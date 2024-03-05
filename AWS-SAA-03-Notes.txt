@@ -35,6 +35,21 @@ users : netflix , dropbox , nasa etc......
 • AWS Data Centers
 • AWS Edge Locations / Points of Presence
 
+
+EPV : ------------------------- Here are some of the best practices while creating an AWS account root user:
+
+1) Use a strong password to help protect account-level access to the AWS Management Console. 
+
+2) Never share your AWS account root user password or access keys with anyone.
+
+3) If you do have an access key for your AWS account root user, delete it. If you must keep it, rotate (change) the access key regularly. You should not encrypt the access keys and save them on Amazon S3.
+
+4) If you don't already have an access key for your AWS account root user, don't create one unless you absolutely need to.
+
+5) Enable AWS multi-factor authentication (MFA) on your AWS account root user account.
+
+
+
 ===========================EC2==============
 -- elastic compute cloud
 
@@ -131,6 +146,25 @@ we have Floppy -- 2MB
 
 ====================================EFS=====================
 
+• Managed NFS (network file system) that can be mounted on many EC2
+
+• EFS works with EC2 instances in multi-AZ
+
+• Highly available, scalable, expensive (3x gp2), pay per use
+
+• Use cases: content management, web serving, data sharing,Wordpress
+
+• Uses NFSv4.1 protocol
+
+• Uses security group to control access to EFS
+
+• Encryption at rest using KMS
+
+• POSIX file system (~Linux) that has a standard file API
+
+• File system scales automatically, pay-per-use, no capacity planning!
+
+
 -- elastic file system , it is file based storage system, it has unlimited storage
 
 -- efs is only for the linux instances only
@@ -150,11 +184,75 @@ we have Floppy -- 2MB
 -- expensive(3 times of GP2)
 
 
------Availability and durability
 
-- Standard : Multi AZ , great for production 
-- One Zone : one AZ, great for Dev , Backups , enabled by default , compatible with IA(one Zone)
-- Over 90% in cost savings 
+------------ EFS – Performance & Storage Classes
+
+• EFS Scale
+
+   • 1000s of concurrent NFS clients, 10 GB+ /s throughput
+   • Grow to Petabyte-scale network file system, automatically
+
+• Performance Mode (set at EFS creation time)
+ 
+   • General Purpose (default) – latency-sensitive use cases (web server, CMS, etc...)
+   • Max I/O – higher latency, throughput, highly parallel (big data, media processing)
+
+• Throughput Mode
+
+   • Bursting – 1TB = 50MiB/s + burst of up to 100MiB/s
+   • Provisioned – set your throughput regardless of storage size, ex: 1 GiB/s for 1 TB storage
+   • Elastic – automatically scales throughput up or down based on your workloads
+      • Upto3GiB/sforreadsand1GiB/sforwrites
+      • Usedforunpredictableworkloads
+
+
+
+------------- EFS – Storage Classes
+
+• Storage Tiers (lifecycle management feature – move file after N days)
+
+   • Standard: for frequently accessed files
+   • Infrequent access (EFS-IA): cost to retrieve files, lower price to store. Enable EFS-IA with a Lifecycle Policy
+
+• Availability and durability
+
+   • Standard: Multi-AZ, great for prod
+   • One Zone: One AZ, great for dev, backup enabled by default, compatible with IA (EFS One Zone-IA)
+   
+• Over 90% in cost savings
+
+
+
+--------------- EBS vs EFS – Elastic Block Storage
+
+• EBS volumes...
+
+    • one instance (except multi-attach io1/io2)
+    • are locked at the Availability Zone (AZ) level 
+    • gp2: IO increases if the disk size increases
+    • gp3 & io1: can increase IO independently
+
+• To migrate an EBS volume across AZ
+
+   • Take a snapshot
+   • Restore the snapshot to another AZ
+   • EBS backups use IO and you shouldn’t run them while your application is handling a lot of traffic
+
+• Root EBS Volumes of instances get terminated by default if the EC2 instance gets terminated. (you can disable that)
+
+
+EBS vs EFS – Elastic File System
+
+• Mounting 100s of instances across AZ 
+
+• EFS share website files (WordPress)
+
+• Only for Linux Instances (POSIX)
+
+• EFS has a higher price point than EBS 
+
+• Can leverage EFS-IA for cost savings
+
 
 ============================SNOW FAMILY===============
 
@@ -351,6 +449,51 @@ $15000
 --- these are all based on SLA (service level Aggrement) 
 
 
+AWS Support offers five support plans:
+
+1 Basic
+
+2 Developer
+
+3 Business
+
+4 Enterprise On-Ramp
+
+5 Enterprise
+
+
+1  Basic Support offers support for account and billing questions and service quota increases. The other plans offer a number of technical support cases with pay-by-the-month pricing and no long-term contracts.
+ 
+  -- All AWS customers automatically have 24x7 access to these features of Basic Support:
+
+     - One-on-one responses to account and billing questions
+     - Support forums
+     - Service health checks
+     - Documentation, technical papers, and best practice guides
+
+2  Customers with a Developer Support plan have access to these additional features:
+
+   - Best practice guidance
+   - Client-side diagnostic tools
+   - Building-block architecture support: guidance on how to use AWS products, features, and services together
+   - Supports an unlimited number of support cases that can be opened by one primary contact, which is the AWS account root user.
+
+3 , 4 , 5  : In addition, customers with a Business, Enterprise On-Ramp, or Enterprise Support plan have access to these features:
+
+   - Use-case guidance – What AWS products, features, and services to use to best support your specific needs.
+   - AWS Trusted Advisor – A feature of AWS Support, which inspects customer environments and identifies opportunities to save money, close security gaps, and improve system reliability and performance. You can access all Trusted Advisor checks.
+   - The AWS Support API to interact with Support Center and Trusted Advisor. You can use the AWS Support API to automate support case management and Trusted Advisor operations.
+   - Third-party software support – Help with Amazon Elastic Compute Cloud (Amazon EC2) instance operating systems and configuration. Also, help with the performance of the most popular third-party software components on AWS. Third-party software support isn't available for customers on Basic or Developer Support plans.
+   - Supports an unlimited number of AWS Identity and Access Management (IAM) users who can open technical support cases.
+
+
+In addition, customers with an Enterprise On-Ramp or Enterprise Support plan have access to these features:
+
+- Application architecture guidance – Consultative guidance on how services fit together to meet your specific use case, workload, or application.
+- Infrastructure event management – Short-term engagement with AWS Support to get a deep understanding of your use case. After analysis, provide architectural and scaling guidance for an event.
+- Technical account manager – Work with a technical account manager (TAM) for your specific use cases and applications.
+- White-glove case routing.
+- Management business reviews.
 
 
 ==================================IAM -- depth 
@@ -541,7 +684,7 @@ AWS Organizations :
 
  • Establish Cross Account Roles for Admin purposes
 
------------------- Security: Service Control Policies (SCP) 
+------------------ Security:  Policies (SService ControlCP) 
 
 • IAM policies applied to OU or Accounts to restrict Users and Roles
 
@@ -991,7 +1134,8 @@ KMS KeysTypes :
 
   • AWS Owned Keys (free): SSE-S3, SSE-SQS, SSE-DDB (default key)
   • AWS Owned Keys (free): SSE-S3, SSE-SQS, SSE-DDB (default key)
-  • AWS Managed Key: free (aws/service-name, example: aws/rds or aws/ebs) • Customer managed keys created in KMS: $1 / month
+  • AWS Managed Key: free (aws/service-name, example: aws/rds or aws/ebs) 
+  • Customer managed keys created in KMS: $1 / month
   • Customer managed keys imported (must be symmetric key): $1 / month
   • + pay for API call to KMS ($0.03 / 10000 calls)
 
@@ -1034,6 +1178,19 @@ KMS KeysTypes :
 • Use cases: global client-side encryption, encryption on Global DynamoDB, Global Aurora
 
 
+EPV : 
+
+-- Deleting an AWS KMS key in AWS Key Management Service (AWS KMS) is destructive and potentially dangerous.
+
+-- AWS KMS is a secure and resilient service that uses hardware security modules that have been validated under FIPS 140-2.
+
+-- Deleting an AWS KMS key in AWS Key Management Service (AWS KMS) is destructive and potentially dangerous. Therefore, AWS KMS enforces a waiting period. To delete a KMS key in AWS KMS you schedule key deletion.
+
+-- You can set the waiting period from a minimum of 7 days up to a maximum of 30 days. The default waiting period is 30 days. During the waiting period, the KMS key status and key state is Pending deletion.
+
+-- To recover the KMS key, you can cancel key deletion before the waiting period ends. After the waiting period ends you cannot cancel key deletion, and AWS KMS deletes the KMS key.
+
+
 
 
 ========================================== SSM Parameter Store ================================
@@ -1074,15 +1231,15 @@ KMS KeysTypes :
 
 • Provide in-flight encryption for websites (HTTPS)
 
-• Supports both public and privateTLS certificates
+• Supports both public and private TLS certificates
 
-• Free of charge for publicTLS certificates
+• Free of charge for public TLS certificates
 
 • AutomaticTLS certificate renewal
 
-• Integrations with (loadTLS certificates on)
+• Integrations with (load TLS certificates on)
 
-  • ElasticLoadBalancers(CLB,ALB,NLB)
+  • Elastic Load Balancers(CLB,ALB,NLB)
   • CloudFront Distributions 
   • APIs on API Gateway
 
@@ -1200,8 +1357,11 @@ Users <---------> Global Accelerator (fixed IP) <-----------> ALB <-------------
   • CloudTrail Events Logs – unusual API calls, unauthorized deployments
      • CloudTrailManagementEvents–createVPCsubnet,createtrail,... 
      • CloudTrailS3DataEvents–getobject,listobjects,deleteobject,...
+
   • VPC Flow Logs – unusual internal traffic, unusual IP address
+
   • DNS Logs – compromised EC2 instances sending encoded data within DNS queries 
+
   • Optional Features – EKS Audit Logs, RDS & Aurora, EBS, Lambda, S3 Data Events...
 
 • Can setup EventBridge rules to be notified in case of findings
@@ -1212,7 +1372,9 @@ Users <---------> Global Accelerator (fixed IP) <-----------> ALB <-------------
 
 
 
-VPC Flow Logs / CloudTrail Logs / DNS Logs (AWS DNS) / S3 Logs / EBS Volumes / RDS & Aurora Login Activity / Lambda Network Activity / EKS Audit Logs & Runtime Monitoring ------ > GuardDuty ---> EventBridge --> SNS / Lambda
+VPC Flow Logs / CloudTrail Logs / DNS Logs (AWS DNS) 
+
+optional features = / S3 Logs / EBS Volumes / RDS & Aurora Login Activity / Lambda Network Activity / EKS Audit Logs & Runtime Monitoring ------ > GuardDuty ---> EventBridge --> SNS / Lambda
 
 
 
@@ -1281,15 +1443,42 @@ S3 Buckets-------(analyze)------> Macie Discover Sensitive Data (PII)-------(not
 
 -- ec2 is regional 
 
--- ---------Pricing models in AWS
+-- ---------EC2 Instances Purchasing Options
+
+
+• On-Demand Instances – short workload, predictable pricing, pay by second
+
+• Reserved (1 & 3 years)
+   • Reserved Instances – long workloads
+   • Convertible Reserved Instances – long workloads with flexible instances
+
+• Savings Plans (1 & 3 years) –commitment to an amount of usage, long workload
+
+• Spot Instances – short workloads, cheap, can lose instances (less reliable)
+
+• Dedicated Hosts – book an entire physical server, control instance placement
+
+• Dedicated Instances – no other customers will share your hardware
+
+• Capacity Reservations – reserve capacity in a specific AZ for any duration
+
+
 
 1  ON-Demand instances: pay as u go 
 
 -fixed price , pay per hour 
 - no upfront payments
 - no predictable
-- no commitment
+- no long-term commitment
 - short term committment
+
+• Pay for what you use:
+   • Linux or Windows - billing per second, after the first minute
+   • All other operating systems - billing per hour
+
+• Has the highest cost but no upfront payment
+
+• Recommended for short-term and un-interrupted workloads, where you can't predict how the application will behave
 
 
 2  Reserved instances 
@@ -1303,13 +1492,46 @@ S3 Buckets-------(analyze)------> Macie Discover Sensitive Data (PII)-------(not
 
 a   Standard RI : where u get 75% discount
 
-b   convertible RI : to change the capacity of the instance 66% discount
+b   convertible RI : to change the capacity of the instance 66% discount 
+    • Can change the EC2 instance type, instance family, OS, scope and tenancy
 
 c   Schedule RI :  reserve it for short term like fraction of day , week, or month
 
 
+• Up to 72% discount compared to On-demand
+
+• You reserve a specific instance attributes (Instance Type, Region,Tenancy, OS)
+
+• Reservation Period – 1 year (+discount) or 3 years (+++discount)
+
+• Payment Options – No Upfront (+), Partial Upfront (++), All Upfront (+++)
+
+• Reserved Instance’s Scope – Regional or Zonal (reserve capacity in an AZ)
+
+• Recommended for steady-state usage applications (think database)
+
+• You can buy and sell in the Reserved Instance Marketplace
+
+
+
+
 3 Spot Instances: 
 
+• Can get a discount of up to 90% compared to On-demand
+
+• Instances that you can “lose” at any point of time if your max price is less than the current spot price
+
+• The MOST cost-efficient instances in AWS
+
+• Useful for workloads that are resilient to failure
+  • Batch jobs
+  • Data analysis
+  • Image processing
+  • Any distributed workloads
+  • Workloads with a flexible start and end time
+
+• Not suitable for critical jobs or databases
+  
 - Biding 
 - huge capacity for cheaper price
 - 90% discount
@@ -1317,15 +1539,125 @@ c   Schedule RI :  reserve it for short term like fraction of day , week, or mon
 
 4 Dedicated Host
 
+• A physical server with EC2 instance capacity fully dedicated to your use
+
+• Allows you address compliance requirements and use your existing server- bound software licenses (per-socket, per-core, pe—VM software licenses)
+
+• Purchasing Options:
+   • On-demand – pay per second for active Dedicated Host
+   • Reserved - 1 or 3 years (No Upfront, Partial Upfront,All Upfront)
+
+• The most expensive option
+
+• Useful for software that have complicated licensing model (BYOL – Bring Your
+Own License)
+
+• Or for companies that have strong regulatory or compliance needs
+
+
 - if u need a physical machine with VM's for this model 
 
 - privaacy
 
 - high security
 
----- ---------recently aws launched savings plans also 
+- Dedicated Hosts enable you to use your existing server-bound software licenses like Windows Server and address corporate compliance and regulatory requirements.
+
+
+5  EC2 dedicated instances 
+
+• Instances run on hardware that’s dedicated to you
+
+• May share hardware with other instances in same account
+
+• No control over instance placement (can move hardware after Stop / Start)
+
+-  Dedicated instances are Amazon EC2 instances that run in a VPC on hardware that's dedicated to a single customer. 
+
+- Your dedicated instances are physically isolated at the host hardware level from instances that belong to other AWS accounts. 
+
+- Dedicated instances may share hardware with other instances from the same AWS account that are not dedicated instances. 
+
+- Dedicated instances cannot be used for existing server-bound software licenses.
+
+
+6  savings plans 
+
+• Get a discount based on long-term usage (up to 72% - same as RIs)
+
+• Commit to a certain type of usage ($10/hour for 1 or 3 years)
+
+• Usage beyond EC2 Savings Plans is billed at the On-Demand price
+
+• Locked to a specific instance family & AWS region (e.g., M5 in us-east-1)
+
+• Flexible across:
+   • Instance Size (e.g., m5.xlarge, m5.2xlarge)
+   • OS (e.g., Linux, Windows)
+   • Tenancy (Host, Dedicated, Default)
 
 - it has same as RI but difernet starategy
+
+
+IMP to KNOW : You can use Dedicated Hosts and Dedicated instances to launch Amazon EC2 instances on physical servers that are dedicated for your use.
+
+-- An important difference between a Dedicated Host and a Dedicated instance is that a Dedicated Host gives you additional visibility and control over how instances are placed on a physical server, and you can consistently deploy your instances to the same physical server over time.
+
+-- As a result, Dedicated Hosts enable you to use your existing server-bound software licenses and address corporate compliance and regulatory requirements.
+
+
+
+
+7  EC2 Capacity Reservations
+
+• Reserve On-Demand instances capacity in a specific AZ for any duration
+
+• You always have access to EC2 capacity when you need it
+
+• No time commitment (create/cancel anytime), no billing discounts
+
+• Combine with Regional Reserved Instances and Savings Plans to benefit from billing discounts
+
+• You’re charged at On-Demand rate whether you run instances or not
+
+Suitable for short-term, uninterrupted workloads that needs to be in a "specific AZ"
+
+
+Which purchasing option is right for me? 
+
+
+• On demand: coming and staying in resort whenever we like, we pay the full price
+
+• Reserved: like planning ahead and if we plan to stay for a long time, we may get a good discount.
+
+• Savings Plans: pay a certain amount per hour for certain period and stay in any room type (e.g., King, Suite, Sea View, ...)
+
+• Spot instances: the hotel allows people to bid for the empty rooms and the highest bidder keeps the rooms.You can get kicked out at any time
+
+• Dedicated Hosts: We book an entire building of the resort
+
+• Capacity Reservations: you book a room for a period with full price even you don’t stay in it
+
+
+
+-------------------------- Spot Fleets
+
+• Spot Fleets = set of Spot Instances + (optional) On-Demand Instances
+
+• The Spot Fleet will try to meet the target capacity with price constraints
+
+   • Define possible launch pools: instance type (m5.large), OS, Availability Zone
+   • Can have multiple launch pools, so that the fleet can choose
+   • Spot Fleet stops launching instances when reaching capacity or max cost
+
+• Strategies to allocate Spot Instances:
+
+   • lowestPrice: from the pool with the lowest price (cost optimization, short workload)
+   • diversified: distributed across all pools (great for availability, long workloads)
+   • capacityOptimized: pool with the optimal capacity for the number of instances
+   • priceCapacityOptimized (recommended): pools with highest capacity available, then select the pool with the lowest price (best choice for most workloads)
+
+• Spot Fleets allow us to automatically request Spot Instances with the lowest price
 
 
 ----------------------------------------------EC2Families/instance type 
@@ -1350,7 +1682,7 @@ c   Schedule RI :  reserve it for short term like fraction of day , week, or mon
 
 - it is billable 
 
-- whn there is lot of traffic coming to the ec2instance(t2.micro) it is not sufficient to handle 
+- when there is lot of traffic coming to the ec2instance(t2.micro) it is not sufficient to handle 
 
 - so aws will give cpu credits , ec2 will nter into the brustable mode and it give high performance for limited of time only
 
@@ -1419,6 +1751,8 @@ Note : io1,io2 , gp3 are iops configurable
 -- up to 16 EC2 instance at a time can be attached 
 
 -- EBS Multi-Attch vs Elastic FIle System
+
+
                   EFS            |      EBS-Multi-Attach
 
 Stoarge Type =   file system            Block Storage
@@ -1439,6 +1773,140 @@ Instance Scalabilty =  can scale to hundreds to thousnds |        Currently limi
 
 
 -- U can Not attach volumes to Non-Nitro instance Like t2.micro , u can do with t3.micro for Multi_attach 
+
+
+
+--------------------------------- Amazon EBS pricing
+
+-- With Amazon Elastic Block Store (EBS), you pay only for what you provision. Volume storage for all EBS volume types is charged by the amount of GB you provision per month until you release the storage. Costs increase for EBS volumes that support additional input/output operations per second (IOPS) and throughput beyond baseline performance.
+
+-- AWS Free Tier includes 30 GB of storage, 2 million I/Os, and 1 GB of snapshot storage with Amazon Elastic Block Store (EBS).
+
+
+
+    Volume Type                                                     Price
+
+General Purpose SSD (gp3) - Storage	                            $0.08/GB-month
+
+General Purpose SSD (gp3) - IOPS	                              3,000 IOPS free and $0.005/provisioned IOPS-month over 3,000
+
+General Purpose SSD (gp3) - Throughput	                        125 MB/s free and $0.040/provisioned MB/s-month over 125
+
+General Purpose SSD (gp2) Volumes	                              $0.10 per GB-month of provisioned storage
+
+Provisioned IOPS SSD (io2) - Storage	                          $0.125/GB-month
+
+Provisioned IOPS SSD (io2) - IOPS	                              $0.065/provisioned IOPS-month up to 32,000 IOPS
+
+                                                                $0.046/provisioned IOPS-month from 32,001 to 64,000 IOPS
+  	                                                            $0.032/provisioned IOPS-month for greater than 64,000 IOPS
+
+Provisioned IOPS SSD (io1) Volumes	                            $0.125 per GB-month of provisioned storage AND $0.065 per provisioned IOPS-month                                                           
+
+Throughput Optimized HDD (st1) Volumes	                        $0.045 per GB-month of provisioned storage
+
+Cold HDD (sc1) Volumes                                          $0.015 per GB-month of provisioned storage
+
+
+
+Examples for pricing : 
+
+
+Example 1 – General Purpose SSD (gp3) Volumes
+
+-- Volume storage for General Purpose SSD (gp3) volumes is charged by the amount you provision in GB per month until you release the storage. All gp3 volumes include a free baseline performance of 3,000 provisioned IOPS (input/output operations per second) and 125 provisioned MB/s throughput. 
+
+-- Additional IOPS and throughput can be provisioned independently and are charged by the amount you provision in IOPS per month and MB/s per month until you release the IOPS or throughput. Provisioned storage, provisioned IOPS, and provisioned throughput for gp3 volumes will be billed in per-second increments, with a 60-second minimum.
+
+
+Q : For example, let’s say that you provision a 2,000 GB volume for 12 hours (43,200 seconds) in a 30-day month. Additionally, you provision 10,000 IOPS and 500 MB/s for your volume.
+
+ANS : 
+
+(A) Gp3 volume charge:
+
+    In a region that charges $0.08 per GB-month, you would be charged:
+
+    ($0.08 per GB-month * 2,000 GB * 43,200 seconds / (86,400 seconds/day * 30-day month)) = $2.667
+
+(B) Gp3 IOPS charge:
+    
+    In a region that charges $0.005 per provisioned IOPS-month, you would be charged:
+    
+    ($0.005 per provisioned IOPS-month * (10,000 IOPS provisioned – 3,000 IOPS in the free baseline performance) * 43,200 seconds /(86,400 seconds /day * 30-day month))= $0.583
+
+(C) Gp3 baseline performance charge:
+
+    In a region that charges $0.06 per provisioned MB/s-month, you would be charged:
+
+    ($0.06 per provisioned MB/s-month * (500 MB/s provisioned – 125 MB/s in the free baseline performance) * 43,200 seconds /(86,400 seconds /day * 30 day-month))= $0.375
+
+(D) Total charges for example 1:
+
+      Gp3 volume charge = $2.667
+      Gp3 IOPS charge = $0.583
+      Gp3 baseline performance charge = $0.375
+
+      Total: $3.625 per 30-day month
+
+
+Example 2 – EBS General Purpose SSD (gp2) Volumes
+
+Q : Volume storage for General Purpose SSD (gp2) volumes is charged by the amount you provision in GB per month until you release the storage. Provisioned storage for gp2 volumes will be billed in per-second increments, with a 60-second minimum. I/O is included in the price of the volumes, so you pay only for each GB of storage you provision.
+
+
+Gp2 volume charge: 
+
+   For example, let's say that you provision a 2,000 GB volume for 12 hours (43,200 seconds) in a 30-day month. 
+
+   In a region that charges $0.10 per GB-month, you would be charged:($0.10 per GB-month * 2,000 GB * 43,200 seconds / (86,400 seconds/day * 30 day-month)) = Total: $3.33 per 30-day month
+
+
+
+Example 3 – EBS Provisioned IOPS SSD (io1) Volumes
+
+-- Volume storage for EBS Provisioned IOPS SSD (io2 and io1) volumes is charged by the amount you provision in GB per month until you release the storage. With Provisioned IOPS SSD (io1 and io2) volumes, you are also charged by the amount you provision in IOPS (input/output operations per second) per month. 
+
+-- Provisioned storage and provisioned IOPS for io1 and io2 volumes will be billed in per-second increments, with a 60-second minimum.
+
+
+
+For example, let’s say that you provision a 2,000 GB volume for 12 hours (43,200 seconds) in a 30-day month. 
+
+In a region that charges $0.125 per GB-month, you would be charged $4.167 for the volume ($0.125 per GB-month * 2,000 GB * 43,200 seconds / (86,400 seconds/day * 30-day month)).
+
+ 
+Additionally, you provision 1,000 IOPS for your volume. 
+
+In a region that charges $0.065 per provisioned IOPS-month, you would be charged $1.083 for the IOPS that you provisioned ($0.065 per provisioned IOPS-month * 1,000 IOPS provisioned * 43,200 seconds /(86,400 seconds /day * 30-day month)).
+
+For this example, the charges would be:
+
+$5.25 ($4.167 + $1.083).
+
+
+
+Example 4 – EBS Throughput Optimized HDD (st1) Volumes
+
+Volume storage for Throughput Optimized HDD (st1) volumes is charged by the amount you provision in GB per month until you release the storage. Provisioned storage for st1 volumes will be billed in per-second increments, with a 60-second minimum. I/O is included in the price of the volumes, so you pay only for each GB of storage you provision.
+
+For example, let's say that you provision a 2,000 GB volume for 12 hours in a 30-day month. 
+
+ In a region that charges $0.045 per GB-month, you would be charged $1.50 for the volume ($0.045 per GB-month * 2,000 GB * 43,200 seconds / (86,400 seconds /day * 30 day-month)).
+
+
+
+Example 6 – EBS Cold HDD (sc1) Volumes
+
+Volume storage for Cold HDD (sc1) volumes is charged by the amount you provision in GB per month until you release the storage. Provisioned storage for sc1 volumes will be billed in per-second increments, with a 60-second minimum. I/O is included in the price of the volumes, so you pay only for each GB of storage you provision.
+
+For example, let's say that you provision a 2,000 GB volume for 12 hours (43,200 seconds) in a 30-day month
+
+In a region that charges $0.015 per GB-month, you would be charged $0.50 for the volume ($0.015 per GB-month * 2,000 GB * 43,200 seconds / (86,400 seconds/day * 30-day month)).
+
+
+
+
 
 ---------------------LAB-------------------
 
@@ -1479,7 +1947,7 @@ go to directory and do ls to check the file is there or not
 
 
 
-2 Instace store volumes 
+2  Instace store volumes 
 
 - not persistent / Temporry storage
 
@@ -1488,6 +1956,9 @@ go to directory and do ls to check the file is there or not
 - it is fre volumes
 
 - Emphemeral storage -- another name of ISV 
+
+EPV : An instance store provides temporary block-level storage for your instance. This storage is located on disks that are physically attached to the host instance. Instance store is ideal for the temporary storage of information that changes frequently such as buffers, caches, scratch data, and other temporary content, or for data that is replicated across a fleet of instances, such as a load-balanced pool of web servers.As Instance Store based volumes provide high random I/O performance at low cost (as the storage is part of the instance's usage cost) and the resilient architecture can adjust for the loss of any instance, therefore you should use Instance Store based Amazon EC2 instances for this use-case.
+
 
 
 NOTE : if u terminate the instance all ur root volumes get terminated by default coz, "delete on termination" is checked/enabled
@@ -1589,7 +2060,7 @@ or
 
 -- NOTE:  encryption snapshots cannot be shared to other accounts 
 
------------- instace store volms are crated from a template stored in S3
+------------ instace store volumes are crated from a template stored in S3
 
 -- to create a snapshot u no need to stop the ec2
 
@@ -1601,7 +2072,7 @@ or
 
 ------------------- EBS snapshot standard and Archive tier 
 
--- movethe snapshots to Archieve tier i.e 75% cheaper
+-- move the snapshots to Archieve tier i.e 75% cheaper
 
 -- it takes 24 - 72 hrs for restoring from archieve tier
 
@@ -1622,6 +2093,61 @@ or
 - encryption the EBS snapshot (using Copy)
 - create new EBS volume from snapshots
 - now u can attach the encrypted volume to the original instance
+
+
+
+------------------------------------- Pricing of SNAPSHOTS 
+
+-- Amazon EBS Snapshots are point-in-time copies of your block data. EBS Snapshots in the Standard tier are stored incrementally, which means you are billed only for the changed blocks stored. EBS Snapshots in the Archive tier are full copies of your block data, which means you are billed for all the blocks stored and not just the changed blocks. 
+
+-- Snapshots in the Archive tier have a minimum retention period of 90 days. Archived snapshots that are deleted or permanently restored to the Standard tier before 90 days will incur a pro-rated charge equal to the storage charge for the remaining days. Additional charges apply for retrievals from the Archive tier.
+
+
+EBS Snapshots Storage Pricing : 
+
+Standard	       $0.05/GB-month 
+
+Archive	         $0.0125/GB-month
+
+
+EBS Snapshots Restore Pricing :
+
+Standard	     Free
+
+Archive	       $0.03 per GB of data retrieved
+
+
+Amazon EBS Fast Snapshot Restore :
+
+-- Fast Snapshot Restore (FSR) allows you to promptly restore fully provisioned EBS volumes from snapshots, regardless of the size of the volume or snapshot. You can enable FSR on snapshots you own or those shared with you.
+
+-- FSR is charged in Data Services Unit-Hours (DSU-Hours) for each snapshot and each Availability Zone in which it is enabled. DSUs mean that you are billed per minute with a one-hour minimum. You will continue to incur charges on an FSR-enabled snapshot until you disable it.
+
+
+Fast Snapshot Restore            $0.75 per 1 DSU hour on each snapshot and in each AZ it is enabled
+
+
+EG : EBS Fast Snapshot Restore
+
+-- Example pricing is based on the US-East (N. Virginia) region. Fast Snapshot Restore (FSR) is charged in Data Services Unit-Hours (DSU-Hours) for each snapshot and each Availability Zone in which it is enabled.
+
+-- DSUs are billed per minute with a one-hour minimum. You will continue to incur charges until you disable FSR on a snapshot. The price of 1 DSU-Hour is $0.75.
+
+1 For example, you enable FSR on an EBS Snapshot in three Availability Zones (AZs) and you disable it after 90 minutes. 
+
+The price of one DSU-Hour is $0.75. Since FSR was enabled on one snapshot for 90 minutes in three AZs, you will be billed as 1 snapshot * 3 AZs * 1.5 DSU-hours at $0.75 per DSU-Hour or $3.375.
+
+
+2 As another example, you enable FSR on an EBS Snapshot in one Availability Zone, and you disable it after 45 minutes
+
+The price of 1 FSR DSU-Hour is $0.75. Since there is a one-hour minimum, you will be billed as 1 snapshot * 1 AZ * one DSU-Hour at $0.75 per DSU-Hour or $0.75.
+
+
+3 Let’s consider another example where you enable FSR on three snapshots in two Availability Zones, and you disable it after 2.5 hours.
+
+Since FSR was enabled for 2.5 hours (150 minutes) on 3 snapshots and in 2 AZs, you will be billed as 3 snapshots * 2 AZs * 2.5 DSU-hours at $0.75 per FSR DSU-Hour or $11.25.
+
+
 
 ===============================IMAGES===================
 
@@ -1664,7 +2190,17 @@ or
 IMP NOTE : whenever if u create image(it has 2 volumes by default) , automatically 2 snapshots are generated 
 
 
--- no need to stop the ec2 to tke snapshot but it is recommended to take snapshot after stop the ec2 
+-- no need to stop the ec2 to take snapshot but it is recommended to take snapshot after stop the ec2 
+
+
+EPV : The solo founder at a tech startup has just created a brand new AWS account. The founder has provisioned an Amazon EC2 instance 1A which is running in AWS Region A. Later, he takes a snapshot of the instance 1A and then creates a new Amazon Machine Image (AMI) in Region A from this snapshot. This AMI is then copied into another Region B. The founder provisions an instance 1B in Region B using this new AMI in Region B.
+
+ANS : 1 Amazon EC2 instance, 1 AMI and 1 snapshot exist in Region B
+
+- An Amazon Machine Image (AMI) provides the information required to launch an instance. You must specify an AMI when you launch an instance. 
+
+- When the new AMI is copied from Region A into Region B, it automatically creates a snapshot in Region B because AMIs are based on the underlying snapshots. Further, an instance is created from this AMI in Region B. Hence, we have 1 Amazon EC2 instance, 1 AMI and 1 snapshot in Region B.
+
 
 ==============================KEY-PAIR=========================
 
@@ -2273,6 +2809,10 @@ windows = powershell
 -- it provide 2 static ip's
 
 -- it is billable 
+
+-- global service 
+
+-- it will reduce 60% traffic to the end-users
  
 
 -- unicast ip : one server holds one ip address 
@@ -2285,6 +2825,7 @@ windows = powershell
 -- eth0 --> private IP
 
 -- eth1 --> public ip
+
 
 
 ----------------------------HOW GA works with LB -------
@@ -2861,7 +3402,7 @@ Group-level stickiness: Off
 ===============================AUTO-SCALING GROUPS========================================
 
 
--- create a LB empty TG
+-- create a Load Balancer with  empty TG
 
 -- u have to create Launch template (user-data), u can edit LT once u created , u havve create new LT if u want new version of ur appn 
 
@@ -2942,14 +3483,25 @@ echo "<h1>Hello World from $(hostname -f)</h1>" > /var/www/html/index.html
 
 Amazon EC2 Auto Scaling supports the following types of dynamic scaling policies:
 
+• Dynamic Scaling
 
-A  Target tracking scaling — Increase and decrease the current capacity of the group based on a Amazon CloudWatch metric and a target value. It works similar to the way that your thermostat maintains the temperature of your home—you select a temperature and the thermostat does the rest.
+    • Target Tracking Scaling
+         • Simple to set-up
+         • Example: I want the average ASG CPU to stay at around 40%
+         EPV : 
 
-B  Step scaling            — Increase and decrease the current capacity of the group based on a set of scaling adjustments, known as step adjustments, that vary based on the size of the alarm breach.
+    • Simple / Step Scaling
+         • When a CloudWatch alarm is triggered (example CPU > 70%), then add 2 units
+         • When a CloudWatch alarm is triggered (example CPU < 30%), then remove 1
+         EPV : With step scaling and simple scaling, you choose scaling metrics and threshold values for the Amazon CloudWatch alarms that trigger the scaling process.
 
-C  Simple scaling          — Increase and decrease the current capacity of the group based on a single scaling adjustment, with a cooldown period between each scaling activity.
+    • Scheduled Scaling
+
+       • Anticipate a scaling based on known usage patterns
+       • Example: increase the min capacity to 10 at 5 pm on Fridays
+
+
  
-
 --- How dynamic scaling policies work
 
 A dynamic scaling policy instructs Amazon EC2 Auto Scaling to track a specific CloudWatch metric, and it defines what action to take when the associated CloudWatch alarm is in ALARM. The metrics that are used to invoke the alarm state are an aggregation of metrics coming from all of the instances in the Auto Scaling group. (For example, let's say you have an Auto Scaling group with two instances where one instance is at 60 percent CPU and the other is at 40 percent CPU. On average, they are at 50 percent CPU.) When the policy is in effect, Amazon EC2 Auto Scaling adjusts the group's desired capacity up or down when the threshold of an alarm is breached.
@@ -2962,6 +3514,8 @@ When a dynamic scaling policy is invoked, if the capacity calculation produces a
 
 
 3  Predictive scaling policies : 
+
+• Predictive scaling: continuously forecast load and schedule scaling ahead
 
 
 Predictive scaling forecasts load based on your Auto Scaling group's history. It scales out the group in advance of forecasted load, so that new instances are ready to serve when the load arrives.
@@ -2993,7 +3547,7 @@ Start an instance refresh to perform rolling updates on the Auto Scaling group's
 
 -- when ec2 terminating it is showing like "draining" once it finishes all connctions , then only it will get removed from the TG (it will complete in-flight request and get removed)
 
----------- scaleout practicals 
+----------------------------------------------------- scaleout practicals 
 
 -- (IMP:Make sure AMI Version is with Kernal 5.10.....) ,select the version of template you want
 
@@ -3013,7 +3567,53 @@ Start an instance refresh to perform rolling updates on the Auto Scaling group's
 
 --  wait for sometime(4-5 min) to updating the data , then check in ASG and see how the changs are happening
 
--- u can see the scale out is happening and meet the max capacity 
+-- u can see the scale out is happening and meet the max capacity
+
+
+----------------------------------------------------------------- Launch Configuration vs Launch Template
+
+Launch Configuration :
+
+-- Launch configuration is an instance configuration template that an Auto Scaling Group uses to launch EC2 instances.
+
+-- Launch configuration is similar to EC2 configuration and involves the selection of the Amazon Machine Image (AMI), block devices, key pair, instance type, security groups, user data, EC2 instance monitoring, instance profile, kernel, ramdisk, the instance tenancy, whether the instance has a public IP address, and is EBS-optimized.
+
+-- Launch configuration can be associated with multiple ASGs
+
+-- Launch configuration can’t be modified after creation and needs to be created new if any modification is required.
+
+-- Basic or detailed monitoring for the instances in the ASG can be enabled when a launch configuration is created.
+
+-- By default, basic monitoring is enabled when you create the launch configuration using the AWS Management Console, and detailed monitoring is enabled when you create the launch configuration using the AWS CLI or an API
+
+-- AWS recommends using Launch Template instead.
+
+
+
+Launch Template :
+
+-- A Launch Template is similar to a launch configuration, with additional features, and is recommended by AWS.
+
+-- Launch Template allows multiple versions of a template to be defined.
+
+-- With versioning, a subset of the full set of parameters can be created and then reused to create other templates or template versions for e.g, a default template that defines common configuration parameters can be created and allow the other parameters to be specified as part of another version of the same template.
+
+-- Launch Template allows the selection of both Spot and On-Demand Instances or multiple instance types.
+
+-- Launch templates support EC2 Dedicated Hosts. Dedicated Hosts are physical servers with EC2 instance capacity that are dedicated to your use.
+
+-- Launch templates provide the following features
+
+   - Support for multiple instance types and purchase options in a single ASG.
+
+   - Launching Spot Instances with the capacity-optimized allocation strategy.
+   - Support for launching instances into existing Capacity Reservations through an ASG.
+   - Support for unlimited mode for burstable performance instances.
+   - Support for Dedicated Hosts.
+   - Combining CPU architectures such as Intel, AMD, and ARM (Graviton2)
+   - Improved governance through IAM controls and versioning.
+   - Automating instance deployment with Instance Refresh.
+
 
 
 ============================CLOUD WATCH=============================
@@ -3422,7 +4022,7 @@ or u can do in nother process
 
 -  why SSM? 
 
-ANs: i have to store particular valur(json document which is used to fetch the memory utilixation from aws ec2 and send it to AWS cloudwatch ) in ssm
+ANs: i have to store particular value(json document which is used to fetch the memory utilixation from aws ec2 and send it to AWS cloudwatch ) in ssm
 
 -  create a parameter in the system manager with the name (u can givve any name) 
 
@@ -3488,6 +4088,11 @@ sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-c
 • If a resource is deleted in AWS, investigate CloudTrail first!
 
 -- By default, CloudTrail trails created via the AWS Management Console will have global service events enabled. It is recommended that you only have one trail allocated to global service events per account in order to reduce duplicate events.
+
+
+EPV : AWS CloudTrail cannot stream data to Amazon Kinesis. Amazon S3 buckets and Amazon CloudWatch logs are the only destinations possible.
+
+
 
 
 --------------------------- CloudTrail Events
@@ -3933,6 +4538,16 @@ eg : htps://bucket1.s3.ap-south-1.amazonaws.com/photos/puppy.jpg
 - Force objects to be encrypted at upload
 - Grant access to another account (Cross Account)
 
+
+
+-------- types of Access control                       AWS Account-Level control                    user-level control
+
+1       IAM policies                                    NO                                           YES
+
+2       ACL's                                           Yes                                           NO
+
+3       Bucket Policies                                 Yes                                           Yes
+
 ------------------------------------------------ S3 Versioning 
 
 -- when u have critical data it is help to bacjup
@@ -4175,6 +4790,85 @@ here            oth day --> 30th day --> 60th day
 - expiration : Delete after 365 days , configure objects to expire (delete) after some time
 
 
+-- In an S3 Lifecycle configuration, you can define rules to transition objects from one storage class to another to save on storage costs.
+
+-- When you don't know the access patterns of your objects, or if your access patterns are changing over time, you can transition the objects to the S3 Intelligent-Tiering storage class for automatic cost savings. 
+
+
+IMP FOR EPV : Amazon S3 supports a waterfall model for transitioning between storage classes,
+
+S3 Standard storage 
+
+    S3 Standard-IA storage class 
+     
+          S3 Intelligent-Tiering storage class
+
+               S3 One Zone-IA storage class
+
+                    S3 Glacier Instant Retrieval storage class
+
+                           S3 Glacier Flexible Retrieval storage class 
+
+                                    S3 Glacier Deep Archive storage class.
+
+1  Supported lifecycle transitions
+
+-- Amazon S3 supports the following lifecycle transitions between storage classes using an S3 Lifecycle configuration. You can transition from the following:
+
+-  The S3 Standard storage class to any other storage class.
+
+-  The S3 Standard-IA storage class to the S3 Intelligent-Tiering, S3 One Zone-IA, S3 Glacier Instant Retrieval, S3 Glacier Flexible Retrieval, or S3 Glacier Deep Archive storage classes.
+
+-  The S3 Intelligent-Tiering storage class to the S3 One Zone-IA, S3 Glacier Instant Retrieval, S3 Glacier Flexible Retrieval, or S3 Glacier Deep Archive storage classes.
+
+-  The S3 One Zone-IA storage class to the S3 Glacier Flexible Retrieval or S3 Glacier Deep Archive storage classes.
+
+-  The S3 Glacier Instant Retrieval storage class to the S3 Glacier Flexible Retrieval or S3 Glacier Deep Archive storage classes.
+
+-  The S3 Glacier Flexible Retrieval storage class to the S3 Glacier Deep Archive storage class.
+
+-  Any storage class to the S3 Glacier Deep Archive storage class.
+
+
+2  Unsupported lifecycle transitions
+
+-- Amazon S3 does not support any of the following lifecycle transitions. You can't transition from the following:
+
+- Any storage class to the S3 Standard storage class.
+
+- Any storage class to the Reduced Redundancy Storage (RRS) class.
+
+- The S3 Intelligent-Tiering storage class to the S3 Standard-IA storage class.
+
+- The S3 One Zone-IA storage class to the S3 Intelligent-Tiering, S3 Standard-IA, or S3 Glacier Instant Retrieval storage classes.
+
+
+Constraints : 
+
+
+-- When you transition objects from the S3 Standard or S3 Standard-IA storage classes to S3 Intelligent-Tiering, S3 Standard-IA, or S3 One Zone-IA, the following object size constraints apply:
+
+Larger objects  : For the following transitions, there is a cost benefit to transitioning larger objects:
+
+  - From the S3 Standard or S3 Standard-IA storage classes to S3 Intelligent-Tiering.
+
+  - From the S3 Standard storage class to S3 Standard-IA or S3 One Zone-IA.
+
+-- Objects smaller than 128 KiB : For the following transitions, Amazon S3 does not transition objects that are smaller than 128 KiB:
+
+  - From the S3 Standard or S3 Standard-IA storage classes to S3 Intelligent-Tiering or S3 Glacier Instant Retrieval.
+
+  - From the S3 Standard storage class to S3 Standard-IA or S3 One Zone-IA.
+
+
+ref: https://docs.aws.amazon.com/AmazonS3/latest/userguide/lifecycle-transition-general-considerations.html
+
+
+
+
+
+
+
 ---------------------------- Amazon S3 – Lifecycle Rules (Scenario 1)
 
 Q Your application on EC2 creates images thumbnails after profile photos are uploaded to Amazon S3.These thumbnails can be easily recreated, and only need to be kept for 60 days.The source images should be able to be immediately retrieved for these 60 days, and afterwards, the user can wait up to 6 hours. How would you design this?
@@ -4240,6 +4934,20 @@ Ans : Enable S3 Versioning in order to have object versions, so that “deleted 
 • protect the object indefinitely, independent from retention period
 • can be freely placed and removed using the s3:PutObjectLegalHold IAM permission
 
+EPV : 1) When you apply a retention period to an object version explicitly, you specify a Retain Until Date for the object version
+     
+       - You can place a retention period on an object version either explicitly or through a bucket default setting. When you apply a retention period to an object version explicitly, you specify a Retain Until Date for the object version.
+
+       - Amazon S3 stores the Retain Until Date setting in the object version's metadata and protects the object version until the retention period expires.
+
+      2) Different versions of a single object can have different retention modes and periods 
+
+        - Like all other Object Lock settings, retention periods apply to individual object versions. Different versions of a single object can have different retention modes and periods.
+
+        - For example, suppose that you have an object that is 15 days into a 30-day retention period, and you PUT an object into Amazon S3 with the same name and a 60-day retention period. 
+
+        - In this case, your PUT succeeds, and Amazon S3 creates a new version of the object with a 60-day retention period. The older version maintains its original retention period and becomes deletable in 15 days.
+
 -- permanent lock and certain period lock 
 
 -- if u want to get logs of ur bucket u have to enable " server Access Logs"
@@ -4301,6 +5009,12 @@ Ans : Enable S3 Versioning in order to have object versions, so that “deleted 
 
 
 NOTE : versioning is manditory to have CRR/SRR
+
+
+VERY IMP for EPV :
+
+
+-- if u want to get logs of ur bucket u have to enable " server Access Logs"
 
 -- object level logs can be captured in CloudTrail
 
@@ -4423,7 +5137,7 @@ To protect data in transit, AWS encourages customers to leverage a multi-level a
 
 
 
----------==============Pre-signed URL===================== 
+======================================Pre-signed URL===================== 
 
 -- Generate pre-signed URLs using the S3 Console, AWS CLI or SDK
 
@@ -4453,6 +5167,10 @@ if u want to give access for some time only then AWS it has "pre-signed URL" whi
 -- Increase transfer speed by transferring file to an AWS edge location which will forward the data to the S3 bucket in the target region
 
 -- Compatible with multi-part upload
+
+
+EPV : There are no S3 data transfer charges when data is transferred in from the internet. Also with S3TA, you pay only for transfers that are accelerated. if it is not accelerate you no need to pay any money 
+
 
 
 ==================== S3 Byte-Range Fetches ===========
@@ -5522,6 +6240,8 @@ Storage Gateway :  You are charged based on the type and amount of storage you u
 
 
 combination : You can use a combination of DataSync and File Gateway to minimize your on-premises’ operational costs while seamlessly connecting on-premises applications to your cloud storage. AWS DataSync enables you to automate and accelerate online data transfers to AWS storage services. File Gateway then provides your on-premises applications with low latency access to the migrated data.
+
+
 =======================================RDS==============================
 
 -- RDS is REgional 
@@ -5847,6 +6567,45 @@ workflow = Client --> proxy Fleet(managed by Aurora) --> AMZN aurora ...  AMZN a
 - Typical cross-region replication takes less than 1 second
 
 
+---------- EPV :
+
+-- Amazon Aurora features a distributed, fault-tolerant, self-healing storage system that auto-scales up to 128TB per database instance. It delivers high performance and availability with up to 15 low-latency read replicas, point-in-time recovery, continuous backup to Amazon S3, and replication across three Availability Zones (AZs).
+
+-- For Amazon Aurora, each Read Replica is associated with a priority tier (0-15). In the event of a failover, Amazon Aurora will promote the Read Replica that has the highest priority (the lowest numbered tier). 
+
+-- If two or more Aurora Replicas share the same priority, then Amazon RDS promotes the replica that is largest in size. 
+
+--  If two or more Aurora Replicas share the same priority and size, then Amazon Aurora promotes an arbitrary replica(chosen at random instead of following a consistent rule) in the same promotion tier.
+
+
+----------- Diff b/w Multi -AZdeploayment  , Multi-region deployment, Read replicas 
+
+
+
+       Multi -AZ deploayment                                        Multi-region deployment                                                  Read replicas
+
+
+1 Main purpose s highly availability                          Main purpose is disaster recovery and local performance                   Main purpose is Scalabilty
+
+
+2 NON-Aurora : synchronous replications &                      Asynchronous replication                                                 Asynchronous replication 
+Aurora  : asynchronous
+
+
+3 NON-Aurora : only the primary instance is active             All regions are accessible nd can be used for reads                      all read replicas are assessible and can be used for readcaling
+  Aurora : all instances are active
+
+
+4  NON-Aurora : automated backups are taken from standby       automated backups are taken in each region                                No backups configured by default 
+  Aurora : automated backups are taken from shared storage 
+  layer
+
+
+5  Always span atleast 2 AZ ithin a single region               Each region can have a Multi - AZ deployment                             can be within an AZ , Cross AZ or Cross region
+
+
+
+
 -------------------------------------------- RDS Backups and Aurora Backups 
 
 -------- RDS Backups
@@ -5901,8 +6660,8 @@ Restoring MySQL Aurora cluster from S3
 -- Faster than snapshot & restore
 
 -- Uses "copy-on-write" protocol:
--  Initially, the new DB cluster uses the same data volume as the original DB cluster (fast and efficient – no copying is needed)
--  When updates are made to the new DB cluster data, then additional storage is allocated and data is copied to be separated
+   -  Initially, the new DB cluster uses the same data volume as the original DB cluster (fast and efficient – no copying is needed)
+   -  When updates are made to the new DB cluster data, then additional storage is allocated and data is copied to be separated
 
 -- Very fast & cost-effective
 
@@ -5938,7 +6697,7 @@ Restoring MySQL Aurora cluster from S3
 
 -- Improving database effiency by reducing the stress on the data base resource(Eg CPU, RAM ) and Minimize open connections(and timeouts)
 
--- Serverles,AutoSclaing, HA
+-- Serverles,AutoScaling, HA
 
 -- Support MYSQL, POstgres, MariaDB, MSQL and AURORA 
 
@@ -6612,6 +7371,19 @@ change, does it need to scale or fluctuate during the day?
 • Use case: Store relational datasets (RDBMS / OLTP), perform SQL queries, transactions
 
 
+EPV :  A healthcare company uses its on-premises infrastructure to run legacy applications that require specialized customizations to the underlying Oracle database as well as its host operating system (OS). The company also wants to improve the availability of the Oracle database layer. The company has hired you as an AWS Certified Solutions Architect – Associate to build a solution on AWS that meets these requirements while minimizing the underlying infrastructure maintenance effort.
+
+
+ANS : - Amazon RDS can automatically back up your database and keep your database software up to date with the latest version.
+
+- However, RDS does not allow you to access the host OS of the database.
+
+- so , you need to use Amazon RDS Custom for Oracle as it allows you to access and customize your database server host and operating system, 
+
+- for example by applying special patches and changing the database software settings to support third-party applications that require privileged access. Amazon RDS Custom for Oracle facilitates these functionalities with minimum infrastructure maintenance effort. 
+
+- You need to set up the RDS Custom for Oracle in multi-AZ configuration for high availability.
+
 
 -------------------------------------- 2 Amazon Aurora – Summary
 
@@ -6896,6 +7668,32 @@ Source DB --------(DMS + SCT)-----> Target DB (different engine)
 
 =================================================== AWS API Gateway =======================================
 
+- Amazon API Gateway is a fully managed service that makes it easy for developers to create, publish, maintain, monitor, and secure APIs at any scale. 
+
+- APIs act as the front door for applications to access data, business logic, or functionality from your backend services.
+
+- Using API Gateway, you can create RESTful APIs and WebSocket APIs that enable real-time two-way communication applications.
+
+How Amazon API Gateway Works:
+
+Amazon API Gateway creates RESTful APIs that:
+
+ - Are HTTP-based.
+
+ - Enable stateless client-server communication.
+
+ - Implement standard HTTP methods such as GET, POST, PUT, PATCH, and DELETE.
+
+Amazon API Gateway creates WebSocket APIs that:
+
+ - Adhere to the WebSocket protocol, which enables stateful, full-duplex communication between client and server. Route incoming messages based on message content.
+
+
+-- So Amazon API Gateway supports stateless RESTful APIs as well as stateful WebSocket APIs. 
+
+
+
+
 • AWS Lambda + API Gateway: No infrastructure to manage
 
 • Support for the WebSocket Protocol
@@ -6904,7 +7702,9 @@ Source DB --------(DMS + SCT)-----> Target DB (different engine)
 
 • Handle different environments (dev, test, prod...)
 
-• Handle security (Authentication and Authorization) • Create API keys, handle request throttling
+• Handle security (Authentication and Authorization) 
+
+• Create API keys, handle request throttling
 
 • Swagger / Open API import to quickly define APIs • Transform and validate requests and responses
 
@@ -7620,7 +8420,7 @@ if one record get down , the request will automaticall go to second record
 
 
 
-3                  Geo-Location Routing Policy;
+3                  GeoLocation Routing Policy;
 
 
 -- for eg u have cutomers all over the world if they are in china , japan , india, austria etc
@@ -7653,6 +8453,23 @@ http://subbu.com-->japan ELB/IP
 -- Should create a “Default” record (in case there’s no match on location)
 
 -- Can be associated with Health Checks
+
+
+EPV : 1) Use Amazon Route 53 based geolocation routing policy to restrict distribution of content to only the locations in which you have distribution rights
+
+- Geolocation routing lets you choose the resources that serve your traffic based on the geographic location of your users, meaning the location that DNS queries originate from.
+
+- For example, you might want all queries from Europe to be routed to an ELB load balancer in the Frankfurt region. You can also use geolocation routing to restrict the distribution of content to only the locations in which you have distribution rights.
+
+2) Use georestriction to prevent users in specific geographic locations from accessing content that you're distributing through a Amazon CloudFront web distribution
+
+- You can use georestriction, also known as geo-blocking, to prevent users in specific geographic locations from accessing content that you're distributing through a Amazon CloudFront web distribution.
+
+- When a user requests your content, Amazon CloudFront typically serves the requested content regardless of where the user is located.
+
+- If you need to prevent users in specific countries from accessing your content, you can use the CloudFront geo restriction feature to do one of the following: Allow your users to access your content only if they're in one of the countries on a whitelist of approved countries.
+
+- 
 
 
 
@@ -8967,6 +9784,10 @@ u will get responce
 
 • Share cross-account using Resource Access Manager (RAM)
 
+-- What is AWS Resource Access Manager?
+
+Ans : AWS Resource Access Manager (AWS RAM) helps you securely share your resources across AWS accounts, within your organization or organizational units (OUs) in AWS Organizations, and with IAM roles and IAM users for supported resource types. You can use AWS RAM to share resources with other AWS accounts. This eliminates the need to provision and manage resources in every account. When you share a resource with another account, that account is granted access to the resource and any policies and permissions in that account apply to the shared resource.
+
 • You can peer Transit Gateways across regions
 
 • RouteTables:limitwhichVPCcantalkwithotherVPC
@@ -9503,7 +10324,7 @@ step 8 : Recovery Point Objective (RPO)
 
 -- that is the maximum acceptable amount of time since the last data recovery point 
 
-eg :  magine this scenario whenever you create a data set you keep a copy of that in another location 
+eg :  imagine this scenario whenever you create a data set you keep a copy of that in another location 
 
 -- so that in case you lose the original data you have a backup from which you can recover your lost data
 
@@ -9850,7 +10671,8 @@ Announcing New Features :
 • AWS API Gateway 
 • Amazon S3
 • AWS SNS & SQS
-• AWS Kinesis Data Firehose • Aurora Serverless
+• AWS Kinesis Data Firehose 
+• Aurora Serverless
 • Step Functions
 • Fargate
 ------------------------------------------AWS LAMBDA 
@@ -10298,7 +11120,51 @@ Eg:               Schedule             uk-office-hours
 
 ============================================================AMAZON SQS========================================
 
-Amazon SQS provides queues for high-throughput, system-to-system messaging. You can use queues to decouple heavyweight processes and to buffer and batch work. Amazon SQS stores messages until microservices and serverless applications process them.
+
+
+-----Intro  to AWS Integration & Messaging
+
+
+• When we start deploying multiple applications, they will inevitably need to communicate with one another
+
+• There are two patterns of application communication
+
+1) Synchronous communications : (application to application)
+
+2  Asynchronous / Event based : (application to queue to application)
+
+• Synchronous between applications can be problematic if there are sudden spikes of traffic
+
+• What if you need to suddenly encode 1000 videos but usually it’s 10?
+
+• In that case, it’s better to decouple your applications,
+
+  • using SQS: queue model
+  • using SNS: pub/sub model
+  • using Kinesis: real-time streaming model
+
+• These services can scale independently from our application!
+
+
+------------------------------- amazon SQS 
+
+
+
+-- Amazon SQS provides queues for high-throughput, system-to-system messaging. You can use queues to decouple heavyweight processes and to buffer and batch work. Amazon SQS stores messages until microservices and serverless applications process them.
+
+-- message SQS is a form of asynchronous service to service communication used in serverless and micro services architecture 
+
+-- sender = producers and receivers = consumers
+
+-- messages are stores in the QUEUE until they are processed and deleted 
+
+-- where the sender of he message and the one who is receiving the message or is going to receive the message don't have to interact with the message queue at the same point of time
+
+EG : customers and the chef's in the restaurant don't have to interact with the servers or waiters at the same time 
+
+-- each message is processed only once by a single consumer
+
+-- 
 
 -- it is a message queuing service
 
@@ -10335,7 +11201,40 @@ Send, receive, or delete messages in batches of up to 10 messages or 256KB to sa
 
 
 
---------- it has 2 components Standard and FIFO queues , the differences are 
+--------- it has 2 components Standard and FIFO queues , \
+
+
+1 Amazon SQS – Standard Queue
+
+• Oldest offering (over 10 years old)
+
+• Fully managed service, used to decouple applications
+
+• Attributes:
+  • Unlimited throughput, unlimited number of messages in queue
+  • Default retention of messages: 4 days, maximum of 14 days
+  • Low latency (<10 ms on publish and receive)
+  • Limitation of 256KB per message sent
+
+• Can have duplicate messages (at least once delivery, occasionally)
+
+• Can have out of order messages (best effort ordering)
+
+
+
+2 Amazon SQS – FIFO Queue
+
+• FIFO = First In First Out (ordering of messages in the queue)
+
+• Limited throughput: 300 msg/s without batching, 3000 msg/s with Batch
+
+• Exactly-once send capability (by removing duplicates)
+
+• Messages are processed in order by the consumer
+
+
+
+---------------- the differences are 
 
 1  Message Order
 
@@ -10384,6 +11283,7 @@ consumer will be : Applications , lambda functions, ec2 instances, and other aws
 
 -- FIFO : If a message must be received only once, your consumer must delete it within the duration of the visibility timeout
 
+
 what is Delivery delay(DelaySeconds)?
 
  Any messages that you send to the queue remain invisible to consumers for the duration of the delay period.
@@ -10394,7 +11294,53 @@ what is Delivery delay(DelaySeconds)?
 
  -- Maximum number of receives per message(maxReceiveCount): If the ReceiveCount for a message exceeds the maximum receive count for the queue, Amazon SQS moves the message to the associated DLQ.
 
+
+
+EPV : 
+
+Q : A major bank is using Amazon Simple Queue Service (Amazon SQS) to migrate several core banking applications to the cloud to ensure high availability and cost efficiency while simplifying administrative complexity and overhead. The development team at the bank expects a peak rate of about 1000 messages per second to be processed via SQS. It is important that the messages are processed in order.
+
+ANS : Use Amazon SQS FIFO (First-In-First-Out) queue in batch mode of 4 messages per operation to process the messages at the peak rate
+
+exp : By default, FIFO queues support up to 300 messages per second (300 send, receive, or delete operations per second). When you batch 10 messages per operation (maximum), FIFO queues can support up to 3,000 messages per second. 
+
+-- Therefore you need to process 4 messages per operation so that the FIFO queue can support up to 1200 messages per second, which is well within the peak rate.
+
+here we need 1k messages so 4 messages per operation 4 * 300 = 1200 , with batch operations 
+
+
+
+---------------------- Long Polling :  with long polling the receive message requests queries all the servers for the message
+
+Amazon SQS - Long Polling
+
+• When a consumer requests messages from the queue, it can optionally “wait” for messages to arrive if there are none in the queue
+
+• This is called Long Polling
+
+• LongPolling decreases the number of API calls made to SQS while increasing the efficiency and reducing latency of your application
+
+• The wait time can be between 1 sec to 20 sec (20 sec preferable)
+
+• Long Polling is preferable to Short Polling
+
+• Long polling can be enabled at the queue level or at the API level using WaitTimeSeconds
+
+
+
+------- short polling : by default use use short pooling not the long pooling , with short pooling the received message requests queries only a subset of their service to find messages that are available to include in the response
+
+
+
+--------important thing that you need to understand the difference is in short pooling Amazon SQS sends the response right away even if the query found is no message 
+
+------- long pooling Amazon SQS asked you sends and empty response only if the polling wait time expires and that is why we use long polling if we want to save API call costs.
+
+
+
+
 ----------------------------------
+
 -- using lambda and SQS combination it is very powerful event driven solutions so, lambda polls SQS and process the messages and these messages are read in the batches and lambda function is invoked once for the each batch so u define the batch size in the lambda configuration , u can specify the batch size b/w 1 - 1000 and default value for the batch  10 
 
 lambda configuration for SQS
@@ -10444,7 +11390,62 @@ Handling Failed messages (recommended)
 eg : ur retried policy number is 5 , it will picked by lambda only for 5 times after 5 times tyhe lambda will send this message to DLQ , this will saves u costs , un-necessary cloud watch logs ....
 
 
-==================LAB=================
+
+================================================ LAB 1 ==================================================
+
+----------------------- 1 Standard Queue 
+
+-- open SQS 
+
+-- create Std Queue 
+
+-- Receive message wait time = long polling
+
+-- create std queue , u have 2 sections these are producers and consumers 
+
+-- send message and do pollto receive message 
+
+-- now here we do not have any Dead letter queue , even if the message is fails to send it won't go to DLQ 'coz we do not have DLQ here , after 14 days it will get deleted 
+
+-- now create DLQ 
+
+-- go to SQS and create one more queue put this as main queue and previous queue as DLQ 
+
+-- Receive message wait time = 10 secs
+
+-- enable DLQ and set Maximum receives = 3 or 5 
+
+-- now go to main queue and send messages 
+
+-- now send msg , now in receivers section c.o statrt polling and then c.o stop polling quickly for 3 times ('coz we have given retries = 3 )
+
+-- if u poll after 3 times it won’t appear in the msg section , it will go to the dead letter queue 
+
+-- now go to std queue and do poll for message , now u will get the message which is not poll in the main queue , from this u can do check why it is failing
+
+
+----------------------- 2 FIFO queues
+
+--  go to SQS 
+
+-- name ends with .fifo and enabled content based deduplication
+
+-- create fifo queue , now send msg with group id , now poll 
+
+-- now send same message and observe , here it do not send another message seperate id 'coz the content is same so it wont allow duplicates 
+
+-- now change the content and send msg , this time it will send the message 'coz we have changed our content 
+
+-- here during the polling period only u can able to delete the messages once it gets polled after u cannot delete in the FIFO queue(The receipt handle has expired.)
+
+-- where u can delete in std queue
+
+-- now try to delete during the polling time , u can able to delete the message 
+
+
+
+
+=================================================LAB 2 =================
 
 AWS SQS Trigger To Lambda Function
 
@@ -10866,6 +11867,8 @@ s3://doc-example-bucket/table1/
 
 ---- Redshift Overview
 
+-- Amazon Redshift is a fully-managed petabyte-scale cloud-based data warehouse product designed for large scale data set storage and analysis.
+
 • Redshift is based on PostgreSQL, but it’s not used for OLTP
 
 • It’s OLAP – online analytical processing (analytics and data warehousing)
@@ -10920,6 +11923,12 @@ s3://doc-example-bucket/table1/
 
 • The query is then submitted to thousands of Redshift Spectrum nodes
 
+-- Using Amazon Redshift Spectrum, you can efficiently query and retrieve structured and semistructured data from files in Amazon S3 without having to load the data into Amazon Redshift tables.
+
+-- Amazon Redshift Spectrum resides on dedicated Amazon Redshift servers that are independent of your cluster. Redshift Spectrum pushes many compute-intensive tasks, such as predicate filtering and aggregation, down to the Redshift Spectrum layer. Thus, Amazon Redshift Spectrum queries use much less of your cluster's processing capacity than other queries.
+
+
+
 
 
 =================================================== 3 Amazon OpenSearch Service ========================
@@ -10928,7 +11937,7 @@ s3://doc-example-bucket/table1/
 
 • In DynamoDB, queries only exist by primary key or indexes...
 
-• With OpenSearch, you can search any field, even par tially matches
+• With OpenSearch, you can search any field, even partially matches
 
 • It’s common to use OpenSearch as a complement to another database
 
@@ -12185,7 +13194,7 @@ Ans :  u can utilize Amazon Fix for lustre . It is a fully managed , high perfor
 
 12.  U need to implement synchronous data replication across Availability Zones with automatic failover in Amazon RDS . What should u do ?
 
-Ans :  to achieve synchronous data replication across A>Z with automatic failover in A RDS , u can enable “MULTI-AZ “ deployment. This configuration automatically replicates ur databases synchronously to a standby instance in a different Availability Zone, ensuring high availability and automatic failover.
+Ans :  to achieve synchronous data replication across AZ with automatic failover in A RDS , u can enable “MULTI-AZ “ deployment. This configuration automatically replicates ur databases synchronously to a standby instance in a different Availability Zone, ensuring high availability and automatic failover.
 
 
 IMP Note : synchronous : Multi-AZ  deployment 
