@@ -299,7 +299,7 @@ we have Floppy -- 2MB
 
 • Encryption at rest using KMS
 
-• POSIX file system (~Linux) that has a standard file API
+• POSIX(Portable Operating System Interface) file system (~Linux) that has a standard file API
 
 • File system scales automatically, pay-per-use, no capacity planning!
 
@@ -735,9 +735,17 @@ EXP :
 
 
 
+EPV : A team has around 200 users, each of these having an IAM user account in AWS. Currently, they all have read access to an Amazon S3 bucket. The team wants 50 among them to have write and read access to the buckets.
+
+How can you provide these users access in the least possible time, with minimal changes?
+
+ANS : Create a group, attach the policy to the group and place the users in the group
 
 
-------------------------------------------IAM ROLES
+
+
+
+----------------------------------------------IAM ROLES
 
 --  Temporary Access without credentials
 
@@ -1756,6 +1764,12 @@ AWS WAF - How it Works?:
 
 
 
+EPV : Your application is deployed on Amazon EC2 instances fronted by an Application Load Balancer. Recently, your infrastructure has come under attack. Attackers perform over 100 requests per second, while your normal users only make about 5 requests per second.
+
+ANS : Use an AWS Web Application Firewall (AWS WAF) and setup a rate-based rule
+
+
+
 
 ================================================== AWS Shield: protect from DDoS attack =================
 
@@ -1788,7 +1802,8 @@ AWS WAF - How it Works?:
  
 • WAF rules (Application Load Balancer, API Gateways, CloudFront)
 • AWS Shield Advanced (ALB, CLB, NLB, Elastic IP, CloudFront)
-• Security Groups for EC2, Application Load BAlancer and ENI resources in VPC • AWS Network Firewall (VPC Level)
+• Security Groups for EC2, Application Load Balancer and ENI resources in VPC 
+• AWS Network Firewall (VPC Level)
 • Amazon Route 53 Resolver DNS Firewall
 • Policies are created at the region level
 
@@ -1807,7 +1822,7 @@ AWS WAF - How it Works?:
 
 • If you want to use AWS WAF across accounts, accelerate WAF configuration, automate the protection of new resources, use Firewall Manager with AWS WAF
 
-• Shield Advanced adds additional features on top of AWS WAF, such as dedicated suppor t from the Shield ResponseTeam (SRT) and advanced reporting.
+• Shield Advanced adds additional features on top of AWS WAF, such as dedicated suppor t from the Shield Response Team (SRT) and advanced reporting.
 
 • If you’re prone to frequent DDoS attacks, consider purchasing Shield Advanced
 
@@ -1975,6 +1990,7 @@ S3 Buckets-------(analyze)------> Macie Discover Sensitive Data (PII)-------(not
     -- Also, on top of the regular EC2 fees, AWS charges 10% more for dedicated instances compared to instances under the shared tenancy model.
 
 
+
 EPV : An IT company is looking to move its on-premises infrastructure to AWS Cloud. The company has a portfolio of applications with a few of them using server bound licenses that are valid for the next year. To utilize the licenses, the CTO wants to use dedicated hosts for a one year term and then migrate the given instances to default tenancy thereafter.
 
 ANS : 
@@ -2098,6 +2114,23 @@ c   Schedule RI :  reserve it for short term like fraction of day , week, or mon
 - Biding 
 - huge capacity for cheaper price
 - 90% discount
+
+
+-- Spot blocks allow you to request Amazon EC2 Spot instances for 1 to 6 hours at a time to avoid being interrupted
+
+   EXP : Spot blocks are designed not to be interrupted and will run continuously for the duration you select (1 to 6 hours), independent of the Spot market price.
+
+   -- In rare situations, Spot blocks may be interrupted due to Amazon Web Services' capacity needs. In these cases, AWS will provide a two-minute warning before it terminates your instance and you will not be charged for the affected instance(s).
+
+
+-- Spot Instances with a defined duration (also known as Spot blocks) are designed not to be interrupted and will run continuously for the duration you select. 
+
+-- This makes them ideal for jobs that take a finite time to complete, such as batch processing, encoding and rendering, modeling and analysis, and continuous integration.
+
+-- Running our load on a Spot Instance with Spot Block sounds like the perfect use case, as we can block the spot instance for 1 hour, run the script there, and then the instance will be terminated.
+
+
+
 
 
 some point to know about sopt instances : 
@@ -2753,17 +2786,15 @@ go to directory and do ls to check the file is there or not
 
 - it is fre volumes
 
+- You can't detach an instance store volume from one instance and attach it to a different instance
+
+- If you create an AMI from an instance, the data on its instance store volumes isn't preserved and isn't present on the instance store volumes of the instances that you launch from the AMI.
+
 - Emphemeral storage -- another name of ISV 
 
 EPV : An instance store provides temporary block-level storage for your instance. This storage is located on disks that are physically attached to the host instance. Instance store is ideal for the temporary storage of information that changes frequently such as buffers, caches, scratch data, and other temporary content, or for data that is replicated across a fleet of instances, such as a load-balanced pool of web servers.As Instance Store based volumes provide high random I/O performance at low cost (as the storage is part of the instance's usage cost) and the resilient architecture can adjust for the loss of any instance, therefore you should use Instance Store based Amazon EC2 instances for this use-case.
 
 
-
-NOTE : if u terminate the instance all ur root volumes get terminated by default coz, "delete on termination" is checked/enabled
-
--  if u want to retain the root volume do uncheck  "delete on termination" while launching te ec2 instance 
-
-- if u terminate ec2 , by default "additional volume will not be deleted coz "DOT" is unchecked/disabled
 
 - based on the size of instance, instance store volume will provided by aws 
 
@@ -2792,6 +2823,8 @@ Explanation : when there is instance store , a hard disk is attached by aws to t
 
 -- Reboot = no jump = Data is not Lost
 
+
+
 ----------------to know the ec2 is launched properly or not 
 
 - they are 2 types of status checks 
@@ -2812,6 +2845,31 @@ or
 -- instance store volume give high performance 
 
 -- EBS volumes are network drives with good but limited performnae
+
+
+
+=============================================== DeleteOnTermination ================================================
+
+
+NOTE : if u terminate the instance all ur root volumes get terminated by default coz, "delete on termination" is checked/enabled / Yes
+
+-  if u want to retain the root volume do uncheck  "delete on termination" while launching te ec2 instance 
+
+- if u terminate ec2 , by default "additional volume will not be deleted coz "DOT" is unchecked/disabled/No
+
+
+========= IMP : If the instance is already running, you can set DeleteOnTermination to False using the "command line."
+    
+EG : To modify the deleteOnTermination attribute of the root volume through command line 
+
+-- The following modify-instance-attribute example sets the deleteOnTermination attribute for the root volume of the specified Amazon EBS-backed instance to false. By default, this attribute is true for the root volume.
+
+     cmd : 
+
+     aws ec2 modify-instance-attribute --instance-id i-1234567890abcdef0 --block-device-mappings "[{\"DeviceName\": \"/dev/sda1\",\"Ebs\":{\"DeleteOnTermination\":false}}]"
+
+      This command produces no output
+
 
 
 
@@ -3110,32 +3168,81 @@ ans : we use putty or mobaxtrem
 
 -- thse types are called "domain user" login type 
 
-==============================Cluster network instances=========
+=================================================Cluster network instances (placement groups)==================================
+
+• Sometimes you want control over the EC2 Instance placement strategy
+
+• That strategy can be defined using placement groups
+
+• When you create a placement group, you specify one of the following strategies for the group:
+
+  1 • Cluster—clusters instances into a low-latency group in a single Availability Zone
+
+  2 • Spread—spreads instances across underlying hardware (max 7 instances per group per AZ)
+
+  3 • Partition—spreads instances across many different partitions (which rely on different sets of racks) within an AZ. Scales to 100s of EC2 instances per group (Hadoop, Cassandra, Kafka)
+
+
 
 -- cluster = grp of servers ---> this group is called Placement group"
 
 -- generally , when u launch a new ec2 , the ec2 service will place the instance such a way that all ur instance are spread out across diferent hardware
 
--- te speed b/w instaces is 20Gbps
+-- the speed b/w instaces is 20Gbps
+
+
 
 -- we have 3 cluster network instance
 
 1  Cluster Placement Group : 
 
-- grouping the einstance in same rack same AZ, high performnace , low HA
+   - grouping the einstance in same rack same AZ, high performnace , low HA
+
+   • Pros: Great network (10 Gbps bandwidth between instances with Enhanced Networking enabled - recommended)
+   • Cons: If the rack fails, all instances fails at the same time
+
+   • Use case:
+      • Big Data job that needs to complete fast
+      • Application that needs extremely low latency and high network throughput
 
 
 
 2  Spread Placement Group : ec2 instance are spread across AZ's, high HA, critical Applications
 
-- per 1 AZ = 7 EC2 instances u can launch 
+    - per 1 AZ = 7 EC2 instances u can launch 
+
+    • Pros:
+       • Can span across Availability Zones
+       • Reduced risk is simultaneous failure
+       • EC2 Instances are on different physical hardware
+
+    • Cons:
+       • Limited to 7 instances per AZ per placement group
+
+    • Use case:
+       • Application that needs to maximize high availability
+       • Critical Applications where each instance must be isolated from failure from each other
 
 
 3  Partition Placement roup : 
 
-- Across AZ, Maz partition = 7 
+  • Up to 7 partitions per AZ
 
-- each partition has 100's of ec2 instances
+  • Can span across multiple AZs in the same region 
+
+  • Up to 100s of EC2 instances
+
+  • The instances in a partition do not share racks with the instances in the other partitions
+
+  • A partition failure can affect many EC2 but won’t affect other partitions
+
+  • EC2 instances get access to the partition information as metadata
+
+  - Across AZ, Maz partition = 7 
+
+  - each partition has 100's of ec2 instances
+
+  • Use cases: HDFS, HBase, Cassandra, Kafka
 
 
 note : placement group recommended to have same homogeneous instance type
@@ -3459,6 +3566,8 @@ EXP :
 
 - u can not create routing rules 
 
+- The Classic Load Balancer supports SSL offloading.
+
 
 ------------------------------- 2  Application Load Balancer : 2016
 
@@ -3481,6 +3590,8 @@ EXP :
 - An Application Load Balancer cannot be assigned an Elastic IP address (static IP address).
 
 - Application Load Balancer cannot use EC2 based health checks , it uses ALB health Checks
+
+- You should note that the Application Load Balancer also supports Transport Layer Security (TLS) offloading. 
 
 
 -- -----------it has routing features 
@@ -3509,6 +3620,17 @@ Tartget Groups for ALB
 -- ALB can route trafffic to multiple target groups 
 
 -- health checks are at target group level
+
+
+
+----------------------- Application Load Balancer + dynamic port mapping
+
+-- Application Load Balancer can automatically distribute incoming application traffic across multiple targets, such as Amazon EC2 instances, containers, IP addresses, and AWS Lambda functions. It can handle the varying load of your application traffic in a single Availability Zone or across multiple Availability Zones (AZs).
+
+-- Dynamic port mapping with an Application Load Balancer makes it easier to run multiple tasks on the same Amazon ECS service on an Amazon ECS cluster.
+
+
+
 
 
 EPV : A streaming solutions company is building a video streaming product by using an Application Load Balancer (ALB) that routes the requests to the underlying Amazon EC2 instances. The engineering team has noticed a peculiar pattern. The Application Load Balancer removes an instance from its pool of healthy instances whenever it is detected as unhealthy but the Auto Scaling group fails to kick-in and provision the replacement instance.
@@ -3575,12 +3697,34 @@ EPV : A leading online gaming company is migrating its flagship application to A
 
 ANS : Traffic is routed to instances using the primary private IP address specified in the primary network interface for the instance
 
-
 EXP : 
 
 -- If you specify targets using an instance ID, traffic is routed to instances using the primary private IP address specified in the primary network interface for the instance. The load balancer rewrites the destination IP address from the data packet before forwarding it to the target instance.
 
 -- If you specify targets using IP addresses, you can route traffic to an instance using any private IP address from one or more network interfaces. This enables multiple applications on an instance to use the same port. Note that each network interface can have its security group. The load balancer rewrites the destination IP address before forwarding it to the target.
+
+
+
+EPV : The systems administrator at a company wants to set up a highly available architecture for a bastion host solution.
+
+As a solutions architect, which of the following options would you recommend as the solution?
+
+ANS : Create a public Network Load Balancer that links to Amazon EC2 instances that are bastion hosts managed by an Auto Scaling Group
+
+EXP : Including bastion hosts in your VPC environment enables you to securely connect to your Linux instances without exposing your environment to the Internet. 
+
+-- After you set up your bastion hosts, you can access the other instances in your VPC through Secure Shell (SSH) connections on Linux. 
+
+-- Bastion hosts are also configured with security groups to provide fine-grained ingress control.
+
+IMP : You need to remember that Bastion Hosts are using the SSH protocol, which is a TCP based protocol on port 22. They must be publicly accessible.
+
+-- Here, we use a Network Load Balancer, which supports TCP traffic, and will automatically allow you to connect to the Amazon EC2 instance in the backend.
+
+
+
+
+
 
 
 ----------------------------------------- 4 Gateway Load Balancer ;2020
@@ -4515,6 +4659,12 @@ Group-level stickiness: Off
    • Re-create an EC2 instance in case a previous one is terminated (ex: if unhealthy)
 
 • ASG are free (you only pay for the underlying EC2 instances)
+
+IMP : When rebalancing, Amazon EC2 Auto Scaling launches new instances before terminating the earlier ones. This way, rebalancing does not compromise the performance or availability of your application.
+
+-- Because Amazon EC2 Auto Scaling attempts to launch new instances before terminating the earlier ones, being at or near the specified maximum capacity could impede or completely halt rebalancing activities.
+
+
 
 
 ----------------------- Auto Scaling - CloudWatch Alarms & Scaling
@@ -6487,6 +6637,8 @@ explanation : Server-side encryption is the encryption of data at its destinatio
 
 
 -- When you use Server-Side Encryption with Amazon S3-Managed Keys (SSE-S3), each object is encrypted with a unique key. As an additional safeguard, it encrypts the key itself with a master key that it regularly rotates. So this option is incorrect.
+
+
 ------ B SSE-KMS ( AWS KMS KEY)
 
 - KMS advantages: user control + audit key usage using CloudTrail
@@ -6523,6 +6675,30 @@ explanation : All Amazon S3 buckets have encryption configured by default, and a
 explanation : Server-side encryption is about protecting data at rest. Server-side encryption encrypts only the object data, not the object metadata. By using server-side encryption with customer-provided keys (SSE-C), you can store your own encryption keys. With the encryption key that you provide as part of your request, Amazon S3 manages data encryption as it writes to disks and data decryption when you access your objects. Therefore, you don't need to maintain any code to perform data encryption and decryption. The only thing that you need to do is manage the encryption keys that you provide.
 
 When you upload an object, Amazon S3 uses the encryption key that you provide to apply AES-256 encryption to your data. Amazon S3 then removes the encryption key from memory. When you retrieve an object, you must provide the same encryption key as part of your request. Amazon S3 first verifies that the encryption key that you provided matches, and then it decrypts the object before returning the object data to you.
+
+
+
+EPV : A development team wants to ensure that all objects uploaded to an Amazon S3 bucket are encrypted?
+
+ANS : Configure the bucket policy to deny if the PutObject does not have an "x-amz-server-side-encryption" header set
+
+EXP : 
+
+-- Server-side encryption is about data encryption at rest—that is, Amazon S3 encrypts your data at the object level as it writes it to disks in its data centers and decrypts it for you when you access it.
+
+-- As long as you authenticate your request and you have access permissions, there is no difference in the way you access encrypted or unencrypted objects.
+
+-- To encrypt an object at the time of upload, you need to add a header called x-amz-server-side-encryption to the request to tell S3 to encrypt the object using SSE-C, SSE-S3, or SSE-KMS.
+
+-- In order to enforce object encryption, create an Amazon S3 bucket policy that denies any S3 Put request that does not include the x-amz-server-side-encryption header. 
+
+-- There are two possible values for the x-amz-server-side-encryption header
+
+    1 AES256, which tells S3 to use S3-managed keys, 
+
+    2 aws:kms, which tells Amazon S3 to use AWS KMS–managed keys.
+
+
 
 
 
@@ -6859,6 +7035,7 @@ IMP :  for image 3 nad 4 u did not enable versioning
 
   """Unable to validate the following destination configurations""
 
+
 __-----------------------------Explore topic , solve this 
 
 -- create bucket , go to propeties create new notification choose SNS 
@@ -6897,6 +7074,17 @@ __-----------------------------Explore topic , solve this
 -- now try to uplod files , check u get notifications or not ? 
 
 -- Getting ok.......................
+
+
+
+
+EPV : A photo-sharing company is storing user profile pictures in an Amazon S3 bucket and an image analysis application is deployed on four Amazon EC2 instances. A solutions architect would like to trigger an image analysis procedure only on one of the four Amazon EC2 instances for each photo uploaded.
+
+ANS : Create an Amazon S3 Event Notification that sends a message to an Amazon SQS queue. Make the Amazon EC2 instances read from the Amazon SQS queue
+
+EXP : Here we have to use Amazon S3 Event Notifications (which can send a message to either AWS Lambda, Amazon SNS, or Amazon SQS) to send a message to the Amazon SQS queue. By using Amazon SQS, we know only one Amazon EC2 instance among the four will pick up a message and process it.
+
+
 
 
 ====================S3 EventBridge==========================
@@ -7080,7 +7268,7 @@ $("#loadDiv").load("https://cors-dem2.s3.ap-south-1.amazonaws.com/load.html");
 
 ============================================  AWS Storage Extras
 
-------------------- AWS Snow Family
+--------------------- AWS Snow Family
 
 -- Highly-secure, portable devices to collect and process data at the edge, and migrate data into and out of AWS
 
@@ -7112,9 +7300,15 @@ $("#loadDiv").load("https://cors-dem2.s3.ap-south-1.amazonaws.com/load.html");
 
 -- If it takes more than a week to transfer over the network, use Snowball devices!
 
-1 Snowball Edge (for data transfers)
+            1 Snowball Edge (for data transfers)
 
--- Physical data transport solution:moveTBs or PBs of data in or out of AWS
+-- The AWS Snowball service uses physical storage devices to transfer large amounts of data between Amazon Simple Storage Service (Amazon S3) and client's onsite data storage location at faster-than-internet speeds. 
+
+-- Snowball provides powerful interfaces that you can use to create jobs, track data, and track the status of your jobs through to completion. 
+
+-- AWS recommends snowball only if you want to transfer greater than 10 TB of data between your on-premises data centers and Amazon S3.
+
+-- Physical data transport solution : moveTBs or PBs of data in or out of AWS
 
 -- Alternative to moving data over the network (and paying network fees)
 
@@ -7123,18 +7317,19 @@ $("#loadDiv").load("https://cors-dem2.s3.ap-south-1.amazonaws.com/load.html");
 -- Provide block storage and Amazon S3-compatible object storage
 
 -- Snowball Edge Storage Optimized
-• 80 TB of HDD capacity for block volume and S3 compatible object storage
+   • 80 TB of HDD capacity for block volume and S3 compatible object storage
 
 Migration Size : Up to petabytes, offline
 
 -- Snowball Edge Compute Optimized
-• 42 TB of HDD or 28TB NVMe capacity for block volume and S3 compatible object storage
+   • 42 TB of HDD or 28TB NVMe capacity for block volume and S3 compatible object storage
 
 -- Usecases:large data cloud migrations,DC decommission,disaster recovery
 
 -- no pre installation of data sync
 
-2 AWS Snowcone & Snowcone SSD
+
+             2 AWS Snowcone & Snowcone SSD
 
 -- Small, portable computing, anywhere, rugged & secure, withstands harsh environments
 
@@ -7155,7 +7350,7 @@ Migration Size : Up to petabytes, offline
 -- Migration Size : Up to 24 TB, online and offline
 
 
-3 AWS Snowmobile
+              3 AWS Snowmobile
 
 -- Transfer exabytes of data (1 EB = 1,000 PB = 1,000,000 TBs)
 
@@ -7168,6 +7363,16 @@ Migration Size : Up to petabytes, offline
 -- Migration Size : Up to exabytes, offline
 
 -- no pre installation of data sync
+
+-- AWS Snowmobile is an Exabyte-scale data transfer service used to move extremely large amounts of data to AWS. You can transfer up to 100PB per Snowmobile, a 45-foot long ruggedized shipping container, pulled by a semi-trailer truck. 
+
+-- Snowmobile makes it easy to move massive volumes of data to the cloud, including video libraries, image repositories, or even a complete data center migration. 
+
+-- Transferring data with Snowmobile is more secure, fast, and cost-effective. AWS recommends using Snowmobile to migrate large datasets of 10PB or more in a single location.
+
+-- For datasets less than 10PB or distributed in multiple locations, you should use Snowball.
+
+
 
 ------------------------------------ Snow Family – Usage Process
 
@@ -7859,7 +8064,7 @@ C : 6 hrs have passed since last modification
 
 -- Mutli AZ is used for the High availability 
 
--- if u enable M-AZ , one more DB instance crated , we can not see that instance , it is handled by the AWS 
+-- if u enable M-AZ , one more DB instance created , we can not see that instance , it is handled by the AWS 
 
 -- it is "SYNCHRONOUS" 
 
@@ -7883,6 +8088,12 @@ IMP NOTE : The Read Replicas be setup as Multi AZ for Disaster Recovery (DR)
 
 -- RDS DB instances can be reserved 
 
+-- Amazon RDS applies operating system updates by performing maintenance on the standby, then promoting the standby to primary and finally performing maintenance on the old primary, which becomes the new standby
+
+-- Amazon RDS automatically initiates a failover to the standby, in case primary database fails for any reason
+
+
+
 
 EPV : A company wants to ensure high availability for its Amazon RDS database. The development team wants to opt for Multi-AZ deployment and they would like to understand what happens when the primary instance of the Multi-AZ configuration goes down.
 
@@ -7901,6 +8112,55 @@ EXP :
 -- When failing over, Amazon RDS simply flips the canonical name record (CNAME) for your DB instance to point at the standby, which is in turn promoted to become the new primary. 
 
 -- Multi-AZ means the URL is the same, the failover is automated, and the CNAME will automatically be updated to point to the standby database.
+
+
+
+
+-------------------------------------- Amazon RDS maintenance 
+
+-- Occasionally, AWS performs maintenance to the hardware, operating system (OS), or database engine version for a DB instance or cluster.
+
+ 1 Hardware maintenance :
+
+  -- Before Amazon RDS schedules maintenance, you receive an email notification about the scheduled maintenance windows. This includes the time of the maintenance and the Availability Zones that are affected. 
+
+  -- During hardware maintenance, Single-AZ deployments are unavailable for a few minutes. 
+
+  -- For Multi-AZ deployments with an affected Availability Zone, your deployment is unavailable for the time it takes the instance to fail over, usually about 60 seconds. 
+
+  -- If maintenance affects only the secondary Availability Zone, then there's no failover or downtime.
+
+
+2 OS maintenance
+
+  -- To postpone scheduled OS maintenance, adjust your preferred maintenance window. Or, you can choose Defer upgrade from the Actions dropdown menu in the Amazon RDS console. 
+
+  -- To minimize downtime, modify the Amazon RDS DB instance to a Multi-AZ deployment. For Multi-AZ deployments, OS maintenance applies to the secondary instance. 
+
+  -- The instance fails over, and then the primary instance updates. The downtime is during failover. 
+  
+  Note: If you upgrade to a Multi-AZ deployment, then you incur higher costs. To determine your costs, use the AWS Pricing Calculator.
+
+
+3  DB engine maintenance
+
+  -- When you upgrade your DB instance's database engine in a Multi-AZ deployment, maintenance occurs on the primary and replica instance at the same time. 
+
+  -- This is also true for non-Amazon Aurora instances in Multi-AZ deployments. Throughout the maintenance window, both the primary and secondary DB instances in the Multi-AZ deployment are unavailable. 
+
+  -- This operation causes downtime until the upgrade is complete. The duration of the downtime varies based on the size of your DB instance.
+
+    NOTE : If the instance is a read replica, then the database engine version upgrade occurs independently from the source instance. By default, maintenance occurs first on the primary instance and then on the replica. 
+
+  
+  -- Upgrades to the database engine level require downtime. Even if your RDS DB instance uses a Multi-AZ deployment, both the primary and standby DB instances upgrade at the same time.
+
+  -- This causes downtime until the upgrade completes, and the duration of the downtime varies based on the size of your DB instance. For more information, 
+
+    NOTE : If you upgrade a SQL Server DB instance in a Multi-AZ deployment, then both the primary and standby instances are upgraded.
+
+          - Amazon RDS performs rolling upgrades, so the outage is only for the duration of a failover.
+
 
 
 
@@ -9941,7 +10201,47 @@ EXP :
 • Any HTTP backend you want
 
 
-----------  CloudFront vs S3 Cross Region Replication
+
+
+EPV : As a Solutions Architect, you would like to completely secure the communications between your Amazon CloudFront distribution and your Amazon S3 bucket which contains the static files for your website. Users should only be able to access the Amazon S3 bucket through Amazon CloudFront and not directly.
+
+ANS : Create an origin access identity (OAI) and update the Amazon S3 Bucket Policy
+
+EXP :
+
+To restrict access to content that you serve from Amazon S3 buckets, you need to follow the following steps:
+
+   1 Create a special Amazon CloudFront user called an origin access identity (OAI) and associate it with your distribution.
+
+   2 Configure your Amazon S3 bucket permissions so that Amazon CloudFront can use the OAI to access the files in your bucket and serve them to your users. Make sure that users can’t use a direct URL to the Amazon S3 bucket to access a file there.
+
+-- After you take these steps, users can only access your files through Amazon CloudFront, not directly from the Amazon S3 bucket.
+
+-- In general, if you’re using an Amazon S3 bucket as the origin for a Amazon CloudFront distribution, you can either allow everyone to have access to the files there, or you can restrict access. 
+
+-- If you restrict access by using, for example, Amazon CloudFront signed URLs or signed cookies, you also won’t want people to be able to view files by simply using the direct Amazon S3 URL for the file. 
+
+-- Instead, you want them to only access the files by using the Amazon CloudFront URL, so your content remains protected.
+
+
+
+---------------------------------------- Use Amazon CloudFront signed URLs
+
+-- Many companies that distribute content over the internet want to restrict access to documents, business data, media streams, or content that is intended for selected users, for example, users who have paid a fee.
+
+-- To securely serve this private content by using Amazon CloudFront, you can do the following:
+
+  - Require that your users access your private content by using special Amazon CloudFront signed URLs or signed cookies.
+  - A signed URL includes additional information, for example, expiration date and time, that gives you more control over access to your content. So this is a correct option.
+
+
+---------------------------------------- Use Amazon CloudFront signed cookies
+
+-- Amazon CloudFront signed cookies allow you to control who can access your content when you don't want to change your current URLs or when you want to provide access to multiple restricted files, for example, all of the files in the subscribers' area of a website. So this is also a correct option.
+
+
+
+-----------------------------------  CloudFront vs S3 Cross Region Replication
 
 CloudFront:
 - Global Edge network
@@ -10187,8 +10487,20 @@ in this URL
 public : contains records that specify how to route traffic on the Internet (public domain names)
 
 private : contain records that specify how you route traffic within one or more VPCs (private domain names)
+        
+        -- You create a hosted zone for a domain (such as example.com), and then you create records to tell Amazon Route 53 how you want traffic to be routed for that domain within and among your VPCs.
 
-EPV(private zone) : A systems administrator has created a private hosted zone and associated it with a Virtual Private Cloud (VPC). However, the Domain Name System (DNS) queries for the private hosted zone remain unresolved?
+
+IMP : For each VPC that you want to associate with the Route 53 hosted zone, change the following VPC settings to true:
+
+enableDnsHostnames
+
+enableDnsSupport
+
+
+
+
+EPV (private zone) : A systems administrator has created a private hosted zone and associated it with a Virtual Private Cloud (VPC). However, the Domain Name System (DNS) queries for the private hosted zone remain unresolved?
 
 ANS : Enable DNS hostnames and DNS resolution for private hosted zones
 
@@ -10211,6 +10523,21 @@ ANS : Enable DNS hostnames and DNS resolution for private hosted zones
 
 
 
+EPV : The engineering team at an e-commerce company wants to set up a custom domain for internal usage such as internaldomainexample.com. The team wants to use the private hosted zones feature of Amazon Route 53 to accomplish this.
+
+Which of the following settings of the VPC need to be enabled? (Select two)
+
+
+ANS : enableDnsHostnames and enableDnsSupport
+
+EXP : For each VPC that you want to associate with the Route 53 hosted zone, change the following VPC settings to true:
+
+enableDnsHostnames
+
+enableDnsSupport
+
+
+
 
 --- Health Checks – Private Hosted Zone
 
@@ -10223,6 +10550,7 @@ IMP -- You can create a CloudWatch Metric and associate a CloudWatch Alarm, then
 -- subbu.com -> elb gives nasty url --> ec2(it has appn)
 
 -- whenever u type subbu.com in browser -> R53--> Hoste Zone --> ELB-->Nasty Url--> Ec2 Instance 
+
 
 
 --- whenevr u creat "Public Hosted Zone " 2 records will create automatically 
@@ -10920,6 +11248,10 @@ eg : ssh -i "terraform-key.pem" ec2-user@192.168.2.31
 
 ------------------------------------------------ NAT Gateway 
 
+----------- Basics of NAT Gateway
+
+-- A NAT gateway supports the following protocols: TCP, UDP, and ICMP.
+
 -- The job of NAT Gateway is provide internet to the Private Subnet and convert Private IP to Public IP 
 
 -- The NAT Gateway Should put in Public subnet 
@@ -10946,6 +11278,15 @@ eg : ssh -i "terraform-key.pem" ec2-user@192.168.2.31
 
 -- A NAT gateway can support up to 55,000 simultaneous connections to each unique destination.
 
+-- You cannot associate a security group with a NAT gateway. You can associate security groups with your instances to control inbound and outbound traffic.
+
+-- You can use a network ACL to control the traffic to and from the subnet for your NAT gateway. NAT gateways use ports 1024–65535. 
+
+-- You can't route traffic to a NAT gateway through a VPC peering connection.
+
+-- You can't route traffic through a NAT Gateway when traffic arrives over a hybrid connection (Site to Site VPN or Direct Connect) through a Virtual Private Gateway. 
+
+-- You can route traffic through a NAT Gateway when traffic arrives over a hybrid connection (Site to Site VPN or Direct Connect) through a transit gateway.
 
 
 
@@ -11228,6 +11569,7 @@ NOTE : u have to remove 5 IP's from each subnet maks , here u will get 251
   • Provisions an ENI (private IP address) as an entry point (must attach a Security Group)
   • Supports most AWS services
   • $ per hour + $ per GB of data processed
+  - dynamodb does not support for interface endpoints
 
 2 Gateway Endpoints
 
@@ -11363,11 +11705,11 @@ sudo ./aws/install
 
 -- use Gateway Endpoint 
 
--- search for s3  and use Gateway Endpoints --> se;ect VPC and attach RT to private Routing Tables 
+-- search for s3  and use Gateway Endpoints --> select VPC and attach RT to private Routing Tables 
 
 -- EndPOINT use AWS inernal network toacces the services 
 
--- go n check in Private RT it wi create one oute for ENDPOINT ( pl-78a54011)
+-- go n check in Private RT it will create one oute for ENDPOINT ( pl-78a54011)
 
 -- pl = prefix list = group of network ranges  
 
@@ -11937,6 +12279,16 @@ EXP : For the given use case, the main pricing parameter while using the AWS Dir
 -- However, if you deploy the visualization tool on-premises, then you need to pay for the 60 MB of DTO charges for the query response from the data warehouse to the visualization tool.
 
 
+
+EPV : To support critical production workloads that require maximum resiliency, a company wants to configure network connections between its Amazon VPC and the on-premises infrastructure. The company needs AWS Direct Connect connections with speeds greater than 1 Gbps.
+
+ANS : Opt for two separate AWS Direct Connect connections terminating on separate devices in more than one Direct Connect location
+
+EXP : Maximum resilience is achieved by separate connections terminating on separate devices in more than one location.
+
+-- This configuration offers customers maximum resilience to failure. 
+
+-- You can use Direct Connect Gateway to access any AWS Region (except AWS Regions in China) from any AWS Direct Connect locations.
 
 
 
@@ -13342,7 +13694,7 @@ Eg:               Schedule             uk-office-hours
 
 
 
-============================================================AMAZON SQS========================================
+============================================================AMAZON SQS (simple queue service)========================================
 
 
 
@@ -13425,7 +13777,7 @@ Send, receive, or delete messages in batches of up to 10 messages or 256KB to sa
 
 
 
---------- it has 2 components Standard and FIFO queues , \
+--------- it has 2 components Standard and FIFO queues , 
 
 
 1 Amazon SQS – Standard Queue
@@ -13528,6 +13880,32 @@ what is Delivery delay (DelaySeconds)?
  -- Message retention period(MessageRetentionPeriod): amount of time that Amazon SQS retains a message that does not get deleted.
 
  -- Maximum number of receives per message(maxReceiveCount): If the ReceiveCount for a message exceeds the maximum receive count for the queue, Amazon SQS moves the message to the associated DLQ.
+
+
+----------------------------------------------------------------- Amazon Simple Queue Service (Amazon SQS) temporary queues
+
+-- Temporary queues help you save development time and deployment costs when using common message patterns such as request-response.
+
+-- You can use the Temporary Queue Client to create high-throughput, cost-effective, application-managed temporary queues.
+
+-- The following are the benefits of temporary queues:
+
+   - They serve as lightweight communication channels for specific threads or processes.
+   - They can be created and deleted without incurring additional costs.
+   - They are API-compatible with static (normal) Amazon SQS queues. This means that existing code that sends and receives messages can send messages to and receive messages from virtual queues.
+
+-- To better support short-lived, lightweight messaging destinations, AWS recommends Amazon SQS Temporary Queue Client.
+
+-- This client makes it easy to create and delete many temporary messaging destinations without inflating your AWS bill. 
+
+-- The key concept behind the client is the virtual queue. 
+
+-- Virtual queues let you multiplex many low-traffic queues onto a single Amazon SQS queue. 
+
+-- Creating a virtual queue only instantiates a local buffer to hold messages for consumers as they arrive; there is no API call to SQS and no costs associated with creating a virtual queue.
+
+
+
 
 
 
@@ -13903,7 +14281,7 @@ Producer -------(send messages 4,3,2,1)--------> SNS ----(receive messages 4,3,2
 
 • Near Real Time
   • 60 seconds latency minimum for non full batches
-  • Orminimum1MBofdataatatime
+  • Or minimum 1MB of data at a time
 
 • Supports many data formats, conversions, transformations, compression
 
@@ -14785,6 +15163,14 @@ Step 4 : open QuickSight
 
 
 S3 Bucket / Amazon RDS ---(extract)----> Glue ETL ----------(load)---> Redshift Data Warehouse
+
+
+- AWS Glue job is meant to be used for batch ETL data processing. 
+
+- AWS Glue ETL jobs can use Amazon S3, data stores in a VPC, or on-premises JDBC data stores as a source. 
+
+- AWS Glue jobs extract data, transform it, and load the resulting data back to S3, data stores in a VPC, or on-premises JDBC data stores as a target.
+
 
 
 ---------------------------- Glue – things to know at a high-level
