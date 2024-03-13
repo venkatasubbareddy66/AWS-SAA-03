@@ -61,7 +61,7 @@ Eg :
 
 
 
-A  Virtual Private Cloud = Regional
+                         A  Virtual Private Cloud = Regional
 
 VPCs are created within a region
 
@@ -96,7 +96,7 @@ VPCs are created within a region
 
 
 
-B AWS Compute Services : 
+                          B AWS Compute Services : 
 
 EC2
 
@@ -119,7 +119,7 @@ EC2
 9 ECR – Regional, Images can be pushed/pulled within the same AWS Region. Images can also be pulled between Regions or out to the internet with additional latency and data transfer costs.
 
 
-C  AWS Storage Services
+                                  C  AWS Storage Services
 
 1 S3 – Global but Data is Regional 
 
@@ -142,7 +142,7 @@ C  AWS Storage Services
 
 
 
-D AWS Identity & Security Services
+                           D AWS Identity & Security Services
 
 1 Users, Groups, Roles, Accounts – Global
  
@@ -181,7 +181,7 @@ D AWS Identity & Security Services
  - runs in a single home region, however, can collect data from all regions
 
 
-E AWS Management & Governance Tools
+                      E AWS Management & Governance Tools
 
  1 AWS Config – Regional
  
@@ -190,7 +190,10 @@ E AWS Management & Governance Tools
 
 
 =================================================== EC2 ===================================================
+
 -- elastic compute cloud
+
+• EC2 = Elastic Compute Cloud = Infrastructure as a Service
 
 -- ec2 is specific at region only 
 
@@ -4578,6 +4581,7 @@ echo "<h1>Hello World from $(hostname -f)</h1>" >
 4 Stickiness : when ever u want to stick with to the specific server 
 
 - if u enable stickness , ur request sent to only one server for the particular period of time 
+
 
 -------------------------------------- do for /path based routing 
 
@@ -10353,7 +10357,7 @@ Can be Private .
 
 --------------------------- CloudFront Prac 
 
--- open S3 and crate private Bucket 
+-- open S3 and create private Bucket 
 
 -- as u cate private bucket , no one can access ur url through the S3 
 
@@ -10379,13 +10383,13 @@ Can be Private .
 
 -- now ur appn is getting deployed all over the world 
 
--- through the CF url cutomers wil able to cnnect ur webiste through the edge locations 
+-- through the CF url customers wil able to connect ur webiste through the edge locations 
 
--- onc eu change the content of ur website and do ulod again n if u do refresh u wont get new content 
+-- once u change the content of ur website and do uploud again n if u do refresh u wont get new content 
 
 -- u have too do "invalidate the Cache" 
 
--- go o CF and create invalidation for /index.html , it will get latest file from the S3 and give latest content to customers 
+-- go to CF and create invalidation for /index.html , it will get latest file from the S3 and give latest content to customers 
 
 -- By default, CloudFront caches files in edge locations for 24 hours. 
 
@@ -10933,7 +10937,8 @@ IMP -- You must use Route 53 Traffic Flow to use this feature
 
 
 
-============================R53 prac=============
+===================================================================R53 prac=============
+
 
 -- to do this buy domain in R53 registry or do purchase from any other 3rd party services 
 
