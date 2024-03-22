@@ -16136,11 +16136,13 @@ Key AWS service:
 IMP NOTE = 
 
 
-1 in the question if it is mention "Least operational overhead" Means  the Services which has in-built feature to solve the issue which is mentioned in the question 
+A in the question if it is mention "Least operational overhead" Means  the Services which has in-built feature to solve the issue which is mentioned in the question . "using ec2 is completely opposite to this statement"
 
-2 if it is "Most Operationally efficient way" = they are talking about "either fully managed or serverless" services
+B if it is "Most Operationally efficient way" = they are talking about "either fully managed or serverless" services
   
-3 Resiliency = Mostly go for Multi-AZ
+C Resiliency = Mostly go for Multi-AZ
+
+D Least amount of infrastructure = Either they are talking about serverless services and fully managed services 
 
 
 
