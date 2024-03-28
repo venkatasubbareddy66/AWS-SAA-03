@@ -3663,6 +3663,8 @@ EXP :
 
 - The Classic Load Balancer supports SSL offloading.
 
+-  Layer 7 load balancer works at the application layer
+
 
 ------------------------------- 2  Application Load Balancer : 2016
 
@@ -3687,6 +3689,13 @@ EXP :
 - Application Load Balancer cannot use EC2 based health checks , it uses ALB health Checks
 
 - You should note that the Application Load Balancer also supports Transport Layer Security (TLS) offloading. 
+
+- it works on round robin algorithm and 
+
+- Uses the least outstanding requests routing algorithm based on request count and target response for HTTP and HTTPS listeners
+
+- u can't give fixed ip's in the ALB , but u can give in NLB (elastic ip's)
+
 
 
 -- -----------it has routing features 
@@ -3776,6 +3785,8 @@ IMP : to avoid this problem ,
 
 -  "it provide 1 static ip per AZ" and supports assign Elastic Ip (helpful for whitelistining Specific IP)
 
+- the load balancer selects a target using a flow hash algorithm based on the protocol, source IP address, source port, destination IP address, destination port, and TCP sequence number.
+
 
 -------NLB Target groups
 
@@ -3804,6 +3815,205 @@ IMP NOTE : NLBs support HTTP, HTTPS and TCP health checks:
 -- HealthCheckProtocol :
 
 The protocol the load balancer uses when performing health checks on targets. The possible protocols are HTTP, HTTPS, and TCP. The default is the TCP protocol. If the target type is ALB, the supported health check protocols are HTTP and HTTPS.
+
+
+------------------------------------- LAB for NLB 
+
+
+STEP 1 
+
+-- create one VPC with the CIDR range , here i took 192.168.0.0/16 for demo purpose
+
+-- now create 2 public subnets and 2 private subnets 
+
+-- 2 public subnets (nlb-public-subnet-1a in 1a zone , nlb-public-subnet-1b, in 1b zone)
+
+-- 2 private subnets (nlb-pprivate-subnet-1a in 1a zone , nlb-private-subnet-1b, in 1b zone)
+
+-- create IGW and attach to the VPC
+
+-- create public and private route table 
+
+-- now do subnet association for both public and private route tables 
+
+-- now go to public route table and edit routes , allow all traffic and add IGW and do make save changes 
+
+
+
+STEP : 2 
+
+-- create one ec2 instance , here i choose ubuntu  with user data , u can choose any one
+
+-- make sure that ec2 instance , deployed in ur VPC that u have created now 
+
+-- in the security group make sure to add 22 and 80 port numbers  -----> very very imp 
+
+-- now add userdata , in usedata section 
+
+#!/bin/bash
+yes | sudo apt update
+yes | sudo apt install apache2
+echo "<h1>Server Details</h1><p><strong>Hostname:</strong> $(hostname)</p><p><strong>IP Address:</strong> $(hostname -I | cut -d" " -f1)</p>" > /var/www/html/index.html
+sudo systemctl restart apache2
+
+
+-- check in the browser by copying public ip of ec2 instance 
+
+-- we also need to set up custom pages so one I'm going to set it 
+
+-- we need these custom paths because we will be setting up our application load balancer and also we will be setting up our Network load balancer 
+
+-- so I will be able to show you the difference between how application load balancer behaves when we have a custom path and how we can set those custom rules in application load balancer 
+
+-- but at the same time that is not possible uh with the network load balancer 
+
+-- so that's a one more difference which we need to check when we are setting up our application load balancer as well as Network load balancer 
+
+
+
+STEP - 3 
+
+-- now go back to the ec2 instance and get connect 
+
+-- check status of apache 
+
+     sudo systemctl status apache2
+
+
+-- now create two directories
+  
+         sudo mkdir /var/www/html/foo
+         sudo mkdir /var/www/html/bar
+
+-- check it is there are not 
+
+         ls /var/www/html
+
+
+-- now create index.html file in the both directories
+
+        sudo touch /var/www/html/foo/index.html
+        sudo touch /var/www/html/bar/index.html
+
+
+-- check the file is there or not 
+
+         ls /var/www/html/foo
+         ls /var/www/html/bar
+
+
+-- now add content in file 
+
+       sudo vi /var/www/html/foo/index.html
+           <h1>Hello from /foo demo-nlb-ec2-1</h1><p>This is a sample hello message in /foo.html. 
+
+       sudo vi /var/www/html/bar/index.html
+           <h1>Hello from /bar demo-nlb-ec2-1</h1><p>This is a sample hello message in /bar.html.</p>"
+
+
+-- now do restart ur apache 
+
+       sudo systemctl restart  apache2
+
+
+-- now do verify the pages 
+
+       ur ip address/foo and /bar
+
+
+------ create another instance with the ubuntu , and create all these stuff , same process 
+
+
+Step 4 : 
+
+
+-- now setup our Target group
+
+-- go to target group sections --> make ec2 instances as targets --> Protocol : Port = TCP (coz we are using NLB) --> choose ur VPC and create TG
+
+
+Step 5 :
+
+
+-- now setup our NLB 
+
+-- create nlb , with ur vpc and select 1a and 1b public subnets 
+
+-- add target group n create NLB
+
+-- once it get create copy DNS and paste in the browser 
+
+-- check ur r getting o/p or not 
+
+-- now check with path based routing like /foo and /bar 
+
+-- getting .................
+
+
+
+STEP 6 : Key Differences: NLB vs. ALB | Path-Based Routing with ALB
+
+-- here i can able to acess my target groups through the NLB 
+
+-- but the difference is we cannot set up some specific  URL based rule with our Network load balancer , which means here go to load balancer --> listeners --> c.o add listeners , here u won’t find any rules which you can Define for your url pattern
+
+   - application load balancer there are some URL patterns like if URL ends with Foo and URL ends with bar then it should put,it should put some rules over here and then it should redirect to the respective Target group so so that it's properly working for URL patterns
+
+   - but in the network load balancer it is not possible it will only give you one URL and that URL will redirect to the ec2 instances
+
+   - so although we have set up the foo and bar HTML pages but I need more granularity and I can set up this rule from the URL itself into load balancer
+
+   - so the it can direct that request to the Target group
+
+   - so that's the difference or the feasibility we have in our application load balancer where we can put some rule patterns on the URL uh URL parameters which are coming in our request 
+
+   - so here if it comes into as a foo then we'll forward that request to the Foo Target group if it is coming with a bar then we'll Target that request to our bar Target group 
+
+   - so that's only possible with our application load balancer and it is not possible with our Network load balancer 
+
+
+
+STEP 7
+
+-- to check it practically , create ALB 
+
+-- so for this we need to make some changes 
+
+-- change  the instance 1 name  = foo
+
+-- change  the instance 2 name  = bar
+
+-- now connect instance 1 (foo) --> go to directory cd /var/www/html/ --> sudo rm -rf bar --> sudo systemctl restart  apache2
+
+    - now verify with /bar in browser  , u can’t get 
+
+
+-- now connect instance 2 (bar) --> go to directory cd /var/www/html/ --> sudo rm -rf foo --> sudo systemctl restart  apache2
+
+    - - now verify with /bar in browser  , u can’t get 
+
+
+-- now we have to create Target groups for this instances
+
+-- create target group for the foo instance (use HTTP protocol , coz we are doing with ALB) , choose ur VPC then choose foo instance and create target group
+
+--  do same with the bar instance 
+
+
+-- so now we need to set up our application load balancer 
+
+-- once u create see the difference b/w NLB and ALB 
+
+-- go to Listeners and rules --> c.o HTTP:80 --> c.o add rule --> name = foo-rule --> add condition --> choose path = /foo --> select foo target group --> priority = 1 --> create 
+
+
+-- go to Listeners and rules --> c.o HTTP:80 --> c.o add rule --> name = bar-rule --> add condition --> choose path = /bar --> select bar target group --> priority = 2 --> create 
+
+
+-- now copy DNS of ALB and check with /path base routing 
+
+
+
 
 
 
@@ -7741,6 +7951,165 @@ services/
 
 
 
+======================================================= Amazon FSx – Overview ===========================================================
+
+
+• Launch 3rd party high-performance file systems on AWS
+
+• Fully managed service
+
+
+1 FSx for Lustre
+
+2 FSx for Windows File Server
+
+3 FSx for NetApp ONTAP
+
+4 FSx for OpenZFS
+
+
+
+
+
+---------------- 1 Amazon FSx for Lustre
+
+• Lustre is a type of parallel distributed file system, for large-scale computing
+
+• The name Lustre is derived from “Linux” and “cluster
+
+• Machine Learning, High Performance Computing (HPC)
+
+• Video Processing, Financial Modeling, Electronic Design Automation
+
+• Scales up to 100s GB/s, millions of IOPS, sub-ms latencies
+
+• Storage Options:
+     • SSD – low-latency, IOPS intensive workloads, small & random file operations
+     • HDD – throughput-intensive workloads, large & sequential file operations
+
+
+• Seamless integration with S3 
+     • Can “read S3” as a file system (through FSx)
+     • Can write the output of the computations back to S3 (through FSx)
+
+
+• Can be used from on-premises servers (VPN or Direct Connect)
+
+
+
+----- FSx Lustre - File System Deployment Options
+
+
+1 • Scratch File System
+     • Temporary storage
+     • Data is not replicated (doesn’t persist if file server fails)
+     • High burst (6x faster, 200MBps per TiB)
+     • Usage: short-term processing, optimize costs
+
+
+2 • Persistent File System
+
+     • Long-term storage
+     • Data is replicated within same AZ
+     • Replace failed files within minutes
+     • Usage: long-term processing, sensitive data
+
+
+
+
+
+------------------- 2 Amazon FSx for Windows (File Server)
+
+• FSx for Windows is a fully managed Windows file system share drive
+
+• Suppor ts SMB protocol & Windows NTFS
+
+• Microsoft ActiveDirectory integration, ACLs, userquotas
+
+• Can be mounted on Linux EC2 instances
+
+• Supports Microsoft's Distributed File System (DFS) Namespaces (group files across multiple FS)
+
+• Scale up to 10s of GB/s, millions of IOPS, 100s PB of data
+
+• Storage Options:
+    • SSD – latency sensitive workloads (databases, media processing, data analytics, ...)
+    • HDD – broad spectrum of workloads (home directory, CMS, ...)
+
+• Can be accessed from your on-premises infrastructure (VPN or Direct Connect)
+
+• Can be configured to be Multi-AZ (high availability)
+
+• Data is backed-up daily to S3
+
+
+
+--------------------- 3 Amazon FSx for NetApp ONTAP
+
+• Managed NetApp ONTAP on AWS
+
+• File System compatible with NFS, SMB, iSCSI protocol
+
+• Move workloads running on ONTAP or NAS to AWS
+
+• Works with:
+      • Linux
+      • Windows
+      • MacOS
+      • VMware Cloud on AWS
+      • Amazon Workspaces & AppStream 2.0
+      • Amazon EC2, ECS and EKS
+
+
+• Storage shrinks or grows automatically
+
+• Snapshots,replication,low-cost,compression and data de-duplication
+
+• Point-in-time instantaneous cloning (helpful for testing new workloads)
+
+
+----- Scheduled replication using NetApp SnapMirror
+
+-- You can use NetApp SnapMirror to schedule periodic replication of your FSx for ONTAP file system to or from a second file system. This capability is available for both in-Region and cross-Region deployments.
+
+-- NetApp SnapMirror replicates data at high speeds, so you get high data availability and fast data replication across ONTAP systems, whether you're replicating between two Amazon FSx file systems in AWS, or from on-premises to AWS.
+
+-- Replication can be scheduled as frequently as every 5 minutes, although intervals should be carefully chosen based on RPOs (Recovery Point Objectives), RTOs (Recovery Time Objectives), and performance considerations.
+
+-- There are two types of SnapMirror replication: Volume-level SnapMirror and SVM Disaster Recovery (SVMDR). Only volume-level SnapMirror replication is supported by FSx for ONTAP.
+
+
+
+
+----------------------- 4 Amazon FSx for OpenZFS
+
+• Managed OpenZFS file system on AWS
+
+• File System compatible with NFS (v3, v4, v4.1, v4.2)
+
+• Move workloads running on ZFS to AWS
+
+• Works with:
+      • Linux
+      • Windows
+      • MacOS
+      • VMwareCloudonAWS
+      • AmazonWorkspaces&AppStream2.0 
+      • AmazonEC2, ECS and EKS
+
+
+• Up to 1,000,000 IOPS with < 0.5ms latency
+
+• Snapshots, compression and low-cost
+
+• Point-in-time instantaneous cloning (helpful for testing new workloads)
+
+
+
+
+
+
+
 ================================AWS Transfer Family=========================
 
 -- Fully managed Service for file transer securely 
@@ -10195,11 +10564,11 @@ https://demo-user-pool-66.auth.ap-south-1.amazoncognito.com/oauth2/authorize?res
 -- u can create ur own log in page using Amplify , and other SDk's
 
 
------------------------ LAB  , we are login through the SAML 2.0
+----------------------- LAB , we are login through the SAML 2.0
 
 -- now demo 
 
----- open IAM Identity center
+--- open IAM Identity center
 
 --  choose Organization
 
@@ -10261,7 +10630,7 @@ email     ${user:email}    format = basic
 
 do in personal lap
 
-==============================CLOUDFRONT=================================================
+==============================================================================CLOUDFRONT=====================================================================
 
 
 -- it is global servie 
@@ -11651,7 +12020,9 @@ but he wants to Access AWS services from private subnet ?
 • Private IP can only allow certain values:
 
   • 10.0.0.0 – 10.255.255.255 (10.0.0.0/8)----> big networks
-  • 172.16.0.0 – 172.31.255.255 (172.16.0.0/12)-------> AWS defaultVPC in that range
+
+  • 172.16.0.0 – 172.31.255.255 (172.16.0.0/12)-------> AWS default VPC in that range
+
   • 192.168.0.0 – 192.168.255.255 (192.168.0.0/16) ------->  e.g., home networks
 
 
@@ -12125,9 +12496,9 @@ OK                    =  log-status
 
 A Site-to-Site VPN connection has the following limitations.
 
--- IPv6 traffic is not supported for VPN connections on a virtual private gateway.
+   -- IPv6 traffic is not supported for VPN connections on a virtual private gateway.
 
--- An AWS VPN connection does not support Path MTU Discovery.
+   -- An AWS VPN connection does not support Path MTU Discovery.
 
 
 --- What is IPSec VPN?
@@ -12138,6 +12509,12 @@ An IPSec VPN is a VPN software that uses the IPSec protocol to create encrypted 
 -- What is the meaning of IPSec?
 
 IPSEC stands for IP Security. It is an Internet Engineering Task Force (IETF) standard suite of protocols between 2 communication points across the IP network that provide data authentication, integrity, and confidentiality.
+
+
+
+-- we can connect the services only which are present in the VPC only 
+
+
 
 
 ------------------------------------- LAB 
@@ -12374,6 +12751,27 @@ u will get responce
 
 ------------------------------------------------- Direct Connect (DX) -----------------------------
 
+
+IMP to know , they are 5 parts in aws to work on hybrid networking 
+
+1 Direct connect 
+
+2 site 2 site vpn connection
+
+3 client vpn 
+
+4 open vpn (3rd party)
+
+5 bastion host
+
+
+- apart this DX , remaining are wotk through the internet 
+
+- only DX works with Intranet , which means diect connection to ur server and aws network through the cables(wired connection), all the cost will be paid by customer , it is one time set up
+
+
+
+
 • Provides a dedicated private connection from a remote network to your VPC
 
 • Dedicated connection must be setup between your DC and AWS Direct Connect locations
@@ -12424,6 +12822,13 @@ u will get responce
 • AWS Direct Connect + VPN provides an IPsec-encrypted private connection
 
 • Good for an extra level of security, but slightly more complex to put in place
+
+
+
+-- we can connect the all aws services through the direct connection , eg dynamoDB , s3 , ec2 etc....... but in site 2 site , we can connect services only in the vpc 
+
+
+
 
 
 
@@ -12650,11 +13055,11 @@ u have to create
 
 ------------------------------------------ What is IPv6? -----------------------------------------
 
-• IPv4 designed to provide 4.3 Billion addresses (they’ll be exhausted soon)
+• IPv4 designed to provide 4.3 Billion addresses (they’ll be exhausted soon), it is 32 bit
 
 • IPv6 is the successor of IPv4
 
-• IPv6 is designed to provide 3.4 × 10^38, unique IP addresses
+• IPv6 is designed to provide 3.4 × 10^38, unique IP addresses ,  128 bit
 
 • Every IPv6 address is public and Internet-routable (no private range)
 
@@ -13508,6 +13913,9 @@ Announcing New Features :
 • Ruby
 • Custom Runtime API (community supported, example Rust)
 
+
+
+
 ------------------------------ AWS Lambda Integrations Main ones
 
 API Gateway 
@@ -13546,6 +13954,19 @@ Cognito
 -- You must define the VPC ID, the Subnets and the Security Groups
 
 -- Lambda will create an ENI (Elastic Network Interface) in your subnets
+
+
+
+
+---------------------- Configuring provisioned concurrency
+
+
+-- In Lambda, concurrency is the number of in-flight requests that your function is currently handling. There are two types of concurrency controls available:
+
+
+ 1 Reserved concurrency – This represents the maximum number of concurrent instances allocated to your function. When a function has reserved concurrency, no other function can use that concurrency. Configuring reserved concurrency for a function incurs no additional charges.
+
+ 2 Provisioned concurrency – This is the number of pre-initialized execution environments allocated to your function. These execution environments are ready to respond immediately to incoming function requests. Configuring provisioned concurrency incurs additional charges to your AWS account.
 
 
 
@@ -15158,6 +15579,9 @@ s3://doc-example-bucket/table1/
 • Use cases: data processing, machine learning, web indexing, big data...
 
 
+-- it is not serverless service , u have to provision EMR and then create EMR jobs
+
+
 
 --------------------------------------------- Amazon EMR – Node types & purchasing
 
@@ -15401,6 +15825,232 @@ S3 Bucket / Amazon RDS ---(extract)----> Glue ETL ----------(load)---> Redshift 
 • Glue Studio: new GUI to create, run and monitor ETL jobs in Glue
 
 • Glue Streaming ETL (built on Apache Spark Structured Streaming): compatible with Kinesis Data Streaming, Kafka, MSK (managed Kafka)
+
+
+EPV : 
+
+-- AWS Glue Studio is a graphical interface that makes it easy to create, run, and monitor extract, transform, and load (ETL) jobs in AWS Glue. 
+
+-- DataBrew is a visual data preparation tool that enables you to clean and normalize data without writing any code.
+
+   - In DataBrew, a recipe is a set of data transformation steps that you can author interactively in its intuitive visual interface.
+
+
+------------------------------------------ LAB 
+
+
+Solution overview :
+
+-- In our fictitious use case, the requirement is to clean up a synthetic medical claims dataset created for this demo, which has some data quality issues introduced on purpose to demonstrate the DataBrew capabilities on data preparation. Then the claims data is ingested into the catalog (so it’s visible to analysts), after enriching it with some relevant details about the corresponding medical providers coming from a separate source.
+
+-- The solution consists of an AWS Glue Studio visual job that reads two CSV files with claims and providers, respectively. The job applies a recipe of the first one to address the quality issues, select columns from the second one, join both datasets, and finally store the result on Amazon Simple Storage Service (Amazon S3), creating a table on the catalog so the output data can be used by other tools like Amazon Athena.
+
+
+
+
+
+Source : https://aws.amazon.com/blogs/big-data/use-aws-glue-databrew-recipes-in-your-aws-glue-studio-visual-etl-jobs/#:~:text=AWS%20Glue%20Studio%20is%20a,data%20without%20writing%20any%20code.
+
+
+
+STEP 1 :  Create a DataBrew recipe
+
+
+ --   Start by registering the data store for the claims file. This will allow you to build the recipe in its interactive editor using the actual data so you can evaluate the result of the transformations as you define them.
+
+1  Download the claims CSV file using the following link: alabama_claims_data_Jun2023.csv. (in the above BLOG link , u will find the .csv file for this demo )
+
+2  On the DataBrew console, choose Datasets in the navigation pane, then choose Connect new dataset.
+
+3  Choose the option File upload.
+
+4  For Dataset name, enter Alabama claims.
+
+5  For Select a file to upload, choose the file you just downloaded on your computer.
+
+6  For Enter S3 destination, enter or browse to a bucket in your account and Region.
+
+7  Leave the rest of the options by default (CSV separated with comma and with header) and complete the dataset creation.
+
+8  Choose Project in the navigation pane, then choose Create project.
+
+9   For Project name, name it ClaimsCleanup.
+
+10  Under Recipe details, for Attached recipe, choose Create new recipe, name it ClaimsCleanup-recipe, and choose the Alabama claims dataset you just created.
+
+11  Select a role suitable for DataBrew or create a new one, and complete the project creation.
+
+
+
+
+ This will create a session using a configurable subset of the data. After it has initialized the session, you can notice some of the cells have invalid or missing values.
+
+
+
+Observation : In addition to the missing values in the columns Diagnosis Code, Claim Amount, and Claim Date, some values in the data have some extra characters: Diagnosis Code values are sometimes prefixed with “code ” (space included), and Procedure Code values are sometimes followed by single quotes.
+Claim Amount values will likely be used for some calculations, so convert to number, and Claim Data should be converted to date type.
+
+
+-- Now that we identified the data quality issues to address, we need to decide how to deal with each case.
+There are multiple ways you can add recipe steps, including using the column context menu, the toolbar on the top, or from the recipe summary. Using the last method, you can search for the indicated step type to replicate the recipe created in this post.
+
+
+
+-- Claim Amount is essential for this use case, and the decision is to remove such rows.
+
+
+
+12  Add the step Remove missing values.
+
+13  For Source column, choose Claim Amount.
+
+14  Leave the default action Delete rows with missing values and choose Apply to save it.
+     
+      - The view is now updated to reflect the step application and the rows with missing amounts are no longer there.
+
+ - Diagnosis Code can be empty so this is accepted, but in the case of Claim Date, we want to have a reasonable estimation. The rows in the data are sorted in chronological order, so you can impute missing dates using the previews valid value from the preceding rows. Assuming every day has claims, the largest error would be assigning it to the preview day if it were the first claim that day missing the date; for illustration purposes, let’s consider that potential error acceptable.
+
+ - First, convert the column from string to date type.
+
+
+15  Add the step Change type.
+
+16  Choose Claim Date as the column and date as the type, then choose Apply.
+
+17  Now to do the imputation of missing dates, add the step Fill or impute missing values.
+
+18  Select Fill with last valid value as the action and choose Claim Date as the source.
+
+19  Choose Preview changes to validate it, then choose Apply to save the step.
+
+      - So far, your recipe should have three steps
+
+
+20  Next, add the step Remove quotation marks.
+
+21  Choose the Procedure Code column and select Leading and trailing quotation marks.
+
+22  Preview to verify it has the desired effect and apply the new step.
+
+23  Add the step Remove special characters.
+
+24  Choose the Claim Amount column and to be more specific, select Custom special characters and enter $ for Enter custom special characters.
+
+25  Add a Change type step on the column Claim Amount and choose double as the type.
+
+26  As the last step, to remove the superfluous “code ” prefix, add a Replace value or pattern step.
+
+27  Choose the column Diagnosis Code, and for Enter custom value, enter code (with a space at the end).
+
+     - Now that you have addressed all data quality issues identified on the sample, publish the project as a recipe.
+
+
+
+28  Choose Publish in the Recipe pane, enter an optional description, and complete the publication.
+
+
+-- Each time you publish, it will create a different version of the recipe. Later, you will be able to choose which version of the recipe to use.
+
+
+
+STEP : 2  Create a visual ETL job in AWS Glue Studio
+
+
+-- Next, you create the job that uses the recipe. Complete the following steps:
+
+1  On the AWS Glue Studio console, choose Visual ETL in the navigation pane.
+
+2  Choose Visual with a blank canvas and create the visual job.
+
+3  At the top of the job, replace “Untitled job” with a name of your choice.
+
+4  On the Job Details tab, specify a role that the job will use.
+
+      - This needs to be an AWS Identity and Access Management (IAM) role suitable for AWS Glue with permissions to Amazon S3 and the AWS Glue Data Catalog. Note that the role used before for DataBrew is not usable for run jobs, so won’t be listed on the IAM Role drop-down menu here.
+      
+      - Create ROLE :
+            - For role type, choose AWS Service, find and choose Glue, and choose Next: Permissions.
+            - On the Attach permissions policy page, choose the policies that contain the required permissions; for example, the AWS managed policy AWSGlueServiceRole for general AWS Glue permissions and the AWS managed policy AmazonS3FullAccess for access to Amazon S3 resources. Then choose Next: Review.
+            - For Role name, enter a name for your role; for example, AWSGlueServiceRoleDefault. Create the role with the name prefixed with the string AWSGlueServiceRole to allow the role to be passed from console users to the service. AWS Glue provided policies expect IAM service roles to begin with AWSGlueServiceRole. 
+
+
+
+Observation : If you used only DataBrew jobs before, notice that in AWS Glue Studio, you can choose performance and cost settings, including worker size, auto scaling, and Flexible Execution, as well as use the latest AWS Glue 4.0 runtime and benefit from the significant performance improvements it brings. For this job, you can use the default settings, but reduce the requested number of workers in the interest of frugality. For this example, two workers will do.
+
+
+5  On the Visual tab, add an S3 source and name it Providers.
+
+6  For S3 URL, enter s3://awsglue-datasets/examples/medicare/Medicare_Hospital_Provider.csv
+
+7  Select the format as CSV and choose Infer schema. Now the schema is listed on the Output schema tab using the file header.
+
+   IMP : make sure  the header are in the same format that in the file (if it is capital letters change it to the capital letters )
+
+
+8  In this use case, the decision is that not all columns in the providers dataset are needed, so we can discard the rest.
+
+9  With the Providers node selected, add a Drop Fields transform (if you didn’t select the parent node, it won’t have one; in that case, assign the node parent manually).
+
+
+10  Select all the fields after Provider Zip Code.
+
+11  Later, this data will be joined by the claims for Alabama state using the provider; however, that second dataset doesn’t have the state specified. We can use knowledge of the data to optimize the join by filtering the data we really need.
+
+
+12  Add a Filter transform as a child of Drop Fields.
+
+13  Name it Alabama providers and add a condition that the state must match AL.
+
+14  Add the second source (a new S3 source) and name it Alabama claims.
+
+15  To enter the S3 URL, open DataBrew on a separate browser tab, choose Datasets in the navigation pane, and on the table copy the location shown on the table for Alabama claims (copy the text starting with s3://, not the http link associated). Then back on the visual job, paste it as S3 URL; if it is correct, you will see in the Output schema tab the data fields listed.
+
+16  Select CSV format 
+
+17  As a child of this source, search in the Add nodes menu for recipe and choose Data Preparation Recipe.
+
+18  In this new node’s properties, give it the name Claim cleanup recipe and choose the recipe and version you published before.
+
+19  You can review the recipe steps here and use the link to DataBrew to make changes if needed.
+
+20  Add a Join node and select both Alabama providers and Claim cleanup recipes as the parent.
+
+21  Add a join condition equaling the provider ID from both sources.
+
+22  As the last step, add an S3 node as a target (note the first one listed when you search is the source; make sure you select the version that is listed as the target).
+
+23  In the node configuration, leave the default format JSON and enter an S3 URL on which the job role has permission to write.
+
+24  In the Data Catalog update options section, select the second option Create a table in the Data Catalog and on subsequent runs, update the schema and add new partitions, then select a database(create on DB in glue data catalog) on which you have permission to create tables.
+
+25  Assign alabama_claims as the name and choose Claim Date as the partition key (this is for illustration purposes; a tiny table like this doesn’t really need partitions if further data won’t be added later).
+
+26  Now you can save and run the job.
+
+27  On the Runs tab, you can keep track of the process and see detailed job metrics using the job ID link.
+
+28  The job should take a few minutes to complete.
+
+29  When the job is complete, navigate to the Athena console.
+
+30  Search for the table alabama_claims in the database you selected and, using the context menu, choose Preview Table, which will run a simple SELECT * SQL statement on the table.
+
+31  You can see in the result of the job that the data was cleaned by the DataBrew recipe and enriched by the AWS Glue Studio join.
+
+32  Apache Spark is the engine that runs the jobs created on AWS Glue Studio. Using the Spark UI on the event logs it produces, you can view insights about the job plan and run, which can help you understand how your job is performing and potential performance bottlenecks. For instance, for this job on a large dataset, you could use it to compare the impact of filtering explicitly the provider state before doing the join, or identify if you can benefit from adding an Autobalance transform to improve parallelism.
+
+
+
+
+Conclusion
+
+-- In this demo, we showed how you can use AWS DataBrew to build a recipe using the provided interactive editor and then use the published recipe as part of an AWS Glue Studio visual ETL job. We included some examples of common tasks that are required when doing data preparation and ingesting data into AWS Glue Catalog tables.
+
+-- This example used a single recipe in the visual job, but it’s possible to use multiple recipes at different parts of the ETL process, as well as reusing the same recipe on multiple jobs.
+
+-- These AWS Glue solutions allow you to effectively create advanced ETL pipelines that are straightforward to build and maintain, all without writing any code. You can start creating solutions that combine both tools today.
+
+
 
 
 
@@ -15863,6 +16513,217 @@ EXP : AWS CloudFormation StackSet extends the functionality of stacks by enablin
 
 
 
+
+------------------------------------------ 7 AWS Outposts
+
+--  AWS Outposts is a fully managed service that extends AWS infrastructure, services, APIs, and tools to customer premises. 
+
+--  By providing local access to AWS managed infrastructure, AWS Outposts enables customers to build and run applications on premises using the same programming interfaces as in AWS Regions, while using local compute and storage resources for lower latency and local data processing needs.
+
+--  An Outpost is a pool of AWS compute and storage capacity deployed at a customer site. AWS operates, monitors, and manages this capacity as part of an AWS Region. 
+
+--  You can create subnets on your Outpost and specify them when you create AWS resources such as EC2 instances, EBS volumes, ECS clusters, and RDS instances.
+
+--  Instances in Outpost subnets communicate with other instances in the AWS Region using private IP addresses, all within the same VPC.
+
+
+IMP Note You cannot connect an Outpost to another Outpost or Local Zone that is within the same VPC.
+
+
+-------- Key concepts
+
+-- These are the key concepts for AWS Outposts.
+
+
+1 Outpost site 
+
+         – The customer-managed physical buildings where AWS will install your Outpost. A site must meet the facility, networking, and power requirements for your Outpost.
+
+2 Outpost capacity
+
+         – Compute and storage resources available on the Outpost. You can view and manage the capacity for your Outpost from the AWS Outposts console.
+
+3 Outpost equipment 
+
+         – Physical hardware that provides access to the AWS Outposts service. The hardware includes racks, servers, switches, and cabling owned and managed by AWS.
+
+4 Outposts racks 
+
+         – An Outpost form factor that is an industry-standard 42U rack. Outpost racks include rack-mountable servers, switches, a network patch panel, a power shelf and blank panels.
+
+5 Outposts servers 
+
+         – An Outpost form factor that is an industry-standard 1U or 2U server, which can be installed in a standard EIA-310D 19 compliant 4 post rack. Outpost servers provide local compute and networking services to sites that have limited space or smaller capacity requirements.
+
+6 Service link 
+
+         – Network route that enables communication between your Outpost and its associated AWS Region. Each Outpost is an extension of an Availability Zone and its associated Region.
+
+7 Local gateway (LGW) 
+
+         – A logical interconnect virtual router that enables communication between an Outpost rack and your on-premises network.
+
+8 Local network interface 
+
+         – A network interface that enables communication from an Outpost server and your on-premises network.
+
+
+
+
+
+------- AWS resources on Outposts
+
+
+-- You can create the following resources on your Outpost to support low-latency workloads that must run in close proximity to on-premises data and applications:
+
+1 Compute  
+ 
+    Resource type	                  Racks	       Servers
+
+    Amazon EC2 instances             Yes	         Yes	
+
+    Amazon ECS clusters              Yes           Yes
+
+    Amazon EKS nodes                 Yes	         No
+
+
+2 Database and analytics
+
+     
+         Resource type	                                                                Racks	       Servers
+         
+        Amazon ElastiCache nodes (Redis cluster, Memcached cluster)                      YES          NO
+
+        Amazon EMR clusters                                                              YES         NO
+
+        Amazon RDS DB instances                                                          YES         NO
+
+
+
+3 Networking
+
+                 Resource type	                              Racks	       Servers
+                  
+                App Mesh Envoy proxy                           YES          YES
+
+                Application Load Balancers                     YES          NO
+
+                Amazon VPC subnets	                           YES          YES
+
+                Amazon Route 53	                               YES          NO
+
+
+
+4 Storage
+
+                 Resource type	                              Racks	       Servers
+                           
+                 Amazon EBS volumes                            YES          NO
+
+                 Amazon S3 buckets                             YES          NO
+
+
+5 Other AWS services
+
+                 Service                               Racks	       Servers
+
+                 AWS IoT Greengrass	                    YES            YES
+
+                 Amazon SageMaker Edge Manager	        YES             YES
+
+
+
+
+
+----- Pricing
+
+-- You can choose from a variety of Outpost configurations, each providing a combination of EC2 instance types and storage options. The price for rack configurations includes installation, removal, and maintenance. For servers, you must install and maintain the equipment.
+
+-- You purchase a configuration for a 3-year term and can choose from three payment options: All Upfront, Partial Upfront, and No Upfront. 
+
+-- If you choose the Partial option or the No Upfront payment option, monthly charges will apply. 
+
+-- Any upfront charges apply 24 hours after your Outpost is installed and the compute and storage capacity is available for use. 
+
+
+
+
+
+----------------------- Local Zones vs Outposts
+
+
+Outposts:
+
+
+-- for example , u have a company , ur employess are going to cream stone to have a ice cream during a break time which is three miles away from ur office  , u have noticed that it will get impact on the work , so u have asked cream stone and set up their outlet in ur compnay building ,  to improve productivity and make employees also happy at the same time , here u are providing the facilities and cream stone will set up their services , this what exactly happen in the AWS outposts 
+
+-- so many companies have applications that need single digit millisecond latency not only that in some cases there are regulatory constraints that your data has to be processed in hosts we know that AWS regions are not there in every country .
+
+-- it is possible that the companies in one country may be using the region in the neighboring country but there can be regulatory restrictions that the data which they are processing using the AWS Services it cannot leave the boundary of country
+
+-- so in such cases what the clients do is they will request AWS to come and set up their services AWS services in their own data center 
+
+-- so basically just like you provide the facility to creamstone to set up the shop , your it department will have to provide the Rackspace in your own Data Center and this will be very useful when you want to use applications which need  single digit millisecond latency such as  arvr applications virtualized desktops , gaming development projects , media content creation 
+
+
+
+
+Local Zones :
+
+-- now assume that let us go back to that same  shop example assume that your company is part of an a big huge it Park where there are dozens of companies
+
+-- and every company has a lot of employees who are ice cream lovers so every company is facing the same issue of productivity impact 
+
+-- so these companies May request creamstone to come and set up a outlet in the neighborhood somewhere in the campus in the it Parks campus or just outside.
+
+-- so here in this case creamstone will set up the facility just remember in the other case your company is providing the facility
+
+-- but in this case creamstone will take up their own building and they will set up all the infrastructure and they will start providing the service
+
+-- local zone is exactly same AWS when they find that there is a concentration of their Enterprise clients in a particular City they can actually come  and set up a local Zone with limited set of services uch as ec2 VPC EFS Etc 
+
+
+-- all the companies in the nearby areas can actually make use of the services in  that local Zone that is called local zone 
+
+
+
+IMP to know 
+
+-- Q: How are Local Zones different from Availability Zones? 
+
+ANS : 
+
+-- Local Zones are designed to bring the core services needed for the latency-sensitive portions of your workload closer to end users,
+
+-- while Availability Zones provide access to the full array of AWS services. 
+
+-- Services like Amazon Elastic Compute Cloud (Amazon EC2), Amazon Elastic Block Store (Amazon EBS), Amazon Virtual Private Cloud (Amazon VPC), and others are locally available and can be used to serve end users in geographic proximity with extremely low latency.
+
+-- Other AWS services like Amazon Simple Storage Service (Amazon S3) and Amazon Aurora are accessible privately through VPC over AWS private network. Both Local Zones and Availability Zones allow you to build applications for high availability.
+
+
+
+
+
+
+------ conclusion :
+
+
+-- AWS Outpost is an extension of aws's infrastructure to your data center 
+
+-- whereas local zone is provided from a small data center which is owned and maintained and operated by AWS in your neighborhood , so that all the companies in that area can get low latency services
+
+-- it provides only limited services but still the local zones have proved successful
+
+
+
+
+
+
+
+
+
+
 =============================================== White Papers & Architectures =========================
 
 
@@ -16132,25 +16993,6 @@ Key AWS service:
 
 
 
-
-IMP NOTE = 
-
-
-A in the question if it is mention "Least operational overhead" Means  the Services which has in-built feature to solve the issue which is mentioned in the question . "using ec2 is completely opposite to this statement"
-
-B if it is "Most Operationally efficient way" = they are talking about "either fully managed or serverless" services
-  
-C Resiliency = Mostly go for Multi-AZ
-
-D Least amount of infrastructure = Either they are talking about serverless services and fully managed services 
-
-
-
-
-
-
-
-
 1   u have been tasked with encrypting EBS Volumes that are restored from unencrypted EBS snapshots . What should u do ? 
 
 ANS :  To encrypt EBS volumes restored from unencrypted EBS snapshots , u can copy the snapshots and enable encryption with a Symmetric Customer Master key (CMK) while creating an EBS volume using the snapshot. This ensures that the restored volumes are encrypted .
@@ -16327,6 +17169,34 @@ Ans: Import into Aws Certificate manager or upload it to AWS IAM
 
 
 ====================================================================== Examples questions =================================================================================
+
+
+IMP points to remember before answering to the questions 
+
+
+A in the question if it is mention "Least operational overhead" Means  the Services which has in-built feature to solve the issue which is mentioned in the question . "using ec2 is completely opposite to this statement"
+
+B if it is "Most Operationally efficient way" = they are talking about "either fully managed or serverless" services
+  
+C Resiliency = Mostly go for Multi-AZ
+
+D Least amount of infrastructure = Either they are talking about serverless services and fully managed services 
+
+E in the question , if it is mention EKS , then blindly go for EKS in Answers , if not , then ggo for ECS 
+
+F in question if is for AWS services , then choose IAM , if it is not for the AWS services , then go for Amazon cognito user pools for authenticate
+
+G 
+
+
+
+
+
+
+
+
+
+
 
 
 1 A company collects data for temperature, humidity, and atmospheric pressure in cities across multiple continents. The average volume of data that the company collects from each site daily is 500 GB. Each site has a high-speed Internet connection.
