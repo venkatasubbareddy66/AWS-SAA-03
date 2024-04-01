@@ -493,6 +493,10 @@ EBS vs EFS – Elastic File System
 
 -- in aws cached memory service is called "Elastic cache" which is in-memory database service
 
+       In-Memory Database : An in-memory database (IMDB) stores computer data in a computer’s main memory instead of a disk drive to produce quicker response times. Accessing data stored in memory eliminates the time needed to query data from a disk.
+
+       - In-memory databases are used by applications that depend on rapid response times and real-time data management. Industries that benefit from in-memory databases include telecommunications, banking, travel and gaming. An in-memory database is also referred to as a main memory database (MMDB), real-time database (RTDB) or in-memory database system (IMDS).
+
 -- low latency
 
 -- high performance
@@ -2988,6 +2992,25 @@ EXP : By default, user data scripts and cloud-init directives run only during th
 
 
 
+--------------------------------- EC2 User Data
+
+• It is possible to bootstrap our instances using an EC2 User data script.
+
+• bootstrapping means launching commands when a machine starts
+
+• That script is only run once at the instance first start
+
+• EC2 user data is used to automate boot tasks such as:
+
+   • Installing updates
+   • Installing software
+   • Downloading common files from the internet
+   • Anything you can think of
+
+• The EC2 User Data Script runs with the root user
+
+
+
 
 
 =====================================SNAPSHOTS===============
@@ -3655,6 +3678,12 @@ EXP :
 
 -------------------- 1 classic load balancer : 2009
 
+• Suppor ts TCP (Layer 4), HTTP & HTTPS (Layer 7)
+
+• Health checks are TCP or HTTP based
+
+• Fixed hostname XXX.region.elb.amazonaws.com
+
 - supports http , https, and TCP
 
 - also know as previous generation
@@ -3664,6 +3693,8 @@ EXP :
 - The Classic Load Balancer supports SSL offloading.
 
 -  Layer 7 load balancer works at the application layer
+
+
 
 
 ------------------------------- 2  Application Load Balancer : 2016
@@ -4444,7 +4475,7 @@ IMP to Know :
 
 - for only reserving u no need to pay until u will use this 
 
-  ==========================EFA === elastic fabric Adapter 
+============================EFA === elastic fabric Adapter 
 
 - it is a network device that u can attach to ur instance to reduce latency and increase throughput for distributed high performnace computing(HPC) and ML 
 
@@ -4481,6 +4512,7 @@ IMP to Know :
 -- An Elastic Network Interface (ENI) is a logical networking component in a VPC that represents a virtual network card. 
 
 -- You can create a network interface, attach it to an instance, detach it from an instance, and attach it to another instance. The ENI is the simplest networking component available on AWS and is insufficient for HPC workflows.
+
 
 ============================ AWS ENA (Elastic Network Adapter)
 
@@ -7089,8 +7121,7 @@ To protect data in transit, AWS encourages customers to leverage a multi-level a
 
 -- Examples:
 
-• Allow only logged-in users to download a premium video from your S3
-bucket
+• Allow only logged-in users to download a premium video from your S3 bucket
 • Allow an ever-changing list of users to download files by generating URLs dynamically
 • Allow temporarily a user to upload a file to a precise location in your S3 bucket
 
@@ -7259,12 +7290,12 @@ if u choose Wait to run the job when it's ready , u have to run job manually
 
 ===========S3 Access Points======================
 
--- it simplify scurity management for S3 buckets
+-- it simplify security management for S3 buckets
 
 
 -- all the people acccesss through the Acces points
 
--- instead of writing critical bucket policies , u can create access points to each and givw the DNS Names to the users to acces their respective folders in buckets
+-- instead of writing critical bucket policies , u can create access points to each and give the DNS Names to the users to acces their respective folders in buckets
 
 
 IMP : A.P can be public(internet) or private(VPC) 
@@ -7837,7 +7868,7 @@ explanation :   fs-0c90179e0f0b6c46b.efs.ap-south-1.amazonaws.com  -- u wil get 
 
 -- for windows u need to downlaod --> AWSCLI.msi
 
--- forlinux u have to use Linux cmnds 
+-- for linux u have to use Linux cmnds 
 
 -- configuring KEYS o the insatnce is not recommmended 
 
@@ -7946,7 +7977,85 @@ services/
 
 -- it is not recommended to do this way coz keys are stored in ec2 itself so u can not do this way 
 
--- so create role and give permissions and run ur cmnds without keys 
+-- so create role and give permissions(eg : s3 full access) and run ur cmnds without keys 
+
+
+
+
+========================================= MFA with CLI
+
+• To use MFA with the CLI, you must create a temporary session
+
+• To do so, you must run the STS GetSessionToken API call
+
+• aws sts get-session-token --serial-number arn-of-the-mfa-device --token-code code-from-token --duration-seconds 3600
+
+
+
+========================================= AWS SDK Overview
+
+• What if you want to perform actions on AWS directly from your applications code ? (without using the CLI).
+
+• You can use an SDK (software development kit) !
+
+• Official SDKs are...
+
+     • Java
+     • .NET
+     • Node.js
+     • PHP
+     • Python (named boto3 / botocore)
+     • Go
+     • Ruby
+     • C++
+
+
+• We have to use the AWS SDK when coding against AWS Services such as DynamoDB
+
+• Fun fact... the AWS CLI uses the Python SDK (boto3)
+
+• The exam expects you to know when you should use an SDK
+
+• Good to know: if you don’t specify or configure a default region, then us-east-1 will be chosen by default
+
+
+
+
+============================================= AWS Limits (Quotas)
+
+• API Rate Limits
+
+     • DescribeInstances API for EC2 has a limit of 100 calls per seconds
+
+     • GetObject on S3 has a limit of 5500 GET per second per prefix
+
+     • For Intermittent Errors: implement Exponential Backoff
+
+     • For Consistent Errors: request an API throttling limit increase
+
+
+• Service Quotas (Service Limits)
+
+     • Running On-Demand Standard Instances: 1152 vCPU
+
+     • You can request a service limit increase by opening a ticket
+
+     • You can request a service quota increase by using the Service Quotas API
+
+
+------------------ Exponential Backoff (any AWS service)
+
+
+• If you get ThrottlingException intermittently, use exponential backoff
+
+• Retry mechanism already included in AWS SDK API calls
+
+• Must implement yourself if using the AWS API as-is or in specific cases
+
+    • Must only implement the retries on 5xx server errors and throttling
+    • Do not implement on the 4xx client errors
+
+
 
 
 
@@ -9336,7 +9445,7 @@ Geospatial support
 
 
 
--------------------------------Developer Strategies(Patterns for ElastiCache)
+------------------------------- Developer Strategies (Patterns for ElastiCache)  
 
 -- they are 3 types of strategies
 
@@ -9348,6 +9457,174 @@ if Cache is not have data , appn go to RDS and get data whatever the data get fr
 2 Write Through : write parallelly both data basess (DB and Cache) , in this 100% similar data on Both RDS and Elastic cache , Adds or update data in the cache when written to a DB (no stale data)
 
 3 Session Store: store temporary session data in a cache (using TTL features)
+
+
+-------------------------------  Developer Associate (Caching Implementation Considerations)
+
+
+                         How to apply caching
+
+
+https://aws.amazon.com/caching/implementation-considerations/  - for more reference
+
+
+• Is it safe to cache data? Data may be out of date, eventually consistent
+
+• Is caching effective for that data?
+ 
+      • Pattern: data changing slowly, few keys are frequently needed
+      • Anti patterns: data changing rapidly, all large key space frequently needed
+
+
+• Is data structured well for caching?
+
+      • example: key value caching, or caching of aggregations results
+
+
+-----------------------------------------  Which caching design pattern is the most appropriate?
+
+
+------------------- 1 Lazy Loading / Cache-Aside / Lazy Population
+
+• Pros
+
+   • Only requested data is cached (the cache isn’t filled up with unused data)
+   • Node failures are not fatal (just increased latency to warm the cache)
+
+• Cons
+   
+   • Cache miss penalty that results in 3 round trips, noticeable delay for that request 
+
+       - First of all, if we get a Cache hit is great. 
+       - But if we get a Cache miss,
+       - that means there's three network calls being done from your application to ElastiCache,
+       - which is a Cache miss from your application to RDS,which is read from Data Base and finally,another write to the cache.
+       - And so for your users,when they are reading something,and they're seeing some latency,they're not used to it.
+       - And so, that three round trips may be a bad user experience.
+
+
+    • Stale data: data can be updated in the database and outdated in the cache
+      
+       - So if your data is updated in RDS,then it will not be necessarily updating in ElastiCache.
+       - then it will not be necessarily updating in ElastiCache.
+       - And that's what you need to ask yourself is my data Okay to be out of date and eventually consistent?
+
+
+------- Lazy Loading / Cache-Aside / Lazy Population Python Pseudocode
+
+
+# Python
+
+def get_user(user_id):
+
+    # Check the cache
+
+    record = cache.get(user_id)
+
+    if record is None:       
+
+       # Run a DB query       
+
+       record = db.query("select * from users where id = ?",user_id)
+
+       # Populate the cache
+
+       cache.set(user_id, record)
+
+    return record
+
+# App code
+
+user = get_user(17)
+
+
+
+
+---------------------------- 2  Write Through – Add or Update cache when database is updated
+
+
+• Pros:
+   
+   • Data in cache is never stale, reads are quick
+    
+   • Write penalty vs Read penalty (each write requires 2 calls)
+
+      - you get a Write penalty versus a Read penalty. 
+      - So before when we had a Cache miss, we had to do three network calls in total,and that was a Read penalty.
+      - But now when we write to the database, we have a Write penalty.
+      - Each write now requires two calls, one to the database and one to the cache.
+      - And from the user perspective, a user is expecting more a write to take longer than a read. For example, if you were on the social media and you post something then you expect that post to last maybe a second or two.
+      - But if you fetch a profile, you expected to take a split second.
+      - So here, the users understand that any write, any changes to the database may take a little bit longer.So there may be better from a user perspective.
+
+
+• Cons:
+    
+    • Missing Data until it is added / updated in the DB. Mitigation is to implement Lazy Loading strategy as well
+
+    • Cache churn – a lot of the data will never be read
+
+
+
+---------  Write-Through Python Pseudocode
+
+
+# Python
+
+def save_user(user_id, values):
+
+    # Save to DB 
+
+    record = db.query("update users ... where id = ?", user_id, values)
+
+    # Push into cache
+
+    cache.set(user_id, record)
+
+    return record
+
+# App code
+
+user = save_user(17, {"name": "Nate Dogg"})
+
+
+
+
+------------------------------------------------- Cache Evictions and Time-to-live (TTL)
+
+• Cache eviction(remove/leave) can occur in three ways: 
+
+    • You delete the item explicitly in the cache
+    • Item is evicted because the memory is full and it’s not recently used (LRU)
+    • You set an item time-to-live (or TTL)
+
+
+• TTL are helpful for any kind of data:
+
+    • Leaderboards
+    • Comments
+    • Activity streams 
+
+
+• TTL can range from few seconds to hours or days
+
+• If too many evictions happen due to memory, you should scale up or out
+
+
+
+------------------------------------ Final words of wisdom
+
+• Lazy Loading / Cache aside is easy to implement and works for many situations as a foundation, especially on the read side
+
+• Write-through is usually combined with Lazy Loading as targeted for the queries or workloads that benefit from this optimization
+
+• Setting a TTL is usually not a bad idea, except when you’re using Write- through. Set it to a sensible value for your application
+
+• Only cache the data that makes sense (user profiles, blogs, etc...)
+
+
+
+
 
 
 ------------------------------------------------- REDIS
@@ -9388,6 +9665,28 @@ if Cache is not have data , appn go to RDS and get data whatever the data get fr
 -------- imp : Service Quotas ia AWS service where u can find the soft limit of the AWS Resource 
 
 -- if required u can increase the soft limit 
+
+
+
+
+
+------------------------------- Amazon MemoryDB for Redis
+
+
+• Redis-compatible, durable, in-memory database service
+
+   - So the difference between Redis and MemoryDB for Redis, that 
+   - while Redis' intent is to be used as a cache with some durability, 
+   - MemoryDB is really a database that has a Redis-compatible API. 
+
+
+• Ultra-fast performance with over 160 millions requests/second
+
+• Durable in-memory data storage with Multi-AZ transactional log
+
+• Scale seamlessly from 10s GBs to 100s TBs of storage
+
+• Use cases: web and mobile apps, online gaming, media streaming, ...
 
 
 
@@ -10711,16 +11010,16 @@ EXP :
 ---------- CloudFront – Origins
 
 1 S3 bucket
-• For distributing files and caching them at the edge
-• Enhanced security with CloudFront Origin Access Control (OAC) 
-• OAC is replacing Origin Access Identity(OAI)
-• CloudFront can be used as an ingress (to upload files to S3)
+  • For distributing files and caching them at the edge
+  • Enhanced security with CloudFront Origin Access Control (OAC) 
+  • OAC is replacing Origin Access Identity(OAI)
+  • CloudFront can be used as an ingress (to upload files to S3)
 
 2 Custom Origin (HTTP)
-• Application Load Balancer
-• EC2 instance
-• S3 website (must first enable the bucket as a static S3 website)
-• Any HTTP backend you want
+  • Application Load Balancer
+  • EC2 instance
+  • S3 website (must first enable the bucket as a static S3 website)
+  • Any HTTP backend you want
 
 
 
@@ -10877,7 +11176,7 @@ Can be Private .
 
 -- open S3 and create private Bucket 
 
--- as u cate private bucket , no one can access ur url through the S3 
+-- as u create private bucket , no one can access ur url through the S3 
 
 -- Only access through by Cloud-Front directly coz, it is privtae bucket and we did not enable Static hosting also 
 
@@ -10887,23 +11186,23 @@ Can be Private .
 
 -- Origina Domain = load balancer / S3 -- these are the places wher u can host ur applications 
 
--- OAC --> Create control settings --> do nt change any n create 
+-- OAC --> Create control settings --> do not change any n create 
 
 -- it is created access from S3 
 
 -- Compress objects automatically : CloudFront can automatically compress certain files that it receives from the origin before delivering them to the viewer. CloudFront compresses files only when the viewer supports it, as specified in the Accept-Encoding header in the viewer request.
 
 
--- Default root object - optional = index.html 
+-- Default root object - optional = index.html  -----> must and should u have to give this , otherwise u won’t get o/p 
 
 
------ once u crate distrubtion , the S3 bucket policy wil gwt generated copy that policy and paste in bucket policy 
+----- once u create distrubtion , the S3 bucket policy wil gwt generated copy that policy and paste in bucket policy 
 
 -- now ur appn is getting deployed all over the world 
 
 -- through the CF url customers will able to connect ur webiste through the edge locations 
 
--- once u change the content of ur website and do uploud again n if u do refresh u wont get new content 
+-- once u change the content of ur website and do uploud again n if u do refresh u won't get new content 
 
 -- u have too do "invalidate the Cache" 
 
@@ -11495,6 +11794,20 @@ EPV : 1) Use Amazon Route 53 based geolocation routing policy to restrict distri
 - Non-AWS resources (specify Latitude and Longitude)
 
 IMP -- You must use Route 53 Traffic Flow to use this feature 
+
+
+----- Route 53 – Traffic flow
+
+• Simplify the process of creating and maintaining records in large and complex configurations
+
+• Visual editor to manage complex routing decision trees
+
+• Configurations can be saved as Traffic Flow Policy
+  
+   • Can be applied to different Route 53 Hosted Zones (different domain names)
+   • Supports versioning
+
+
 
 
 
@@ -12324,8 +12637,13 @@ aws s3 mb s3://vpc-bucket19876 --region ap-south-1
 
 • Captures network information from AWS managed interfaces too: ELB, RDS, ElastiCache, Redshift,WorkSpaces, NATGW,Transit Gateway...
 
+• Helps to monitor & troubleshoot connectivity issues. Example: 
+   • Subnets to internet
+   • Subnets to subnets
+   • Internet to subnets
 
----------------------- LAB 
+
+------------------------------- LAB 
 
 -- go to clouwatch and create log group 
 

@@ -1,0 +1,491 @@
+
+
+IMP NOTE : ALL the Topics have covered in the Solution architect Associate , here I have prepared the Most advanced topics for Associate Developer which was not covered in the solution architect associate
+
+
+
+=========================================================== CloudFront =========================================
+
+
+-------------------- CloudFront Caching 
+
+• The cache lives at each CloudFront Edge Location
+
+• CloudFront identifies each object in the cache using the Cache Key 
+
+• You want to maximize the Cache Hit ratio to minimize requests to the origin
+
+• You can invalidate part of the cache using the CreateInvalidation API
+
+
+-------------------- What is CloudFront Cache Key?
+
+• A unique identifier for every object in the cache
+
+• By default, consists of hostname + resource portion of the URL
+
+• If you have an application that serves up content that varies based on user, device, language, location...
+
+• You can add other elements (HTTP headers, cookies, query strings) to the Cache Key using "CloudFront Cache Policies"
+
+
+-------------------- CloudFront Policies – Cache Policy
+
+• Cache based on:
+
+    • HTTP Headers: None – Whitelist
+
+    • Cookies: None – Whitelist – Include All-Except – All
+
+    • Query Strings: None – Whitelist – Include All-Except – All
+
+
+• Control the TTL (0 seconds to 1 year), can be set by the origin using the Cache-Control header, Expires header...
+
+• Create your own policy or use Predefined Managed Policies
+
+IMP : • All HTTP headers, cookies, and query strings that you include in the Cache Key are automatically included and forward to ur  origin requests
+
+
+
+------------------ 1 CloudFront Caching – Cache Policy HTTP Headers
+
+- let's say we have an example request in french language
+
+
+GET /blogs/myblog.html HTTP/1.1
+Host: mywebsite.com
+User-Agent: Mozilla/5.0 (Mac OS X 10_15_2....) 
+Date: Tue, 28 Jan 2021 17:01:57 GMT 
+Authorization: SAPISIDHASH fdd00ecee39fe.... Keep-Alive: 300
+Language: fr-fr
+
+
+-- so if we define none : 
+
+• None:
+   
+    • Don’t include any headers in the Cache Key (except default)
+    • Headers are not forwarded (except default)
+    • Best caching performance
+
+• Whitelist: 
+
+    • only specified headers included in the Cache Key
+      
+       -     if u want to whitelist specific Headers and that may mean necessary because while you want to have the language as a Cache Key, then you specify which headers you want to include in the Cache Key,
+
+    • Specified headers are also forwarded to Origin
+
+       - so that the origin can actually respond to the request and give you the blog in the correct language.
+
+
+
+
+---------------------------- 2 CloudFront Cache – Cache Policy Query Strings
+
+
+- for example we have a request like 
+
+ GET /image/cat.jpg?border=red&size=large HTTP/1.1
+
+
+-- So query strings are what happens in the URL after a question mark. 
+
+-- So for example, border equals red and size equals large. So here, we want a cat image. But apparently, it's going to be customized a little bit by the origin.
+
+-- if you have 
+
+• None : 
+
+    • Don’t include any query strings in the Cache Key
+
+    • Query strings are not forwarded
+
+• Whitelist
+
+    • Only specified query strings included in the Cache Key
+
+    • Only specified query strings are forwarded
+
+
+• Include All-Except : you specify which ones you don't want but the rest passes
+
+    • Include all query strings in the Cache Key except the specified list
+
+    • All query strings are forwarded except the specified list
+
+
+• All
+
+    • Include all query strings in the Cache Key
+
+    • All query strings are forwarded
+
+    • Worst caching performance
+
+
+
+
+------------------------------ CloudFront Policies – Origin Request Policy 
+
+
+• Specify values that you want to include in origin requests without including them in the Cache Key (no duplicated cached content)
+
+• You can include extra :
+      
+      • HTTP headers: None – Whitelist – All viewer headers options
+      • Cookies: None – Whitelist – All
+      • Query Strings: None – Whitelist – All
+
+    - but they will be forwarded to the origin but they're not going to be used in the Cache Key.
+
+
+• Ability to add CloudFront HTTP headers and Custom Headers to an origin request that were not included in the viewer request (eg :  if you wanted to pass an API key or a secret header.)
+
+• Create your own policy or use Predefined Managed Policies
+
+
+
+----------------------------- Cache Policy vs. Origin Request Policy
+
+
+GET /blogs/myblog.html HTTP/1.1
+Host: mywebsite.com
+User-Agent: Mozilla/5.0 (Mac OS X 10_15_2....) 
+Date: Tue, 28 Jan 2021 17:01:57 GMT 
+Authorization: SAPISIDHASH fdd00ecee39fe.... Keep-Alive: 300
+Language: fr-fr
+
+
+--  so the request will come with some query strings, some cookies, some headers, and then we will cache based on the cache policy.
+
+-- For example, we want to cache here on the host name, the resource, and a header called authorization.
+
+
+
+-- But then, your origin may need more than these three things to actually work and to actually serve properly the request.
+
+-- So you may want to add the user agents,the session ID and the ref query string as part of your request to the origin.
+
+-- So in this case, the request to the origin is going to be enhanced but then the caching will not happen based on what we forwarded to the origin request policy.
+
+-- It's only going to be based on the cache policy.
+
+
+
+
+
+
+
+Client ------------------------------(request)----------------------------> C.F --------------------------(forward)--------------------------------> Origin (EC2 instance)
+                                                                             |
+
+                   Cache Policy                                           EDGE Location                   Origin Request Policy (whitelist)
+
+                Cache Key (cache based on)                                  |                                  Type                        Value
+                                                                            |                               HTTP Headers         User-Agent, Authorization
+                 - mywebsite.com 
+                 - /content/stories/example-story.html                     CACHE                            Cookies               session_id
+                 - Header: Authorization                                                                    Query Strings          ref
+
+
+    
+
+
+----------------------------------- CloudFront – Cache Invalidations
+
+
+• In case you update the back-end origin, CloudFront doesn’t know about it and will only get the refreshed content after the TTL has expired
+
+• However, you can force an entire or partial cache refresh (thus bypassing the TTL) by performing a CloudFront Invalidation
+
+• You can invalidate all files (*) or a special path (/images/*)
+
+
+------------------------------------ CloudFront – Cache Behaviors
+
+
+• Configure different settings for a given URL path pattern
+
+• Example: one specific cache behavior to images/*.jpg files on your origin web server
+
+• Route to different kind of origins/origin groups based on the content type or path pattern
+  
+      • /images/*
+      • /api/*  --  EG : Load balancer 
+      • /* (default cache behavior) EG : S3 
+
+
+• When adding additional Cache Behaviors, the Default Cache Behavior is always the last to be processed and is always /*
+
+
+
+------ use case for cache behavior  EG : CloudFront – Cache Behaviors – Sign In Page
+
+
+                                                                
+
+                                                                        cache behaviours                                                 origins 
+           Signed Cookies
+       <------------------------->                                    
+Users                                           <--------------------------->  /* (default)      -------------------->                      S3
+                                          CF Distribution                         
+                                                <--------------------------->  /login             ------------------->                EC2 instance (generated signed cookies)
+       <------------------------->                                                                <--------------------              
+            authenticate                                                                    Signed Cookies              
+
+
+
+-- So the way we do it is that we define a cache behavior ,for /login and so the users who hit the /login page will be redirected to our EC2 instance.
+
+-- And the role of our EC2 instance is to generate CloudFront signed cookies.
+
+-- So these signed cookies are sent back to the user and the user will then use the signed cookies to be able to access our default cache behavior, which is any other URL, then /login and then access our S3 bucket files.
+
+-- if the users are trying to access the default cache behavior without doing a login first, what we can do is that we can set up the cache behavior to only accept the request if signed cookies are present.
+
+-- Therefore, we can redirect to the /login page and we're good to go.
+
+
+
+---------------------------------------- CloudFront – Maximize cache hits by separating static and dynamic distributions
+
+
+
+Static requests --------------> CDN Layer CloudFront (No headers / session caching rules Required for maximizing cache hits) ------(Static content)-----------> S3
+
+Dynamic         --------------> CDN Layer CloudFront (Cache based on correct headers and cookie)------------------(Dynamic Content (REST, HTTP server))----------------> ALB + EC2 
+
+
+
+
+
+--------------------------------------- CloudFront Signed URL / Signed Cookies
+
+
+• You want to distribute paid shared content to premium users over the world
+
+• We can use CloudFront Signed URL / Cookie. We attach a policy with:
+
+      • Includes URL expiration
+      • Includes IP ranges to access the data from
+      • Trusted signers (which AWS accounts can create signed URLs)
+
+• How long should the URL be valid for?
+
+     • Shared content (movie, music): make it short (a few minutes)
+     • Private content (private to the user): you can make it last for years
+
+
+• Signed URL = access to individual files (one signed URL per file)
+
+• Signed Cookies = access to multiple files (one signed cookie for many files)
+
+
+
+------------------------------------------ CloudFront Signed URL vs S3 Pre-Signed URL
+
+
+          • CloudFront Signed URL:                                                                                                • S3 Pre-Signed URL:
+
+
+• Allow access to a path, no matter the origin  (not only s3 , but HTTP, backend ....)                           • Issue a request as the person who pre-signed the URL
+
+• Account wide key-pair, only the root can manage it                                                             • Uses the IAM key of the signing IAM principal
+
+• Can filter by IP, path, date, expiration                                                                       • Limited lifetime
+
+• Can leverage caching features
+
+
+
+------------------------------------------ CloudFront Signed URL Process
+
+• Two types of signers:
+
+    1 • Either a trusted key group (recommended)
+        
+        • Can leverage APIs to create and rotate keys (and IAM for API security)
+
+
+    2 • An AWS Account that contains a CloudFront Key Pair
+
+        • Need to manage keys using the root account and the AWS console
+        • Not recommended because you shouldn’t use the root account for this
+
+
+
+• In your CloudFront distribution, create one or more trusted key groups
+
+• You generate your own public / private key
+       
+       • The private key is used by your applications (e.g. EC2) to sign URLs
+       • The public key (uploaded) is used by CloudFront to verify URLs
+
+
+
+
+---------------------------------------------------------------- LAB Demo 
+
+------------ Type 1 
+
+
+-- open S3 and create private Bucket 
+
+-- as u create private bucket , no one can access ur url through the S3 
+
+-- Only access through by Cloud-Front directly coz, it is privtae bucket and we did not enable Static hosting also 
+
+-- go to CF in console 
+
+-- create ditrubtion on CF 
+
+-- Origina Domain = load balancer / S3 -- these are the places wher u can host ur applications 
+
+-- OAC --> Create control settings --> do not change any n create 
+
+-- it is created access from S3 
+
+-- Compress objects automatically : CloudFront can automatically compress certain files that it receives from the origin before delivering them to the viewer. CloudFront compresses files only when the viewer supports it, as specified in the Accept-Encoding header in the viewer request.
+
+
+-- Default root object - optional = index.html  -----> must and should u have to give this , otherwise u won’t get o/p 
+
+
+----- once u create distrubtion , the S3 bucket policy wil gwt generated copy that policy and paste in bucket policy 
+
+-- now ur appn is getting deployed all over the world 
+
+-- through the CF url customers will able to connect ur webiste through the edge locations 
+
+-- once u change the content of ur website and do uploud again n if u do refresh u won't get new content 
+
+-- u have too do "invalidate the Cache" 
+
+-- go to CF and create invalidation for /index.html or /* , do upload again the file to s3 ,it will get latest file from the S3 and give latest content to customers 
+
+-- By default, CloudFront caches files in edge locations for 24 hours. 
+
+
+------------ Sign URL System 
+
+--  now i want to make this private , and want to give access to only prime customers 
+
+--  so do create Signed URL'S
+
+-- for this first u have to create public key and do store this key in the Key group 
+
+-- go to google and search for "RSA Key Generator" create 2048 bit key , copy public key and do paste in public key , create public key
+
+-- now create key group and add this public key to this group , u can store upto 5 pulic keys in one group 
+
+-- now go to distribution --> behaviour --> edit --> Restrict viewer access = yes --> save changes 
+
+-- it will get create one URL
+
+
+
+
+TYPE 2 
+
+-- go to security credentials --> create cloudfront key pair --> download both public and private files 
+
+-- now open terminals and enter the command like this 
+
+      aws cloudfront sign --url https://dgw7w0gfg0nkb.cloudfront.net --key-pair-id APKAUK2QS6DOWVAB3OG5 --private-key file://pk-APKAUK2QS6DOWVAB3OG5.pem --date-less-than 2024-03-31
+
+
+      -- it will generate one url 
+
+      EG :    https://dgw7w0gfg0nkb.cloudfront.net?Expires=1711843200&Signature=Pa7-jzCpDyXKgwS6bqPh75zqiNnCHryUCWDgcQheZLwX7g0wyzLrBSiUmD2KNFtdnx-OKnYLO2zJSiLsORIQO1yDs5RBTCqW6y5BTGqE0-CUdQ5clls4LY4KKdwZWmRs2VyJtMMDNqiwjsID2nTHO8nRUkgWBB0Nx9FShrhsmMoqVYo2JnDmIWnLb8KE4r8vSxbKPmMKByRkqmUmHPSbR6ODct0njHdDbcDJuANZLh3NKXVPvfYNMGre1ipjwfPhz7neEbcZoMq3AYuXce83DzSQd2BN~P8lPKDyDOWy8C3kAHoUKUg~2tneTa9~Ksh2hFHHyOnIthSysoFKmsW5ug__&Key-Pair-Id=APKAUK2QS6DOWVAB3OG5%                                    
+
+
+
+
+
+--------------------------------------- CloudFront – Multiple Origin
+
+• To route to different kind of origins based on the content type
+
+• Based on path pattern:
+
+      • /images/*
+      • /api/* 
+      • /*
+
+
+
+-------------------------------------- CloudFront – Origin Groups
+
+• To increase high-availability and do failover
+
+• Origin Group: one primary and one secondary origin
+
+• If the primary origin fails, the second one is used
+
+
+-------------------------------------- CloudFront – Field Level Encryption
+
+
+• Protect user sensitive information through application stack
+
+• Adds an additional layer of security along with HTTPS
+
+• Sensitive information encrypted at the edge close to user
+
+• Uses asymmetric encryption
+
+• Usage: 
+
+     • Specify set of fields in POST requests that you want to be encrypted (up to 10 fields)
+     • Specify the public key to encrypt them
+
+
+                                      
+                                                Encrypt using Public Key
+
+Client -----------(HTTPS)----------------------> EDGE Location ------------(HTTPS)--------------------> C.F -------------(HTTPS)-----------> ALB --------(HTTPS)------------------> WEB Servers
+
+         POST /submit HTTP/1.1 
+         Host: www.example.com                                             POST /submit HTTP/1.1                                                                               Decrypt using Private Key
+                                                                           Host: www.example.com 
+
+
+
+EG : 
+
+
+LAB : https://325b057e.isolation.zscaler.com/profile/1233fc6e-6618-4022-a03b-96afce7da312/zia-session/?controls_id=5363df57-072a-41ec-8342-91ef13f84e51&region=bom&tenant=462f064b6b51&user=a88c06b13d4badbc3b1628a94e955f23c843810a6a0110d09b7d0213d4fe17aa&original_url=https%3A%2F%2Faws.amazon.com%2Fblogs%2Fsecurity%2Fhow-to-enhance-the-security-of-sensitive-customer-data-by-using-amazon-cloudfront-field-level-encryption%2F&key=sh-1&hmac=dfa6e28bf1bc65f977e7e1b8fb8cd99b505583c03072c2c6e52c6e286b86f799
+
+
+
+
+------------------------------------------ CloudFront – Real Time Logs
+
+
+• Get real-time requests received by CloudFront sent to Kinesis Data Streams
+
+• Monitor, analyze, and take actions based on content delivery performance
+
+• Allows you to choose:
+  
+      • Sampling Rate – percentage of requests for which you want to receive
+
+      • Specific fields and specific Cache Behaviors (path patterns)
+
+
+
+Real-time Processing  =          Users -----(Requests)--------> C.F -----(LOGS)-------> Kinesis Data Streams ------(records)--------------> Lambda
+
+
+Near Real-time Processing  =       Users -----(Requests)--------> C.F -----(LOGS)-------> Kinesis Data Streams ------(records)--------------> Kinesis Data Firehose
+
+
+
+
+
+
+===================================================== Containers on AWS ===============================
+
+
