@@ -486,6 +486,1072 @@ Near Real-time Processing  =       Users -----(Requests)--------> C.F -----(LOGS
 
 
 
-===================================================== Containers on AWS ===============================
+===================================================== Containers on AWS ========================================
+
+• Docker is a software development platform to deploy apps
+
+• Apps are packaged in containers that can be run on any OS
+
+• Apps run the same, regardless of where they’re run
+
+  • Any machine
+  • No compatibility issues
+  • Predictable behavior
+  • Less work
+  • Easier to maintain and deploy
+  • Works with any language, any OS, any technology
+
+
+• Use cases: microservices architecture, lift-and-shift apps from on- premises to the AWS cloud, ...
+
+
+
+---------------------------- Where are Docker images stored?
+
+• Docker images are stored in Docker Repositories
+
+• Docker Hub (https://hub.docker.com)
+
+    • Public repository
+    • Find base images for many technologies or OS (e.g., Ubuntu, MySQL, ...)
+
+
+• Amazon ECR (Amazon Elastic Container Registry)
+
+    • Private repository
+    • Public repository (Amazon ECR Public Gallery https://gallery.ecr.aws)
+
+
+-- Jfrog also we can store images
+
+
+
+
+
+-------------------------- Docker vs.Virtual Machines
+
+• Docker is ”sort of ” a virtualization technology, but not exactly
+
+• Resources are shared with the host => many containers on one server
+
+-- see pics in google for better understanding
+
+
+
+
+
+-------------------------------- Getting Started with Docker
+
+
+
+Dockerfile -------(Build)----------------> Docker Image ------------(Run)------------> Docker Container (Eg :python)
+                                            |      |
+                                            |      |
+                                Push        |      |    Pull
+                                            |      |
+                                            |      |
+              
+                                        Docker Repositories
+
+                                        Eg : DockerHub , ECR
+
+
+
+-- Dockerfile  : which is defining how your Docker container will look. So we have a base Docker image , and we add some files and then we're going to build it.
+
+-- DockerImage : And this will become a Docker image. And that Docker image, you can store it on a Docker repository , it's called a Push and you push it to either Docker hub which is a public repository, or Amazon is ECR
+   
+                 - Then you can pull back these images from these repositories and then you would run them.
+
+
+-- Docker Container : And when you run a Docker image , it becomes a Docker container, which runs your code hat you had built from your Docker build.
+
+
+--- That is the whole process with Docker.
+
+
+
+
+
+---------------------------------------------- Docker Containers Management on AWS
+
+• Amazon Elastic Container Service (Amazon ECS)
+     
+     • Amazon’s own container platform
+
+
+• Amazon Elastic Kubernetes Service (Amazon EKS)
+
+     • Amazon’s managed Kubernetes (open source)
+
+
+• AWS Fargate
+  
+     • Amazon’s own Serverless container platform
+     • Works with ECS and with EKS
+
+
+• Amazon ECR:
+  
+     • Store container images
+
+
+
+
+
+--------------------------------------------------- 1 Amazon ECS - EC2 Launch Type
+
+
+• ECS = Elastic Container Service
+
+• Launch Docker containers on AWS = Launch ECS Tasks on ECS Clusters 
+    
+        - an ECS Cluster is made of things.And with the EC2 Launch Type, well these things are EC2 instances.
+
+
+• EC2 Launch Type: you must provision & maintain the infrastructure (the EC2 instances)
+
+• Each EC2 Instance must run the ECS Agent to register in the ECS Cluster
+
+• AWS takes care of starting / stopping containers
+
+     - AWS is going to be starting or stopping the containers.
+     - That means that whenever we have a new Docker container it's going to be placed accordingly on each EC2 Instance.
+     
+
+
+
+
+
+----------------------------------------------------  2 Amazon ECS – Fargate LaunchType
+
+
+• Launch Docker containers on AWS
+
+• You do not provision the infrastructure (no EC2 instances to manage)
+
+• It’s all Serverless!, because we don't manage servers (there are servers behind., but we are not managing the servers)
+
+• if we have an ECS Cluster , we just create task definition to define our ECS tasks.
+
+• AWS just runs ECSTasks for you based on the CPU / RAM you need
+
+   - So when we want to run a new Docker container, simple as that, it's going to be run, without us knowing where it's run and without an EC2 Instance to be created in the backend in our accounts for it to work.
+   - So it's a little bit magic.
+
+
+• To scale, just increase the number of tasks. Simple - no more EC2 instances
+
+
+
+
+
+------------------------------------------------------- Amazon ECS – IAM Roles for ECS
+
+
+ -- So let's take an example of the EC2 Launch Type in which we have an EC2 Instance running the ECS Agent on Docker.
+
+ -- So in this case, we can create an EC2 Instance Profile which is only valued of course if you use EC2 Launch Type.
+
+ 1  EC2 Instance Profile (EC2 Launch Type only):
+
+       • Used by the ECS agent
+       • Makes API calls to ECS service
+       • Send container logs to CloudWatch Logs
+       • Pull Docker image from ECR
+       • Reference sensitive data in Secrets Manager or SSM Parameter Store
+
+
+
+ 2 ECSTask Role:
+
+-- our ECS tasks are going to get ECS Task Roles. And so this is valued for both EC2 Launch Type and Fargate.
+
+-- And so here I have two tasks.And we can create a specific role per task.
+
+           TASK A -----------(EC2 Task A Role)-------> s3 
+
+           TASK B -----------(EC2 Task B Role)-------> DynamoDB
+
+-- Well, why do we have different roles? 
+
+ANS : Because each role allows you to be linked to different ECS services.
+
+1  so, for example, the ECS Task A Role allows you to have your Task A, runs some API calls against Amazon S3
+
+2  so, for example, the ECS Task B Role allows you to have your Task B, runs some API calls against Dynamodb
+
+
+NOTE : you define the Task Role in the task definition of your ECS service.
+
+
+
+• Allows each task to have a specific role
+
+• Use different roles for the different ECS Services you run
+
+• Task Role is defined in the task definition 
+
+     -- task definition : The Task definitions view lists each task definition family you've created.
+
+     -- You can perform the following actions:
+        
+         - Deploy the task definision as a service or a task.
+         - Create a new revision
+
+
+
+
+
+
+---------------------------------------------- Amazon ECS – Load Balancer Integrations
+
+
+1  Application Load Balancer 
+
+    -- supported and works for most use cases
+
+    -- multiple ECS Tasks running. It's all in the ECS Cluster.
+
+    -- And we want to expose these tasks as a HTP or HTTPS endpoint.
+
+    -- Therefore we can run an Application Load Balancer in front of it and then our users will be going to the ALB and in the back end to the ECS tasks directly.
+
+    -- the ALB is supported and will support most use cases, and that's a good choice.
+
+
+2   Network Load Balancer
+
+    -- recommended only for high throughput / high performance use cases, or to pair it with AWS Private Link
+
+
+3   Classic Load Balancer supported but not recommended (no advanced features – no Fargate)
+
+    - you cannot link your Elastic Load Balancer to Fargate.
+
+
+
+
+
+
+----------------------------------------------------- Amazon ECS – Data Volumes (EFS)
+
+
+• Mount EFS file systems onto ECS tasks
+
+   - So say you have an ECS cluster and in this case are represented both the EC2 Instance , as well as the Fargate Launch Type for my ECS Cluster.
+
+   - And we want to mount a file system onto the ECS task to share some data. In that case, we use an Amazon EFS file system,
+
+
+• Works for both EC2 and Fargate launch types
+
+   - because it's a network file system is going to be compatible with both EC2 and the Fargate launch types. And it allows us to mount the file system directly onto our ECS tasks.
+
+
+• Tasks running in any AZ will share the same data in the EFS file system
+
+• Fargate + EFS = Serverless
+
+
+• Use cases: persistent multi-AZ shared storage for your containers
+
+
+IMP NOTE : 
+
+    • Amazon S3 cannot be mounted as a file system ( S3 isn't a file system, it is object storage. )
+
+
+
+--------------------------------------------------------- Capacity providers ECS 
+
+-- The capacity provider view provides details about your Fargate and EC2 capacity providers.
+
+-- For Amazon ECS on AWS Fargate, the Capacity Provider is FARGATE and a FARGATE_SPOT and the Type is FargateProvider. When you select AWS Fargate, these providers are added automatically. You cannot update or delete them.
+
+-- For Amazon ECS on Amazon EC2, the Capacity Provider is the Auto Scaling group name and the Type is ASGProvider.
+
+-- For Amazon ECS on Amazon EC2, you can create, update, and delete the capacity provider.
+
+--  When you delete the capacity provide the capacity provider association is removed. You must go the Amazon EC2 console to delete the Auto Scaling group.
+
+
+
+
+
+
+---------------------------------------------- LAB for ECS 
+
+-- open ECS , give name for ur cluster
+
+--  do check Fargate and ec2 instances 
+
+-- now it create new ASG automatically for u , go with amazon linux 2 (os) , t2.micro (instance type) 
+
+-- if u want to deploy these in ur vpc then select ur vpc , otherwise go with default vpc 
+
+-- remaining all are default 
+
+-- once the cluster is get created , automatically one ASG get created for u 
+
+-- FARGATE / FARGATE_SPOT / Our ASG  = these are capacity providers 
+
+-- go to democluster --> infrastructure 
+
+        - we can launch the ec2 instances directly in the cluster through an ASG 
+
+-- if u change desired capacity is 1 , it will create 1 ec2 for u 
+
+-- democluster --> infrastructure --> the created instance is show in Container instances , these instance can be create by FARGATE / FARGATE_SPOT / Our ASG 
+
+
+
+---- create an ECS service 
+
+-- u need to create task definition, create new task definition
+
+-- create TD with the name "nginxdemos-hello"
+
+     - nginxdemos-hello : this is from the official dockerhub page from internet ,we are using this in this demo
+
+-- Infrastructure requirements = AWS Fargate 
+
+     - u can also do select ec2 , but here i want to be serverless
+
+-- OS, Architecture, Network mode = Linux/x86_64
+
+-- Task size = CPU = .5 vcpu and memory = 1 GB
+
+-- IN Container – 1 
+
+     - Name = nginxdemos-hello   and Image URI = nginxdemos/hello : this will directly pull image from the dockerhub repo
+
+-- keep remaining are default
+
+-- create TD with this configuration , 
+
+-- let's launch this task definition as a service.
+
+-- democluster --> create service 
+
+-- Compute options = Launch type 
+
+-- Launch type = Fargate
+
+-- Application type = Service : Launch a group of tasks handling a long-running computing work that can be stopped and restarted. For example, a web application
+
+             - Task : Launch a standalone task that runs and terminates. For example, a batch job.
+
+-- for this demo choose service
+
+-- choose family and revision
+
+-- Service name = same as family name
+
+-- create one new sg in Network field , allow HTTP from anywhere and public ip turned On
+
+-- and also create NEW ALB for this demo in load balcer section
+
+-- create service , wait for few minutes to create 
+
+-- once the service is get created do observe the service 
+
+-- the service is linked to the target group and this target group is present infront of LB , 
+
+-- in the target , u can see ip address , this is ip of ur container 
+
+-- now go to load balancer and copy the DNS , paste in browser , u will get nginx welcome page  , /hello with dns in browser , ---> get o/p as /hello 
+
+-- now here we have one service , u can also launch some more 
+
+-- cluster --> service --> democluster --> update service
+
+-- put desired = 3 1 per AZ , now we have two more tasks being provisioned and they are provisioned on the Fargate engine.
+
+-- So that means that behind the scenes, AWS is going to provision automatically the resource that it needs to launch these tasks.
+
+-- now do refresh in the browser , it will refresh for 3 services , ALB is distributing the load equally
+
+-- to avoid charges , make sure our desired capacity = 0 in services and ASG both 
+
+
+
+
+
+
+-------------------------------------------------- ECS Service Auto Scaling
+
+
+• Automatically increase/decrease the desired number of ECS tasks
+
+• Amazon ECS Auto Scaling uses "AWS Application Auto Scaling" , we have three metrics we can scale on using the service.
+
+    • ECS Service Average CPU Utilization
+    • ECS Service Average Memory Utilization-Scale on RAM
+    • ALB Request Count Per Target–metric coming from the ALB
+
+
+• Target Tracking – scale based on target value for a specific CloudWatch metric
+
+• Step Scaling – scale based on a specified CloudWatch Alarm
+
+• Scheduled Scaling – scale based on a specified date/time (predictable changes)
+
+• ECS Service Auto Scaling (task level) ≠ EC2 Auto Scaling (EC2 instance level)
+
+    - IMP NOTE : Remember, that scaling your service, your ECS Service, at the task level is not equal to scaling your cluster of EC2 instances if you are in the EC2 launch type.
+
+• Fargate Auto Scaling is much easier to setup (because Serverless)
+
+
+
+------------------------------------------------ EC2 Launch Type – Auto Scaling EC2 Instances
+
+• Accommodate ECS Service Scaling by adding underlying EC2 Instances
+
+-- We have 2 types
+
+
+1 • Auto Scaling Group Scaling
+
+    • Scale your ASG based on CPU Utilization 
+    • Add EC2 instances over time
+
+
+2 • ECS Cluster Capacity Provider
+ 
+     • Used to automatically provision and scale the infrastructure for your ECSTasks
+     • Capacity Provider paired with an Auto Scaling Group
+     • Add EC2 Instances when you’re missing capacity (CPU, RAM...)
+
+
+
+IMP NOTE : So if you have to choose between Auto Scaling Group Scaling and ECS Cluster Capacity Provider, please use ECS Cluster Capacity Provider for your EC2 launch type.
+
+
+USer -------------> CloudWatch Metric (ECS Service CPU Usage) ---------------(Trigger)-------------->CloudWatch Alarm -----------(scale)-------> ASG / Capacity providers
+
+
+
+
+
+------------------------------------------------ ECS Rolling Updates
+
+
+• When updating from v1 to v2, we can control how many tasks can be started and stopped, and in which order
+
+-- you will have two settings, the minimum healthy percent and the maximum percent.
+
+-- So by default they're 100 and 200
+
+-- EG : So your ECS service, for example, this one is running nine tasks represents an actual running capacity of 100%. 
+    
+         - And then if you set a minimum healthy percent of less than 100, this is going to say, "Hey you're allowed to terminate all the tasks on the right hand side, as long as we have enough tasks to have a percentage over the minimum healthy percent."
+
+         - And in the maximum percent shows you how many new tasks you can create of the version two, to basically roll updates your service.
+
+         - So this is how these two settings would impact your updates. 
+
+         - so you will go ahead, create new tasks, then terminate all tasks and so on. All to make sure that all your tasks are going to be terminated and then updated to a newer version.
+
+
+-- lets discuss 2 scenarios
+
+
+------------------------------------------- 1 ECS Rolling Update – Min 50%, Max 100% 
+
+
+ • Starting number of tasks: 4
+
+   - In this case, we're going to lose four tasks to be terminated , so that we're running at 50% capacity.
+
+   - Then two new tasks are going to be created, Now we're back at 100% capacity.
+
+   - Then two old tasks are going to be terminated, we're back at 50% capacity.And two new tasks are going to be created, we're back at 100 capacity.
+
+   - we have done a rolling updates.
+
+   - In this case, we have been terminating tasks because we set the minimum to 50% and the maximum to 100%.
+
+
+
+------------------------------------------- 2 ECS Rolling Update – Min 100%, Max 150%
+
+
+• Starting number of tasks: 4
+
+   - We cannot terminate a task because the minimum is 100%.
+
+   - Therefore we can go into create two new tasks and this will bring our capacity to 150%. (total 6)
+
+   - Then because we are above the minimum 100% we can terminate two old task and we're back at 100%.
+
+   - Then we will create two new tasks and finally, terminates two old tasks. And this will have performed our rolling updates for our ECS service.
+
+
+
+
+----------------------------------------- Amazon ECS – Task Definitions
+
+• Task definitions are metadata in JSON form to tell ECS how to run a Docker container
+
+• It contains crucial information, such as:
+    
+    • Image Name
+    • Port Binding for Container and Host • Memory and CPU required
+    • Environment variables
+    • Networking information
+    • IAM Role
+    • Logging configuration (ex CloudWatch)
+
+• Can define up to 10 containers in a Task Definition
+
+
+-- Amazon ECS allows you to run and maintain a specified number of instances of a task definition simultaneously in an Amazon ECS cluster. This is called a service.
+
+
+
+-------------------------------------- Amazon ECS – Load Balancing (EC2 Launch Type)
+
+
+• We get a Dynamic Host Port Mapping if you define only the container port in the task definition
+
+    - So if you have load balancing and you're using the EC2 launch type, then you're going to get what's called a Dynamic Host Port Mapping. If you define only the container port and the task definition.
+
+Explanation : 
+
+    - So we are running for example, an ECS task, and all of them have the container port set to 80 but the host port set to zero,meaning not set.
+
+    - the host port is going to be random, is going to be dynamic.
+
+    - so, each ECS task from within the EC2 instance, is going to be accessible from a different port on the host,the EC2 instance.
+
+    - therefore, if you define an application load balancer , then you may say, well, it is difficult for the ALB to connect to the ECS test because the port is changing.
+
+    - But the ALB when linked to an ECS service knows how to find the right port, thanks to the Dynamic Host Port Mapping feature.
+
+NOTE : but it does not work with a classic load balancer because it is older generation.
+
+
+• You must allow on the EC2 instance’s Security Group any port from the ALB’s Security Group
+
+
+
+
+
+
+
+-------------------------------------- Amazon ECS – Load Balancing (Fargate)
+
+
+• Each task has a unique private IP
+
+• Only define the container port (host port is not applicable)
+
+   -  because this is Fargate, there is no host
+
+
+-- for example, with four tasks each task is going to get its own private IP through an Elastic Network Interface or ENI. And then each ENI is going to get the same container ports.
+
+-- And therefore, when you have an ALB, then to connect to the Fargate task, it's just going to connect to all all of them on the same port on port 80.
+
+
+
+• Example
+
+   • ECS ENI Security Group
+
+         • Allow port 80 from the ALB
+
+
+   • ALB Security Group
+
+         • Allow port 80/443 from web
+
+
+
+
+
+------------------------------------------------------ Amazon ECS One IAM Role per Task Definition
+
+
+-- you should know that IAM roles are assigned per task definition.
+
+-- you have a task definition and then you assign an ECS task role. And this will allow you, for example, for your ECS tasks out of your task definition, to access the Amazon S3 service.
+
+-- And therefore when you create an ECS service from this task definition then each ECS task automatically is going to assume and inherit this ECS task role.
+
+NOTE :  you should know that the role is defined at the task definition level, not at this service level.so, therefore all the tasks within your service, are going to get access to Amazon S3.
+
+
+
+
+
+----------------------------------------------------- Amazon ECS – Environment Variables
+
+
+• Environment Variable
+
+    • Hardcoded – e.g., URLs
+    • SSM Parameter Store – sensitive variables (e.g., API keys, shared configs)
+    • Secrets Manager – sensitive variables (e.g., DB passwords)
+
+
+• Environment Files (bulk) – Amazon S3
+
+
+
+---------------------------------------------------- Amazon ECS – Data Volumes (Bind Mounts)
+
+
+Bind Mount :
+
+-- With bind mounts, a file or directory on a host, such as an Amazon EC2 instance, is mounted into a container. Bind mounts are supported for tasks that are hosted on both Fargate and Amazon EC2 instances.
+
+-- Bind mounts are tied to the lifecycle of the container that uses them. After all of the containers that use a bind mount are stopped, such as when a task is stopped, the data is removed.
+
+-- For tasks that are hosted on Amazon EC2 instances, the data can be tied to the lifecycle of the host Amazon EC2 instance by specifying a host and optional sourcePath value in your task definition. 
+
+The following are common use cases for bind mounts.
+
+  - To provide an empty data volume to mount in one or more containers.
+  
+  - To mount a host data volume in one or more containers.
+  
+  - To share a data volume from a source container with other containers in the same task.
+
+  - To expose a path and its contents from a Dockerfile to one or more containers.
+
+
+
+
+• Share data between multiple containers in the same Task Definition
+
+• Works for both EC2 and Fargate tasks
+
+• EC2 Tasks – using EC2 instance storage
+
+     • Data are tied to the lifecycle of the EC2 instance
+
+• Fargate Tasks – using ephemeral storage
+  
+     • Data are tied to the container(s) using them
+     • 20 GiB – 200 GiB (default 20 GiB)
+
+
+• Use cases:
+
+   • Share ephemeral data between multiple containers
+
+   • “Sidecar”container pattern, where the “sidecar” container used to send metrics/logs to other destinations (separation of conerns)
+
+
+
+
+
+
+
+----------------------------------------------------  Amazon ECS – Task Placement
+
+
+• When an ECS task is started with EC2 Launch Type, ECS must determine where to place it, with the constraints of CPU and memory (RAM) and available port
+
+• Similarly, when a service scales in, ECS needs to determine which task to terminate
+
+• You can define:
+  
+    • Task Placement Strategy
+    • Task Placement Constraints
+
+
+• Note: only for ECS Tasks with EC2 LaunchType (Fargate not supported)
+
+
+
+----------------------------------------------------  Amazon ECS – Task Placement Process
+
+
+• Task Placement Strategies are a best effort
+
+
+• When Amazon ECS places a task, it uses the following process to select the appropriate EC2 Container instance:
+
+   1. Identify which instances that satisfy the CPU, memory, and port requirements
+
+   2. Identify which instances that satisfy the Task Placement Constraints
+
+   3. Identify which instances that satisfy the Task Placement Strategies
+
+   4. Select the instances for task placement
+
+
+
+
+---------------------------------------------------- Amazon ECS –Task Placement Strategies
+
+
+• Binpack
+
+    • Tasks are placed on the least available amount of CPU and Memory
+
+    • Minimizes the number of EC2 instances in use (cost savings)
+
+
+JSON :
+
+
+"placementStrategy": [
+    {
+        "field": "memory",
+        "type": "binpack"
+    }
+]
+
+
+
+• Random
+
+    • Tasks are placed randomly
+
+
+JSON : 
+
+
+
+"placementStrategy": [
+    {
+       
+        "type": "random"
+    }
+]
+
+
+
+• Spread
+
+
+  • Tasks are placed evenly based on the specified value
+
+  • Example: instanceId, attribute:ecs.availability-zone, ...
+
+
+  JSON :
+
+  "placementStrategy": [
+    {
+       
+        "type": "spread",
+        "field": "attribute:ecs.availability-zone"
+    }
+]
+
+
+
+-------------------- You can mix them together
+
+
+1 we can have a spread on availability zone and then a spread on instance ID
+
+   
+EG :
+
+ "placementStrategy": [
+    {
+
+         "field": "attribute:ecs.availability-zone"
+         "type": "spread",
+       
+    },
+
+    {
+          "field": "instanceid"
+         "type": "spread",
+    }
+]
+
+
+
+
+2  we can have a spread on availability zone and then a binpack on memory.
+
+    
+EG :
+
+"placementStrategy": [
+    {
+
+         "field": "attribute:ecs.availability-zone"
+         "type": "spread",
+       
+    },
+
+    {
+          "field": "memory"
+         "type": "binpack",
+    }
+]
+
+
+
+
+
+
+---------------------------------------------------- Amazon ECS –Task Placement Constraints
+
+
+1  distinctInstance
+
+     • Tasks are placed on a different EC2 instance
+
+     - So you will never have two tasks on the same instance.
+
+    
+ "placementStrategy": [
+    {
+       
+        "type": " distinctInstance"
+        
+    }
+]
+
+
+2   memberOf
+
+    • Tasks are placed on EC2 instances that satisfy a specified expression
+
+    • Uses the Cluster Query Language (advanced)
+
+EG: 1 
+
+    "placementStrategy": [
+    {
+       
+        "type": "memberOf"
+        "expression": "attribute:ecs.availability-zone in [ap-south-1,ap-south-2]"
+        
+    }
+]
+
+EG : 2 
+
+
+"placementStrategy": [
+    {
+       
+        "type": "memberOf"
+        "expression": "attribute:ecs.instance-type =~ t2.*"
+        
+    }
+]
+
+
+
+
+
+
+---------------------------------------------------- Amazon ECR
+
+• ECR = Elastic Container Registry
+
+• Store and manage Docker images on AWS
+
+• Private and Public repository (Amazon ECR Public Gallery https://gallery.ecr.aws)
+
+• Fully integrated with ECS, backed by Amazon S3
+
+• Access is controlled through IAM (permission errors => policy)
+
+• Supports image vulnerability scanning, versioning, image tags, image lifecycle, ...
+
+
+
+
+----------------------------------------------------  Amazon ECR – Using AWS CLI
+
+• Login Command
+
+   • AWS CLI v2
+
+        aws ecr get-login-password --region region | docker login --username AWS --password-stdin aws_account_id.dkr.ecr.region.amazonaws.com
+
+
+
+• Docker Commands
+ 
+   • Push
+
+       docker push aws_account_id.dkr.ecr.region.amazonaws.com/demo:latest
+
+
+   • Pull
+     
+       docker pull aws_account_id.dkr.ecr.region.amazonaws.com/demo:latest
+
+
+
+• In case an EC2 instance (or you) can’t pull a Docker image, check IAM permissions
+
+
+
+
+
+---------------------------------------------------- AWS Copilot
+
+
+• CLI tool to build, release, and operate production-ready containerized apps
+      
+      - So Copilot is not a service,
+
+
+• The idea is that we want to remove the difficulty of running apps on AppRunner, ECS and Fargate, by just using a CLI tool to deploy to these environments.
+
+• Helps you focus on building apps rather than setting up infrastructure
+
+• Provisions all required infrastructure for containerized apps (ECS,VPC, ELB, ECR...) is done for you by Copilot.
+
+• Automated deployments with one command using CodePipeline
+
+• Deploy to multiple environments
+
+• Troubleshooting, logs, health status...
+
+
+
+Microservices Architecture
+Use CLI or YAML to describe the architecture of your applications   --------------------------------> AWS Copilot CLI for containerized applications (Well-architected infrastructure setup, Deployment Pipeline, Effective Operations and Troubleshooting)----------------> Amazon ECS / AWS Fargate / AWS App Runner
+
+
+
+------------------------------------- LAB for Copilot
+
+-- open cloud9 , create environment
+
+-- all are default , create environment
+
+sudo curl -Lo /usr/local/bin/copilot https://github.com/aws/copilot-cli/releases/latest/download/copilot-linux \
+   && sudo chmod +x /usr/local/bin/copilot \
+   && copilot --help
+
+
+-- by using the above command we can install the copilot in the Identify
+
+-- make sure that docker should be installed in the IDE , check by typing docker
+
+-- clone the url from the github
+  
+      git clone https://github.com/aws-samples/aws-copilot-sample-service example
+
+-- do cd example
+
+-- this example folder contains docker file , and index.html files 
+
+-- do copilot init
+
+-- So this is the Copilot CLI and it's going to give us some questions. And with it we're going to be able to set up a containerized application on AWS.
+
+-- Application name: copilot-guide
+
+ Which workload type best represents your architecture?  [Use arrows to move, type to filter, ? for more help]
+  > Request-Driven Web Service  (App Runner)
+    Load Balanced Web Service   (Public. ALB by default. Internet to ECS on Fargate)
+    Backend Service             (Private. ALB optional. ECS on Fargate)
+    Worker Service              (Events to SQS to ECS on Fargate)
+    Static Site                 (Internet to CDN to S3 bucket)
+    Scheduled Job               (Scheduled event to State Machine to Fargate)
+
+
+-- u will get this once u give ur application load balancer 
+
+-- here we have LB service web app
+
+-- Service name: web-app
+ 
+   Which Dockerfile would you like to use for web-app?  [Use arrows to move, type to filter, ? for more help]
+  > ./Dockerfile
+    Enter custom path for your Dockerfile
+    Use an existing image instead
+
+-- choose 1st option
+
+-- select N 
+
+-- in web-app folder one manifest file will get created here 
+
+-- now create an environment to run our application in.
+
+    copilot env init --name prod --profile default --app copilot-guide\
+
+-- choose default 
+
+-- now now it's going to update all the resources 
+
+-- now go to cloudformation and check StackSet-copilot-guide-infrastructure --> resource , it will create ecr repo , s3 bucket and bucket policy and KMS created for us
+
+-- next what we have to do is to actually go ahead and provision our application.
+
+-- once u run copilot env deploy --name prod  
+
+-- it will gives u InvalidClientTokenId error , so to avoid this , u can do  click on cloud9 logo --> preferences --> aws settings --> disable temporary credentials 
+
+-- now go to IAM --> create user --> with administration access policy --> generate Access key 
+
+-- now do aws configure and give details and o/p format is JSON
+
+-- now it is working , see what it is created for u 
+
+-- check in ecs cluster got vreated but no services are there 
+
+-- so now run copilot deploy
+
+-- so it will search for our appn "web-app" and choose environment to run our application
+
+-- So now it goes ahead and uses Docker to actually build our final Docker image.
+
+-- Then it pushes that Docker image into ECR, and then from ECR is going to create an ECS service that will be referencing that image, and will be started on our ECS cluster.
+
+-- now wait for 5-7 minutes , it will get created the whole process for u  do not close the window unitl it get created 
+
+- Creating the infrastructure for stack copilot-guide-prod-web-app                [create complete]  [351.8s]
+  - Service discovery for your services to communicate within the VPC             [create complete]  [0.0s]
+  - Update your environment's shared resources                                    [update complete]  [172.8s]
+    - A security group for your load balancer allowing HTTP traffic               [create complete]  [3.6s]
+    - An Application Load Balancer to distribute public traffic to your services  [create complete]  [151.8s]
+    - A load balancer listener to route HTTP traffic                              [create complete]  [1.1s]
+  - An IAM role to update your environment stack                                  [create complete]  [16.3s]
+  - An IAM Role for the Fargate agent to make AWS API calls on your behalf        [create complete]  [16.3s]
+  - An HTTP listener rule for path `/` that forwards HTTP traffic to your tasks   [create complete]  [0.0s]
+  - A custom resource assigning priority for HTTP listener rules                  [create complete]  [3.0s]
+  - A CloudWatch log group to hold your service logs                              [create complete]  [7.3s]
+  - An IAM Role to describe load balancer rules for assigning a priority          [create complete]  [16.3s]
+  - An ECS service to run and maintain your tasks in the environment cluster      [create complete]  [122.5s]
+    Deployments                                                                                      
+               Revision  Rollout      Desired  Running  Failed  Pending                                       
+      PRIMARY  1         [completed]  1        1        0       0                                             
+  - A target group to connect the load balancer to your service on port 80        [create complete]  [15.3s]
+  - An ECS task definition to group your containers and run them on ECS           [create complete]  [0.0s]
+  - An IAM role to control permissions for the containers in your tasks
+
+
+-- these are things that it will create all the complexity of thinking about what you need to actually create when you run an application on ECS is taken away by Copilot.
+
+-- now do check in ecs , the service is get created 
+
+-- now copy the link and paste in the broswer , u will get o/p
+
+-- all the complexity will tAKEN BY Copilot for u
+    
+-- now delete resource , do run copilot app delete
+
+-- wait for some time it will get deleted 
+
+-- delete user in iam also 
+
+
+---------------------------------------------------- Amazon EKS(Elastic Kubernetes service) Overview
+
+
+
+
+
 
 
