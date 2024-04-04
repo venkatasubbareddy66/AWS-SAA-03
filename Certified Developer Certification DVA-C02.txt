@@ -608,6 +608,8 @@ Dockerfile -------(Build)----------------> Docker Image ------------(Run)-------
     
         - an ECS Cluster is made of things.And with the EC2 Launch Type, well these things are EC2 instances.
 
+        - group of servers is called "clusters"
+
 
 • EC2 Launch Type: you must provision & maintain the infrastructure (the EC2 instances)
 
@@ -1549,9 +1551,170 @@ sudo curl -Lo /usr/local/bin/copilot https://github.com/aws/copilot-cli/releases
 
 ---------------------------------------------------- Amazon EKS(Elastic Kubernetes service) Overview
 
+• Amazon EKS = Amazon Elastic Kubernetes Service
+
+• It is a way to launch managed Kubernetes clusters on AWS
+
+• Kubernetes is an open-source system for automatic deployment, scaling and management of containerized (usually Docker) application
+
+• It’s an alternative to ECS, similar goal but different API
+
+• EKS supports EC2 if you want to deploy worker nodes or Fargate to deploy serverless containers
+
+• Use case: if your company is already using Kubernetes on-premises or in another cloud, and wants to migrate to AWS using Kubernetes
+
+• Kubernetes is cloud-agnostic (can be used in any cloud – Azure, GCP...)
+
+• For multiple regions, deploy one EKS cluster per region
+
+• Collect logs and metrics using CloudWatch Container Insights
+
+
+
+----------------------- Amazon EKS – Node Types
+
+• Managed Node Groups
+
+    • Creates and manages Nodes (EC2 instances) for you
+    • Nodes are part of an ASG managed by EKS
+    • Supports On-Demand or Spot Instances
+
+• Self-Managed Nodes
+
+    • Nodes created by you and registered to the EKS cluster and managed by an ASG
+    • You can use prebuilt AMI - Amazon EKS Optimized AMI
+    • Supports On-Demand or Spot Instances
+
+
+• AWS Fargate
+
+    • No maintenance required; no nodes managed
+
+
+------------------ Amazon EKS – Data Volumes
+
+• Need to specify StorageClass manifest on your EKS cluster
+
+• Leverages a Container Storage Interface (CSI) compliant driver
+
+• Support for...
+   
+   • Amazon EBS
+   • Amazon EFS (works with Fargate) 
+   • Amazon FSx for Lustre
+   • Amazon FSx for NetApp ONTAP
 
 
 
 
+
+================================================= AWS Elastic Beanstalk ===============================================
+
+
+Developer problems on AWS
+
+  • Managing infrastructure
+  • Deploying Code
+  • Configuring all the databases, load balancers, etc
+  • Scaling concerns
+
+
+• Most web apps have the same architecture (ALB + ASG)
+
+• All the developers want is for their code to run!
+
+• Possibly, consistently across different applications and environments
+
+
+
+------------------------------------- Elastic Beanstalk – Overview
+
+• Elastic Beanstalk is a developer centric view of deploying an application on AWS
+
+• It uses all the component’s we’ve seen before: EC2, ASG, ELB, RDS, ...
+
+• Managed service
+
+     • Automatically handles capacity provisioning, load balancing, scaling, application health monitoring, instance configuration, ...
+
+     • Just the application code is the responsibility of the developer
+
+• We still have full control over the configuration
+
+• Beanstalk is free but you pay for the underlying instances
+
+
+
+------------------------------------- Elastic Beanstalk – Components
+
+• Application: collection of Elastic Beanstalk components (environments, versions, configurations, ...)
+
+• Application Version: an iteration of your application code (v1, v2 , v3)
+
+• Environment 
+
+      • Collection of AWS resources running an application version (only one application version at a time in an environment),  where we can see we can actually update an application version within an environment from version one to version two.
+   
+      • Tiers: Web Server Environment Tier & Worker Environment Tier
+
+      • You can create multiple environments (dev, test, prod, ...)
+
+
+
+------------------------------------- Elastic Beanstalk – Supported Platforms
+
+• Go
+• Java SE
+• Java withTomcat
+• .NET Core on Linux
+• .NET on Windows Server 
+• Node.js
+• PHP
+• Python
+• Ruby
+• Packer Builder
+• Single Container Docker 
+• Multi-container Docker 
+• Preconfigured Docker
+
+
+------------------------------------- Web ServerTier vs. WorkerTier (environments)
+
+
+ Web ServerTier :
+
+ -- This is the traditional architecture that we know, where we have a load balancer and then it's sending traffic to an auto scaling group that has multiple EC2 instances that are going to be your web server.
+
+
+ WorkerTier :
+
+ -- So this time there is no clients accessing directly your EC2 instances. We're going to use an SQS queue, which is a message queue and the message will be sent into the SQS queue and the EC2 instances are going to be workers,
+
+ -- because they're going to pull messages from the SQS queue to process them.
+
+ • Scale based on the number of SQS messages
+
+ • Can push messages to SQS queue from anotherWeb ServerTier
+
+
+
+
+------------------------------------ Elastic Beanstalk Deployment Modes
+
+1 Single Instance Great for dev
+
+  -- In this case, you'll have one EC2 instance which will have an Elastic IP, potentially it can also launch an RDS database and so on,
+
+  -- but it's all based on one instance with an Elastic IP. It's great for development purposes,
+
+
+NOTE : but then if you wanted to scale a real Elastic Beanstalk mode, then you would go for high available with a load balancer,
+
+
+2  High Availability with Load Balancer Great for prod
+
+   -- which is great for production environments, in which case, you can have a load balancer distributing the loads across multiple EC2 instances that are managed for an auto scaling group and multiple available zones.
+
+   -- And finally, you may have an RDS database that's also multi AZ with a master and a standby.
 
 
