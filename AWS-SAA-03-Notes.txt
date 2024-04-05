@@ -6231,7 +6231,7 @@ traffic Spliting  : split traffic b/w ec2 one by one
 -- if error chckc SG configuration or copy public ip and paste in browser 
 
 
------- now create new environment , ow we are changing platform python in appn 
+------ now create new environment , now we are changing platform python in appn 
 
 
 -- same steps jst change platform  
