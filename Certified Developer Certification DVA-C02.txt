@@ -5278,3 +5278,91 @@ IMP to Know :
 ---------------------------------------------------------------- Kinesis Data Streams Consumers
 
 
+• Get data records from data streams and process them
+
+-- consumers can be 
+
+• AWS Lambda
+• Kinesis Data Analytics
+• Kinesis Data Firehose
+• Custom Consumer (AWS SDK) – Classic or Enhanced Fan-Out
+• Kinesis Client Library (KCL): library to simplify reading from data stream
+
+
+
+
+---------------------------------------------------------------- Kinesis Consumers – Custom Consumer
+
+
+
+(look picture at pdf for better understanding )
+
+
+
+1 Shared (Classic) Fan-out Consumer  (Pull Model)
+
+
+-- So when you write your consumer in the classic shared throughput way you have your Kinesis Data Stream with a lot of shards and you get two megabytes per second per shard across all consumers.
+
+-- That means that if you look at shard, number one just for this example we can write a Consumer Application A that is going to issue a get records API call to get records from the shard one, 
+
+-- but as possible for us to have many different applications reading from the same Kinesis Data Stream.
+
+-- So consumer Application B will also issue get records API calls, 
+
+-- the Consumer Application C will also issue get records across all consumers.
+
+-- Now, what happens in this instance is that they are all sharing two megabytes per second per shard across all consumers.
+
+-- That means that in this instance we have three consumers sharing, two megabytes per second. That means that each consumer can get a maximum of approximately 666 kilobytes per second of data.
+
+-- So as you can see, there's a limit to how many consumers we can have in the more consumer applications we add onto Kinesis Data Stream. The more we're put limitation we're going to have.
+
+
+
+
+2  Enhanced Fan-out Consumer (Push Model)
+
+
+-- So in this case we get two megabytes per second, per consumer, per shard. So it's not across all consumers it's per consumer, per shard.
+
+-- So that means that the Consumer Application A will use a new API code called Subscribe to Shard and this will make the shard, send the data push the data into our Consumer Application A at the rate of two megabytes per second.
+
+-- If the second Consumer Application B issues another subscribed to shard then this Consumer Application B as well. Will get the data pushed by the shard into the Consumer Application at the rate of two megabytes per second.
+
+-- So as we can see here we have three consumer applications and we get six megabytes per second of throughputs for this one shard.
+
+
+
+
+
+----------------------------------------------------------- Kinesis Consumers Types Difference
+
+
+
+
+
+Shared (Classic) Fan-out Consumer - pull                                                    Enhanced Fan-out Consumer - push
+
+
+• Low number of consuming applications                                                 • Multiple consuming applications for the same stream
+
+• Read throughput: 2 MB/sec per shard across all consumers                             • 2 MB/sec per consumer per shard
+
+• Max. 5 GetRecords API calls/sec                                                     
+
+• Latency ~200 ms                                                                      • Latency ~70 ms
+
+• Minimize cost ($)                                                                    • Higher costs ($$$)
+
+• Consumers poll data from Kinesis using GetRecords API call                           • Kinesis pushes data to consumers over HTTP/2 (SubscribeToShard API)
+
+• Returns up to 10 MB (then throttle for 5 seconds) or up to 10000 records             • Soft limit of 5 consumer applications (KCL) per data stream (default)
+
+
+
+
+
+----------------------------------------------------------- Kinesis Consumers – AWS Lambda
+
+
