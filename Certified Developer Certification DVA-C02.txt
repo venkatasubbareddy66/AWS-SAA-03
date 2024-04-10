@@ -2171,12 +2171,2740 @@ REF : https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/using-features.depl
 
 
 
--------------------------------------------------- General questions ----------
 
 
-You have been tasked to run an application developed using Rust language on Elastic Beanstalk. After checking, you found that Rust runtime is not currently supported on Elastic Beanstalk. Which of the following is the best solution?
 
-ANS : use docker image and install all the libraries and packges in it 
+
+============================================================================= AWS CloudFormation ========================================================================
+
+Managing your infrastructure as code
+
+
+• CloudFormation is a declarative way of outlining your AWS Infrastructure, for any resources (most of them are supported)
+
+• For example, within a CloudFormation template, you say:
+
+    • I want a security group
+    • I want two EC2 instances using this security group
+    • I want two Elastic IPs for these EC2 instances
+    • I want an S3 bucket
+    • I want a load balancer (ELB) in front of these EC2 instances
+
+
+• Then CloudFormation creates those for you, in the right order, with the exact configuration that you specify
+
+
+
+
+---------------------------------------------- Benefits of AWS CloudFormation 
+
+• Infrastructure as code
+
+    • No resources are manually created, which is excellent for control
+
+    • The code can be version controlled for example using Git
+
+    • Changes to the infrastructure are reviewed through code
+
+
+
+• Cost
+
+    • Each resources within the stack is tagged with an identifier so you can easily see how much a stack costs you
+
+    • You can estimate the costs of your resources using the CloudFormation template
+
+    • Savings strategy: In Dev, you could automation deletion of templates at 5 PM and recreated at 8 AM, safely
+
+
+
+
+• Productivity
+
+
+   • Ability to destroy and re-create an infrastructure on the cloud on the fly
+
+   • Automated generation of Diagram for your templates!
+
+   • Declarative programming (no need to figure out ordering and orchestration)
+
+
+
+• Separation of concern: create many stacks for many apps, and many layers. Ex:
+
+   • VPC stacks
+   • Network stacks 
+   • App stacks
+
+
+
+• Don’t re-invent the wheel
+
+
+    • Leverage existing templates on the web!
+
+    • Leverage the documentation
+
+
+
+
+
+---------------------------------------------------------- How CloudFormation Works
+
+
+• Templates must be uploaded in S3 and then referenced in CloudFormation
+
+
+
+   Template ------(upload)-------------> S3 bucket ------------- (reference)-----------> AWS CloudFormation ---------------(create)-----------> Stack ----------(create)----> AWS Resources
+
+
+
+• To update a template, we can’t edit previous ones. We have to re- upload a new version of the template to AWS
+
+
+• Stacks are identified by a name within a region 
+
+• Deleting a stack deletes every single artifact that was created by CloudFormation.
+
+
+
+
+
+---------------------------------------------------------- Deploying CloudFormation Templates
+
+
+1 • Manual way
+
+     • Editing templates in CloudFormation Designer or code editor
+
+     • Using the console to input parameters, etc...
+
+     • We’ll mostly do this way in the course for learning purposes
+
+
+2 • Automated way
+
+     • Editing templates in a YAML file
+
+     • Using the AWS CLI (Command Line Interface) to deploy the templates, or using a Continuous Delivery (CD) tool
+
+     • Recommended way when you fully want to automate your flow
+
+
+
+NOTE : there is no order in which CloudFormation should create your resources. When you write a CloudFormation template
+
+
+
+
+
+---------------------------------------------------------- CloudFormation – Building Blocks
+
+
+• Template’s Components
+
+    • AWSTemplateFormatVersion – identifies the capabilities of the template “2010-09-09”
+
+    • Description – comments about the template
+
+    • Resources (MANDATORY) – your AWS resources declared in the template
+
+    • Parameters – the dynamic inputs for your template
+
+    • Mappings – the static variables for your template
+
+    • Outputs – references to what has been created
+
+    • Conditionals – list of conditions to perform resource creation
+
+
+• Template’s Helpers
+
+    • References
+    • Functions
+
+
+
+
+---------------------------------------------------------- LAB for Stacks
+
+
+-------------- 1 creating source
+
+
+-- make sure to use us-east-1 region only for creating stacks , 'coz all the templates have been designed for that region, especially when talking about AMI IDs, which are region specific.
+
+-- open cloudformation --> choose yaml files for easy purpose --> upload a yaml file which has template for ec2 creation --> do submit 
+ 
+EG for ec2 
+     Resources:
+     MyInstance:
+       Type: AWS::EC2::Instance
+       Properties:
+          AvailabilityZone: us-east-1a
+          ImageId: ami-0a3c3a20c09d6f377
+          InstanceType: t2.micro
+
+
+
+-- our first stack is being created , do refresh it will created for u 
+
+-- do explore in CF Properties
+
+
+
+
+
+------------ 2 Update and Delete Stack 
+
+
+-- here only way to update is to upload a new version of template to update 
+
+-- upload updated template yaml file 
+
+EG for updated template 
+
+
+
+---
+Parameters:
+  SecurityGroupDescription:
+    Description: Security Group Description
+    Type: String
+
+Resources:
+  MyInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      AvailabilityZone: us-east-1a
+      ImageId: ami-0a3c3a20c09d6f377
+      InstanceType: t2.micro
+      SecurityGroups:
+        - !Ref SSHSecurityGroup
+        - !Ref ServerSecurityGroup
+
+  # an elastic IP for our instance
+  MyEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      InstanceId: !Ref MyInstance
+
+  # our EC2 security group
+  SSHSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable SSH access via port 22
+      SecurityGroupIngress:
+      - CidrIp: 0.0.0.0/0
+        FromPort: 22
+        IpProtocol: tcp
+        ToPort: 22
+
+  # our second EC2 security group
+  ServerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Ref SecurityGroupDescription
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: 22
+        ToPort: 22
+        CidrIp: 192.168.1.1/32
+
+
+
+-- in above template we are attaching 2 security groups and EIP to the instance
+
+-- choose nxt --> SecurityGroupDescription , u will get this option 'coz in this code u have written so give Description --> nxt 
+
+-- in the summary page in step 2 u have stack deatils with parameters and in Changeset preview , u can able to see the changes and modifiers 
+
+-- a "change set" represents a list of things that is going to change as part of your CloudFormation updates.
+
+-- do submit , u can see that in the same stack the update is happening , go n check all the resources are created through the template 
+
+-- to delete stack ,jst do delete stack 
+
+
+
+
+
+
+------------------------------------------------------------------  YAML Crash Course
+
+EG for YAML code 
+
+Parameters:
+  KeyName:
+    Description: The EC2 Key Pair to allow SSH access to the instance
+    Type: 'AWS::EC2::KeyPair::KeyName'
+Resources:
+  Ec2Instance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      SecurityGroups:
+        - !Ref InstanceSecurityGroup
+        - MyExistingSecurityGroup
+      KeyName: !Ref KeyName
+      ImageId: ami-7a11e213
+  InstanceSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Enable SSH access via port 22
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+
+
+
+
+ • YAML and JSON are the languages you can use for CloudFormation
+
+ • JSON is horrible for CF , 'coz of of many string interpolations and so on,
+
+ • YAML is great in so many ways
+
+ • Key value Pairs
+
+ • Nested objects  (SG is nested object, resource , preperties etc )
+
+ • Support Arrays ( - symbol means which represents an array)
+
+ • Multi line strings 
+
+
+
+
+
+------------------------------------------------------------------ 1 CloudFormation – Resources
+
+
+• Resources are the core of your CloudFormation template (MANDATORY)
+
+• They represent the different AWS Components that will be created and configured
+
+• Resources are declared and can reference each other
+
+• AWS figures out creation, updates and deletes of resources for us
+
+• There are over 700 types of resources (!)
+
+• Resource types identifiers are of the form:
+
+          service-provider::service-name::data-type-name
+
+
+
+
+--------------------------- How do I find Resources documentation?
+
+• All the resources can be found here:
+
+      https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/a ws-template-resource-type-ref.html
+
+
+• Then, we just read the docs 
+
+• Example here (for an EC2 instance):
+
+     https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/a ws-resource-ec2-instance.html
+
+
+
+
+--------------------------------CloudFormation – Resources FAQ
+
+• Can I create a dynamic number of resources?
+
+  - Yes, you can by using CloudFormation Macros and Transform
+  
+
+
+• Is every AWS Service supported?
+
+   - Almost. Only a select few niches are not there yet
+
+   - You can work around that using CloudFormation Custom Resources
+
+
+
+------------------------------------------------------------------ 2 CloudFormation – Parameters
+
+
+• Parameters are a way to provide inputs to your AWS CloudFormation template
+
+• They’re important to know about if:
+
+     • You want to reuse your templates across the company
+
+     • Some inputs can not be determined ahead of time
+
+
+• Parameters are extremely powerful, controlled, and can prevent errors from happening in your templates, thanks to types    -- IMP to know
+
+
+
+
+------------------------------- When should you use a Parameter?
+
+
+EG : 
+
+Parameters:
+  KeyName:
+    Description: The EC2 Key Pair to allow SSH access to the instance
+    Type: 'AWS::EC2::KeyPair::KeyName'
+
+
+-- EG for the parameter 
+
+• Ask yourself this:
+
+       • Is this CloudFormation resource configuration likely to change in the future?
+
+       • If so, make it a parameter
+
+
+• You won’t have to re-upload a template to change its content
+
+
+
+
+
+------------------------------- CloudFormation – Parameters Settings
+
+
+• Parameters can be controlled by all these settings:
+
+   • Type:
+       
+       • String
+       • Number
+       • CommaDelimitedList
+       • List<Number>
+       • AWS-Specific Parameter (to help catch invalid values – match against existing values in the AWS account)
+       • List<AWS-Specific Parameter>
+       • SSM Parameter (get parameter value from SSM Parameter store)
+       • Description
+       • ConstraintDescription (String)
+       • Min/MaxLength
+       • Min/MaxValue
+       • Default
+       • AllowedValues (array)
+       • AllowedPattern (regex)
+       • NoEcho (Boolean)
+
+
+-- So you don't have to remember all of those, but what you need remember is that the parameters are not just strings. You can have constraints and validation, allowing you to make sure they are safe to use.
+ 
+
+
+
+
+
+------------------------------- CloudFormation – Parameters Example
+
+     1 • AllowedValues (array)
+
+Parameters:
+ InstanceType:
+   Description: Choose an ec2 type
+   Type: String
+   AllowedValues:
+      - t2.micro
+      - t3.micro
+      - t2.small
+
+
+Resources:
+  Ec2Instance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+       InstanceType: !Ref InstanceType
+       ImageId: xxxxxxxxxxxxxx
+
+
+-- Here , we have a parameter called InstanceType. To choose an EC2 InstanceType of Type: String.
+
+-- But we have defined AllowedValues being t2.micro, t2.small, or t2.medium with a Default being t2.micro. And this parameter is reused in the EC2Instance.
+
+-- So thanks to it, we'll have a dropdown and the user can only select one of these three values, hence giving them choice while giving you control.
+
+
+
+
+     2 NoEcho (Boolean)
+
+
+Parameters:
+ DBPassword:
+   Description: db password
+   Type: String
+   NoEcho: true
+
+Resources:
+  MyDBInstance:
+   Type: 'AWS::RDS::DBInstance'
+    Properties:
+      DBInstanceClass: db.t2.micro
+      AllocatedStorage: 20
+      Engine: mysql 
+      MasterUsername: administration
+      MasterUserpassword: !Ref DBPassword
+      DBInstanceIdentifier: MydbInstance
+
+
+-- So for example, say we want as a parameter to put in the database password, but of course it is a password so we have to keep it secret.
+
+-- So we want to remove it from the logs and so on. So we'll have NoEcho: true , so that the password is not displayed anywhere.
+
+
+
+
+
+
+------------------------------- How to Reference a Parameter?
+
+• The Fn::Ref function can be leveraged to reference parameters
+
+• Parameters can be used anywhere in a template
+
+• The shorthand for this inYAML is !Ref
+
+• The function can also reference other elements within the template
+
+
+IMP : you need to make sure that your resources don't have the same name as your parameters.
+
+
+
+------------------------------- CloudFormation – Pseudo Parameters
+
+• AWS offers us Pseudo Parameters in any CloudFormation template
+
+• These can be used at any time and are enabled by default
+
+• Important pseudo parameters:
+
+    EG ;
+
+    AWS::AccountId
+
+    AWS::Region
+
+    AWS::StackId
+
+    AWS::StackName
+
+    AWS::NotificationARNs
+
+    AWS::NoValue
+
+
+
+
+
+------------------------------------------------------------------ 3 CloudFormation – Mappings
+
+
+
+• Mappings are fixed variables within your CloudFormation template
+
+• They’re very handy to differentiate between different environments (dev vs prod), regions (AWS regions), AMI types...
+
+• All the values are hardcoded within the template
+
+
+EG : 
+
+Mappings: 
+  Mapping01: 
+    Key01: 
+      Name: Value01
+    Key02: 
+      Name: Value02
+    Key03: 
+      Name: Value03
+
+
+
+RegionMap: 
+    us-east-1:
+      HVM64: ami-0ff8a91507f77f867
+      HVMG2: ami-0a584ac55a7631c0c
+    us-west-1:
+      HVM64: ami-0bdb828fd58c52235
+      HVMG2: ami-066ee5fd4a9ef77f1
+    eu-west-1:
+      HVM64: ami-047bb4163c506cd98
+      HVMG2: ami-0a7c483d527806435
+    ap-northeast-1:
+      HVM64: ami-06cd52961ce9f0d85
+      HVMG2: ami-053cdd503598e4a9d
+    ap-southeast-1:
+      HVM64: ami-08569b978cc4dfa10
+      HVMG2: ami-0be9df32ae9f92309
+
+
+-- So here, based on the region you have, so us-east-1, us-west-1, or eu-west-1, and based on the architecture you're using, for example, HVM64 or HVMG2, this is going to give you a different AMI ID every time.
+
+-- Well, we know that the AMIs are specific based on the region, so of course it makes sense to have a different AMI per region.
+
+
+
+--------------------------------- Accessing Mapping Values (Fn::FindInMap)
+
+
+
+• We use Fn::FindInMap to return a named value from a specific key
+
+• !FindInMap [ MapName,TopLevelKey, SecondLevelKey ]
+
+
+EG :
+
+AWSTemplateFormatVersion: "2010-09-09"
+Mappings: 
+  RegionMap: 
+    us-east-1:
+      HVM64: ami-0ff8a91507f77f867
+      HVMG2: ami-0a584ac55a7631c0c
+    us-west-1:
+      HVM64: ami-0bdb828fd58c52235
+      HVMG2: ami-066ee5fd4a9ef77f1
+    eu-west-1:
+      HVM64: ami-047bb4163c506cd98
+      HVMG2: ami-0a7c483d527806435
+    ap-northeast-1:
+      HVM64: ami-06cd52961ce9f0d85
+      HVMG2: ami-053cdd503598e4a9d
+    ap-southeast-1:
+      HVM64: ami-08569b978cc4dfa10
+      HVMG2: ami-0be9df32ae9f92309
+Resources: 
+  myEC2Instance: 
+    Type: "AWS::EC2::Instance"
+    Properties: 
+      ImageId: !FindInMap [RegionMap, !Ref "AWS::Region", HVM64]
+      InstanceType: m1.small
+
+
+-- we have an EC2 instance that is using an ImageId. And this ImageId is using the FindInMap function.
+
+-- to use this FindInMap function, we first need to use a map name. So here we have the RegionMap. Then we have the top level key.
+
+-- So what we want to use in here, we have a reference to the pseudo parameter AWS::Region. So if you launch this template in us-east-1, it's going to be us-east-1, and if you launch it to us-west-1, automatically this pseudo parameter is going to resolve to us-west-1.
+ 
+-- And then finally, the type of architecture you want, for example, HVM64. And this works great because, well, AMIs are region specific, and so you want to make sure you have the right AMI for the right region and the right architecture.
+
+
+
+--------------------------------- When would you use Mappings vs. Parameters?
+
+
+
+• Mappings are great when you know in advance all the values that can be taken and that they can be deduced from variables such as 
+
+   • Region
+   • Availability Zone
+   • AWS Account
+   • Environment (dev vs prod) 
+   • etc...
+
+• They allow safer control over the template
+
+• Use parameters when the values are really user specific
+
+
+
+
+
+------------------------------------------------------------------ 4  CloudFormation –  Outputs
+
+
+
+• The Outputs section declares optional outputs values that we can import into other stacks (if you export them first)!
+
+• You can also view the outputs in the AWS Console or in using the AWS CLI
+
+• They’re very useful for example if you define a network CloudFormation, and output the variables such as VPC ID and your Subnet IDs
+
+• It’s the best way to perform some collaboration cross stack, as you let expert handle their own part of the stack
+
+
+
+-------------------------- CloudFormation – Outputs Example
+
+• Creating a SSH Security Group as part of one template
+
+• We create an output that references that security group
+
+
+Outputs:
+  StackSSHSecurityGroup:
+    Description: The SSH SG
+    Value: !Ref MycompanywideSShSG
+    Export:
+      Name: SSH SecurityGroup
+
+
+
+
+-------------------------- CloudFormation – Outputs Cross-Stack Reference
+
+• We then create a second template that leverages that security group
+
+• For this, we use the Fn::ImportValue function
+
+• You can’t delete the underlying stack until all the references are deleted
+
+
+
+
+
+------------------------------------------------------------------ 5 CloudFormation –  Conditions
+
+
+• Conditions are used to control the creation of resources or outputs based on a condition
+
+• Conditions can be whatever you want them to be, but common ones are:
+   • Environment (dev / test / prod) 
+   • AWS Region
+   • Any parameter value
+
+• Each condition can reference another condition, parameter value or mapping
+
+
+-------------------------- How to define a Condition
+
+  Conditions:
+     CreateprodResource: !Equals [!Ref EnvType, prod]
+  
+
+• The logical ID is for you to choose. It’s how you name condition
+
+• The intrinsic function (logical) can be any of the following:
+
+   • Fn::And
+   • Fn::Equals
+   • Fn::If
+   • Fn::Not
+   • Fn::Or
+
+
+----------------- How to use a Condition
+
+• Conditions can be applied to resources / outputs / etc...
+
+   
+
+
+
+
+-------------------------------------------------------------------- CloudFormation – Intrinsic Functions
+
+
+mk = must know 
+
+
+
+• Ref              mk
+• Fn::GetAtt       mk
+• Fn::FindInMap    mk
+• Fn::ImportValue   mk
+• Fn::Join
+• Fn::Sub
+• Fn::ForEach
+• Fn::ToJsonString
+• Condition Functions (Fn::If, Fn::Not, Fn::Equals, etc...)     mk
+• Fn::Base64        mk
+• Fn::Cidr
+• Fn::GetAZs 
+• Fn::Select
+• Fn::Split
+• Fn::Transform 
+• Fn::Length
+
+
+
+--------------------------- 1  Intrinsic Functions – Fn::Ref
+
+• The Fn::Ref function can be leveraged to reference
+
+     • Parameters – returns the value of the parameter
+
+     • Resources – returns the physical ID of the underlying resource (e.g., EC2 ID)
+
+     - it won’t work for conditions 
+     
+
+• The shorthand for this inYAML is !Ref
+
+MyEIP:
+  Type: "AWS::EC2::EIP"
+  Properties:
+    InstanceId: !Ref MyEC2Instance
+
+
+
+--------------------------- 2 Intrinsic Functions – Fn::GetAtt
+
+
+• Attributes are attached to any resources you create
+
+• To know the attributes of your resources, the best place to look at is the documentation
+
+
+
+-- The following example template returns the SourceSecurityGroup.OwnerAlias and SourceSecurityGroup.GroupName of the load balancer with the logical name myELB.
+
+
+EG 
+
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
+  myELB:
+    Type: AWS::ElasticLoadBalancing::LoadBalancer
+    Properties:
+      AvailabilityZones:
+        - eu-west-1a
+      Listeners:
+        - LoadBalancerPort: '80'
+          InstancePort: '80'
+          Protocol: HTTP
+  myELBIngressGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: ELB ingress group
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          SourceSecurityGroupOwnerId: !GetAtt myELB.SourceSecurityGroup.OwnerAlias
+          SourceSecurityGroupName: !GetAtt myELB.SourceSecurityGroup.GroupName
+
+
+
+-- in general So anytime we use Ref, we're going to get the reference ID out of it.
+
+-- But if we use GetAtt to get an attribute, we have the option to get more information out of this EC2 instance. So here we have the AvailabilityZone. So for example, we can know in which AZ an instance was launched, for example, us-east-1b. You get the Id again,
+
+-- you could get the PrivateDNSName, the PrivateIp, the PublicDNSName, and the PublicIp. So while the Ref gives you usually a reference to the ID of the resource you have created, the GetAtt allows you to get more out of the resource and you can only get what CloudFormation supports in terms of attributes that are defined in documentation
+
+
+
+
+
+
+
+--------------------------- 3 Intrinsic Functions – Fn::FindInMap
+
+• We use Fn::FindInMap to return a named value from a specific key
+
+• !FindInMap [ MapName,TopLevelKey, SecondLevelKey ]
+
+
+TopLevelKey: The top-level key name. Its value is a list of key-value pairs.
+
+SecondLevelKey: The second-level key name, which is set to one of the keys from the list assigned to TopLevelKey.
+
+
+
+Return value:
+
+  The value that's assigned to SecondLevelKey.
+
+
+EG 
+
+Mappings: 
+  RegionMap: 
+    us-east-1: 
+      HVM64: "ami-0ff8a91507f77f867"
+      HVMG2: "ami-0a584ac55a7631c0c"
+    us-west-1: 
+      HVM64: "ami-0bdb828fd58c52235"
+      HVMG2: "ami-066ee5fd4a9ef77f1"
+    eu-west-1: 
+      HVM64: "ami-047bb4163c506cd98"
+      HVMG2: "ami-31c2f645"
+    ap-southeast-1: 
+      HVM64: "ami-08569b978cc4dfa10"
+      HVMG2: "ami-0be9df32ae9f92309"
+    ap-northeast-1: 
+      HVM64: "ami-06cd52961ce9f0d85"
+      HVMG2: "ami-053cdd503598e4a9d"
+Resources: 
+  myEC2Instance: 
+    Type: "AWS::EC2::Instance"
+    Properties: 
+      ImageId: !FindInMap
+        - RegionMap
+        - !Ref 'AWS::Region'
+        - HVM64
+      InstanceType: m1.small
+
+
+
+
+
+
+--------------------------- 4 Intrinsic Functions – Fn::ImportValue
+
+
+• Import values that are exported in other stacks
+
+• For this, we use the Fn::ImportValue function
+
+-- The intrinsic function Fn::ImportValue returns the value of an output exported by another stack. You typically use this function to create cross-stack references. 
+
+-- In the following example template snippets, Stack A exports VPC security group values and Stack B imports them.
+
+EG :
+
+Stack A Export
+
+
+Outputs:
+  PublicSubnet:
+    Description: The subnet ID to use for public web servers
+    Value:
+      Ref: PublicSubnet
+    Export:
+      Name:
+        'Fn::Sub': '${AWS::StackName}-SubnetID'
+  WebServerSecurityGroup:
+    Description: The security group ID to use for public web servers
+    Value:
+      'Fn::GetAtt':
+        - WebServerSecurityGroup
+        - GroupId
+    Export:
+      Name:
+        'Fn::Sub': '${AWS::StackName}-SecurityGroupID'
+
+
+
+Stack B Import
+
+
+Resources:
+  WebServerInstance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      InstanceType: t2.micro
+      ImageId: ami-a1b23456
+      NetworkInterfaces:
+        - GroupSet:
+            - Fn::ImportValue: 
+              'Fn::Sub': '${NetworkStackNameParameter}-SecurityGroupID'
+          AssociatePublicIpAddress: 'true'
+          DeviceIndex: '0'
+          DeleteOnTermination: 'true'
+          SubnetId: Fn::ImportValue: 
+            'Fn::Sub': '${NetworkStackNameParameter}-SubnetID'
+
+
+
+-- Declaration
+
+   Fn::ImportValue: sharedValueToImport
+
+
+-- Alternatively, you can use the short form:
+
+   !ImportValue sharedValueToImport
+
+
+
+
+------- Important to know : 
+
+ - You can't use the short form of !ImportValue when it contains the short form of !Sub.
+
+ # do not use
+!ImportValue
+  !Sub '${NetworkStack}-SubnetID' 
+
+
+- Instead, you must use the full function name, for example:
+
+Fn::ImportValue:
+  !Sub "${NetworkStack}-SubnetID"
+
+
+
+
+
+
+
+--------------------------- 5 Intrinsic Functions – Fn::Base64
+
+
+• Convert String to it’s Base64 representation
+
+     !Base64 "valueToEncode"
+
+
+• Example: pass encoded data to EC2 Instance’s UserData property
+
+
+-- The intrinsic function Fn::Base64 returns the Base64 representation of the input string. This function is typically used to pass encoded data to Amazon EC2 instances by way of the UserData property.
+
+
+EG:
+
+Resources:
+  WebServerInstance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      InstanceType: t2.micro
+      ImageId: ami-a1b23456
+        UserData:
+          Fn::Base64: |
+            #!/bin/bash
+            # Use this for your user data (script from top to bottom)
+            # install httpd (Linux 2 version)
+            yum update -y
+            yum install -y httpd
+            systemctl start httpd
+
+
+
+
+
+--------------------------- 6 Intrinsic Functions – Condition Functions
+
+
+Conditions:
+     CreateprodResource: !Equals [!Ref EnvType, prod]
+  
+
+• The logical ID is for you to choose. It’s how you name condition
+
+• The intrinsic function (logical) can be any of the following:
+
+   • Fn::And
+   • Fn::Equals
+   • Fn::If
+   • Fn::Not
+   • Fn::Or
+
+
+
+
+Ref for other functions  : https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference-base64.html
+
+
+
+
+
+
+
+-------------------------------------------------------------------- CloudFormation – Rollbacks
+
+
+-- they're very important to understand at the exam.
+
+
+• If Stack Creation Fails: you have two options.
+
+     • Default: everything rolls back (gets deleted). We can look at the log
+
+     • Option to disable rollback and troubleshoot what happened
+
+
+
+• If it is a problem with Stack Update Fails:
+
+     • The stack automatically rolls back to the previous known working state, again, deleting anything that was newly created.
+
+     • Ability to see in the log what happened and error messages
+
+
+
+• Rollback Failure? Fix resources manually then issue ContinueUpdateRollback API from Console
+
+    • Or from the CLI using continue-update-rollback API call
+
+
+
+
+----------------- LAB for failuers 
+
+
+-- create one yaml file , make some wrong configurations in it , for eg : ImageId
+
+
+ami-0a3c3a20c09d6f377
+
+
+-- create stack with the yaml file which has wrong ami-id, it has 2 Security Groups
+
+
+subbu1.yaml
+
+
+---
+Parameters:
+  SecurityGroupDescription:
+    Description: Security Group Description
+    Type: String
+
+Resources:
+  MyInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      AvailabilityZone: us-east-1a
+      ImageId: ami-123345
+      InstanceType: t2.micro
+      SecurityGroups:
+        - !Ref SSHSecurityGroup
+        - !Ref ServerSecurityGroup
+
+  # an elastic IP for our instance
+  MyEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      InstanceId: !Ref MyInstance
+
+  # our EC2 security group
+  SSHSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable SSH access via port 22
+      SecurityGroupIngress:
+      - CidrIp: 0.0.0.0/0
+        FromPort: 22
+        IpProtocol: tcp
+        ToPort: 22
+
+  # our second EC2 security group
+  ServerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Ref SecurityGroupDescription
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: 22
+        ToPort: 22
+        CidrIp: 192.168.1.1/32
+
+
+
+-- choose Stack failure options = Preserve successfully provisioned resources , create stack
+
+-- here it is failed to create resource 'coz , i have not given description for security group
+
+-- but i did not give description for "ServerSecurityGroup" but the SSHSecurityGroup is created 
+
+-- now u cannot update the stack , so delete the stack , when there is create failure , u should delete the stack and troubleshoot and upload again
+
+
+
+now create another yaml file with correct configuration 
+
+
+subbu2.yaml 
+
+
+---
+Resources:
+  MyInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      AvailabilityZone: us-east-1a
+      ImageId: ami-0a3c3a20c09d6f377
+      InstanceType: t2.micro
+
+
+-- now upload this file , 
+
+
+-- choose  Stack failure options = Roll back all stack resources
+
+-- create stack , now the resource got created 
+
+-- now update the stack by uploading the 1st example yaml file (subbu1.yaml) file 
+
+-- here u will get update option , 'coz u have created resources successfully 
+
+-- upload the 1st yaml file 
+
+-- now here provide group description
+
+-- choose Stack failure options = Roll back all stack resources
+
+-- create stack 
+
+-- here the securitygropus were created but due to wrong ami-id , it is failed to create , so as per the condition that we ahve given (rollback), so, that means that my server security group and SSH security groups should disappear.
+
+
+
+
+-- now update the stack with the same yaml file subbu1.yaml , bit choose Stack failure options = Preserve successfully provisioned resources
+
+-- This would create SSH and server security groups, but it would not roll them back in case there is a rollback happening, a stack failure.
+
+-- So, this is up to you to choose what you want, but both the behaviors can be desirable based on what you're trying to do.
+
+
+
+
+
+
+
+
+
+-------------------------------------------------------------------- CloudFormation – Service Role
+
+
+-- So CloudFormation can use service roles. What are they?
+
+
+• IAM role that allows CloudFormation to create/update/delete stack resources on your behalf
+
+   - Well, they are iam roles that you create and they're dedicated to CloudFormation and they allow CloudFormation to actually create update and delete stack resources on your behalf.
+
+
+• Give ability to users to create/update/delete the stack resources even if they don’t have permissions to work with the resources in the stack
+
+
+• Use cases:
+
+    • You want to achieve the least privilege principle
+
+    • But you don’t want to give the user all the required permissions to create the stack resources
+
+
+• User must have iam:PassRole permissions which is a necessary permission to give a role to a specific service in AWS.
+
+
+
+
+----------- LAB IAm roles with CF
+
+
+-- open IAM --> create new role --> aws service --> CF --> give s3 full access --> create role 
+
+
+-- now create stack , upload subbu2.yaml file for demo and in the permission sections = select IAM role that we have created now ,
+
+-- So if I don't specify, then iam role is going to use my own personal permissions. 
+
+-- But if I want to specify an iam role, I can look at this DemoRole for CFN with S3 capabilities. AWS CloudFormation will use this role for all stack operations. Other users that have permissions to operate on this stack will be able to use this role, even if they don't have permission to pass it. Ensure that this role grants the least privilege.
+
+-- but this one, and because this one is just powered with Amazon S3 permissions,then actually my stack will fail because my stack is actually creating an EC2 instance.
+
+
+
+
+
+
+-------------------------------------------------------------------- CloudFormation – Capabilities
+
+
+• We have  CAPABILITY_NAMED_IAM and CAPABILITY_IAM 
+       
+       - So they are capabilities you need to give to CloudFormation whenever your CloudFormation template is going to create or update IAM resources, such as when you create a IAM user, a role, a group, a policy, and so on, through your CloudFormation templates.
+
+      • Necessary to enable when you CloudFormation template is creating or updating IAM resources (IAM User, Role, Group, Policy, Access Keys, Instance Profile...)
+
+      • Specify CAPABILITY_NAMED_IAM if the resources are named, otherwise, just CAPABILITY_IAM.
+
+      - And the reason we do so is that we want to explicitly acknowledge the fact that CloudFormation is going to create IAM resources.
+
+
+• CAPABILITY_AUTO_EXPAND
+
+     - which is when your CloudFormation template is including macro and nested stacks, so stacks within stacks, to perform dynamic transformations.
+
+     • Necessary when your CloudFormation template includes Macros or Nested Stacks (stacks within stacks) to perform dynamic transformations
+
+     • You’re acknowledging that your template may change before deploying
+
+
+
+• InsufficientCapabilitiesException
+
+     • Exception that will be thrown by CloudFormation if the capabilities haven’t been acknowledged when deploying a template (security measure)
+
+     - while launching a template, that means that the CloudFormation templates was requiring capabilities, but you haven't acknowledged them.
+
+     - So, as a security measure, you need to redo the templates, upload, and launch using, this time, these capabilities. It's just an extra argument in your API call, or a box to tick on your AWS console.
+
+
+
+-------------- lab
+
+-- create one capabilities.yaml file 
+
+
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: An example CloudFormation that requires CAPABILITY_IAM and CAPABILITY_NAMED_IAM
+
+Resources:
+  MyCustomNamedRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: MyCustomRoleName
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [ec2.amazonaws.com]
+            Action: ['sts:AssumeRole']
+      Path: "/"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEC2FullAccess
+      Policies:
+        - PolicyName: MyPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: 's3:*'
+                Resource: '*'
+
+Outputs:
+  RoleArn:
+    Description: The ARN of the created IAM Role
+    Value: !GetAtt MyCustomNamedRole.Arn
+
+
+
+-- here CloudFormation template, which actually has an IAM role being created. And it's named, so there's a role name, MyCustomRoleName. And it's using a managed policy, which is the AmazonEC2FullAccess. So we're dealing with IAM, and so as such, we are creating some IAM roles.
+
+
+-- now try to create this stack in console with this file 
+
+-- u will have a checkbox at last while u try to create this stack , do check and submit , then only u will able to create this stack 
+
+-- the role has been created . check in console 
+
+
+
+
+
+
+
+--------------------------------------------------------------------  1 CloudFormation – DeletionPolicy Delete
+
+
+• DeletionPolicy:
+  
+     •  DeletionPolicy is a setting you can apply to resources on your CloudFormation templates, which allows you to Control what happens when the CloudFormation template is deleted or when a resource is removed from a CloudFormation template
+
+     • Extra safety measure to preserve and backup resources
+
+• Default DeletionPolicy=Delete 
+
+-- So by default, we've seen that when we delete a CloudFormation template, all the resources within are also deleted. That means that the default DeletionPolicy is delete, so you don't have to specify it because it is the default.
+
+EG:
+
+Resources:
+  MyInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      AvailabilityZone: us-east-1a
+      ImageId: ami-0a3c3a20c09d6f377
+      InstanceType: t2.micro
+    DeletionPolicy: Delete  
+
+
+
+
+EG 2 :
+
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  myS3Bucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Delete
+
+
+-- in the above example , We have an S3 buckets and we have DeletionPolicy=Delete.
+
+-- It will work only if the S3 bucket is empty. If it's not empty, then the delete will fail. So the way to fix this if you wanted to would be to either manually delete everything within the S3 bucket and then continue with the deletion of your CloudFormation templates.
+
+-- Or it would be for you to implement a custom resource to actually delete everything within the S3 bucket before automatically having the S3 bucket go away.
+
+
+
+
+
+
+----------------------------- 2 CloudFormation – DeletionPolicy Retain
+
+• DeletionPolicy=Retain: 
+
+     • Specify on resources to preserve in case of CloudFormation deletes
+
+     • Works with any resources
+
+
+
+
+EG :
+
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  myS3Bucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+
+
+
+-- So example here, we have a S3, and we know that by default, it would be deleted when I delete my CloudFormation template, 
+
+-- but maybe we actually wanna keep it, keep the data within because we care about the data of this bucket. And so we would specify at the bottom DeletionPolicy retain.
+
+-- And so even if I delete my CloudFormation templates, this S3 Bucket would stay, and this works with any resources.
+
+
+
+
+
+----------------------------- 3 CloudFormation – DeletionPolicy Snapshot
+
+
+• DeletionPolicy=Snapshot
+
+• Create one final snapshot before deleting the resource
+
+• Examples of supported resources:
+
+    • EBS Volume, ElastiCache Cluster, ElastiCache ReplicationGroup
+
+    • RDS DBInstance, RDS DBCluster, Redshift Cluster, Neptune DBCluster, DocumentDB DBCluster
+
+
+
+----------- LAB 
+
+-- create one yaml file that has DeletionPolicy
+
+
+Resources:
+  MySG:
+    Type: AWS::EC2::SecurityGroup
+    DeletionPolicy: Retain
+    Properties:
+      GroupDescription: Enable SSH access via port 22
+      SecurityGroupIngress:
+      - CidrIp: 0.0.0.0/0
+        FromPort: 22
+        IpProtocol: tcp
+        ToPort: 22
+
+  MyEBS:
+    Type: AWS::EC2::Volume
+    DeletionPolicy: Snapshot
+    Properties:
+      AvailabilityZone: us-east-1a
+      Size: 1
+      VolumeType: gp2
+
+
+
+-- in above example , there is a security group and the DeletionPolicy is retained. So that means that if I delete my transformation stack, this security group should stay.
+
+-- And there is an EBS volume, and the DeletionPolicy is a snapshot. So that means that upon deleting the stack, the volume should go away, but a snapshot should be created first.
+
+-- let's see how it is working 
+
+-- upload yaml file and create one stack 
+
+-- once the resource is created , do delete the stack
+
+-- u can observe that MySG = DELETE_SKIPPED , 'coz we have given retain 
+
+-- ebs volume is deleted but the snapshot is already created for u go n check in console 
+
+-- u can delete manually through console , if u want to delete 
+
+
+
+
+
+
+
+--------------------------------------------------------------------  CloudFormation – Stack Policies
+
+
+• During a CloudFormation Stack update, all update actions are allowed on all resources (default)
+
+
+-- but sometimes, you may want to protect your stack against updates, or part of your stack against updates. This is where Stack policies come in.
+
+
+• A Stack Policy is a JSON document that defines the update actions that are allowed on specific resources during Stack updates
+
+
+EG:
+
+{
+  "Statement" : [
+  {
+    "Effect" : "Allow",
+    "Principal" : "*",
+    "Action" : "update:*",
+    "Resource" : "*",
+   },
+
+  {
+    "Effect" : "Deny",
+    "Principal" : "*",
+    "Action" : "Update:*",
+    "Resource" : "LogicalResourceId/ProductionDatabase"
+  }
+  ]
+}
+
+
+-- So here, we have an example where the first statement is saying "Allow update*" on everything, meaning that everything in your CloudFormation Stack can be updated,
+
+-- second part is saying "Deny update*" on Resource Production Database. That means that whatever is named "Production Database" in your CloudFormation Stack is going to be protected against any kind of updates,
+
+
+
+• Protect resources from unintentional updates
+
+• When you set a Stack Policy, all resources in the Stack are protected by default
+
+• Specify an explicit ALLOW for the resources you want to be allowed to be updated
+
+
+
+
+
+
+--------------------------------------------------------------------  CloudFormation – Termination Protection
+
+
+• To prevent accidental deletes of CloudFormation Stacks, use TerminationProtection
+
+
+-- once u create stack --> stack actions --> set TerminationProtection
+
+
+
+
+
+--------------------------------------------------------------------  CloudFormation – Custom Resources
+
+
+• Used to
+
+     • define resources not yet supported by CloudFormation
+
+     • define custom provisioning logic for resources can that be outside of CloudFormation (on-premises resources, 3rd party resources...)
+
+     • have custom scripts run during create / update / delete through Lambda functions (Eg : running a Lambda function to empty an S3 bucket before being deleted)
+
+
+• Defined in the template using
+
+      - AWS::CloudFormation::CustomResource or 
+      
+      - Custom::MyCustomResourceTypeName (recommended)
+
+
+• Backed by a Lambda function (most common) or an SNS topic
+
+
+
+
+------------------------------- How to define a Custom Resource?
+
+
+• Ser viceToken specifies where CloudFormation sends requests to, such as Lambda ARN or SNS ARN (required & must be in the same region)
+
+• Input data parameters (optional)
+
+
+EG :
+
+Resources:
+  MyCustomResourceUsingLambda:
+   Type: Custom::MylambdaResource
+   properties:
+      ServiceToken: arn:aws:lambda:REGION:ACCOUNT_ID:function:FUNCTION_NAME
+      #input values (optional)
+      ExamplePreperty: "exampleValue"
+
+
+
+
+------------------------------- Use Case – Delete content from an S3 bucket
+
+
+• You can’t delete a non-empty S3 bucket
+
+• To delete a non-empty S3 bucket, you must first delete all the objects inside it
+
+• We can use a custom resource to empty an S3 bucket before it gets deleted by CloudFormation
+
+
+EG : 
+
+-- Whenever we run delete stack on CloudFormation, then your custom resource backed by Lambda function is going to run API calls to empty your S3 bucket.
+
+-- when your S3 bucket is emptied, then CloudFormation is going to actually attempt to delete your S3 bucket, and everything will work.
+
+
+
+
+
+---------------- LAB 
+
+
+-- in this demo , we are going to create lambda function , s3 bucket , lambdaexecutionrole, and custom resource 
+
+-- as per the documentation we can not delete the s3 bucket directly which has objects in it , but through the custom resources with lambda function , we can delete the s3 bucket directly
+
+-- create one yaml files which will create an s3 bucket , CustomResourceLambdaFunction , CustomResourceLambdaExecutionRole , CustomResource
+
+
+
+EG :  delete-resource.yaml
+
+
+----
+Resources:
+
+    CustomResourceLambdaExecutionRole:
+        Type: 'AWS::IAM::Role'
+        Properties:
+            AssumeRolePolicyDocument:
+                Version: 2012-10-17
+                Statement:
+                    - Effect: Allow
+                      Principal:
+                          Service: lambda.amazonaws.com
+                      Action:
+                          - 'sts:AssumeRole'
+            Policies:
+                - PolicyName: LoggingPolicy
+                  PolicyDocument:
+                      Version: 2012-10-17
+                      Statement:
+                          - Effect: Allow
+                            Action:
+                                - logs:CreateLogGroup
+                                - logs:CreateLogStream
+                                - logs:PutLogEvents
+                            Resource: '*'
+                - PolicyName: S3Policy
+                  PolicyDocument:
+                      Version: 2012-10-17
+                      Statement:
+                          - Effect: Allow
+                            Action:
+                                - s3:List*
+                                - s3:DeleteObject
+                            Resource: '*'
+
+    CustomResourceLambdaFunction:
+        Type: 'AWS::Lambda::Function'
+        Properties:
+            Code:
+                ZipFile: |
+                    import cfnresponse
+                    import boto3
+
+                    def handler(event, context):
+                        print(event)
+                        print('boto version ' + boto3.__version__)
+
+                        # Globals
+                        responseData = {}
+                        ResponseStatus = cfnresponse.SUCCESS
+                        s3bucketName = event['ResourceProperties']['s3bucketName']
+
+                        if event['RequestType'] == 'Create':
+                            responseData['Message'] = "Resource creation successful!"
+
+                        elif event['RequestType'] == 'Update':
+                            responseData['Message'] = "Resource update successful!"
+
+                        elif event['RequestType'] == 'Delete':
+                            # Need to empty the S3 bucket before it is deleted
+                            s3 = boto3.resource('s3')
+                            bucket = s3.Bucket(s3bucketName)
+                            bucket.objects.all().delete()
+
+                            responseData['Message'] = "Resource deletion successful!"
+
+                        cfnresponse.send(event, context, ResponseStatus, responseData)
+
+            Handler: index.handler
+            Runtime: python3.12
+            Role: !GetAtt CustomResourceLambdaExecutionRole.Arn
+
+    CustomResource:
+        Type: Custom::CustomResource
+        Properties:
+            ServiceToken: !GetAtt CustomResourceLambdaFunction.Arn
+            s3bucketName: !Ref S3Bucket
+        DependsOn: S3Bucket
+
+    S3Bucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        AccessControl: Private
+        BucketName: custom-resource-s3-bucket1
+
+
+-- once u upload this file this will create s3 bucket , CustomResourceLambdaFunction , CustomResourceLambdaExecutionRole , CustomResource 
+
+-- now go to bucket and upoad some files in it , now do dleete the stack u can able to delete the s3 bucket (in this process , the custom resource will delete first and then remaing will delete after this )
+
+
+
+-- suppose u ahve s3 bucket already and have files in it so , u have to change 2 items in the 'CustomResource' resource:
+
+     1 - Change the `DependsOn` property to the logical name of the S3 bucket in your template
+
+     2  - change the parameter passed to the custom resource to reference your S3 bucket.  So you should change this line:
+
+                `s3bucketName: !Ref S3Bucket`
+
+        - to this:
+
+                `s3bucketName: !Ref <your s3 bucket logical ID>`
+
+
+--  DependsOn: < logical name of ur bucket >
+
+--  s3bucketName: !Ref <your s3 bucket logical ID>
+
+-- this is how u can automate the process
+
+
+-- it will take almost 30 min to give status 
+
+-- once u delete the stack , u will 2 cases 
+
+1 Delete a custom resource that's stuck in DELETE_FAILED status
+
+2 Delete a custom resource that's stuck in DELETE_IN_PROGRESS status
+
+
+
+
+1 Delete a custom resource that's stuck in DELETE_FAILED status
+
+
+-- To delete your stack, complete the following steps:
+
+1.    Open the CloudFormation console.
+
+2.    Choose the stack that contains your custom resource that's stuck in DELETE_FAILED status.
+
+3.    Choose Actions, and then choose Delete Stack.
+
+4.    In the pop-up window that provides a list of resources to retain, choose the custom resource that's stuck in DELETE_FAILED status. Then, choose Delete.
+
+5.    Choose Actions, and then choose Delete Stack.
+
+The status of your stack changes to DELETE_COMPLETE.
+
+Note: Your custom resource isn't a physical resource, so you don't have to clean up your custom resource after stack deletion.
+
+
+
+
+2 Delete a custom resource that's stuck in DELETE_IN_PROGRESS status
+
+
+-- To force the stack to delete, you must manually send a SUCCESS signal. The signal requires the ResponseURL and RequestId values, which are both included in the event that's sent from CloudFormation to Lambda.
+
+-- open lambda --> monitoring --> choose log it has values
+
+Received event: {
+  "RequestType": "Delete",
+  "ServiceToken": "arn:aws:lambda:us-east-1:111122223333:function:awsexamplelambdafunction",
+  "ResponseURL": "https://cloudformation-custom-resource-response-useast1.s3.us-east-1.amazonaws.com/arn%3Aaws%3Acloudformation%3Aus-east-1%3A111122223333%3Astack/awsexamplecloudformation/33ad60e0-5f25-11e9-a734-0aa6b80efab2%7CMyCustomResource%7Ce2fc8f5c-0391-4a65-a645-7c695646739?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20170313T0212304Z&X-Amz-SignedHeaders=host&X-Amz-Expires=7200&X-Amz-Credential=QWERTYUIOLASDFGBHNZCV%2F20190415%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Signature=dgvg36bh23mk44nj454bjb54689bg43r8v011uerehiubrjrug5689ghg94hb",
+  "StackId": "arn:aws:cloudformation:us-east-1:111122223333:stack/awsexamplecloudformation/33ad60e0-5f25-11e9-a734-0aa6b80efab2",
+  "RequestId": "e2fc8f5c-0391-4a65-a645-7c695646739",
+  "LogicalResourceId": "MyCustomResource",
+  "PhysicalResourceId": "test-MyCustomResource-1URTEVUHSKSKDFF",
+  "ResourceType": "Custom::PingTester"
+
+}
+
+
+--  To send a SUCCESS response signal in the response object to the delete request, run the following command in your local command-line interface. Be sure to include the values that you copied from above values 
+
+curl -H 'Content-Type: ''' -X PUT -d '{
+    "Status": "SUCCESS",
+    "PhysicalResourceId": "test-CloudWatchtrigger-1URTEVUHSKSKDFF",
+    "StackId": "arn:aws:cloudformation:us-east-1:111122223333:stack/awsexamplecloudformation/33ad60e0-5f25-11e9-a734-0aa6b80efab2
+  ",
+    "RequestId": "e2fc8f5c-0391-4a65-a645-7c695646739",
+    "LogicalResourceId": "CloudWatchtrigger"
+  }' 'https://cloudformation-custom-resource-response-useast1.s3.us-east-1.amazonaws.com/arn%3Aaws%3Acloudformation%3Aus-east-1%3A111122223333%3Astack/awsexamplecloudformation/33ad60e0-5f25-11e9-a734-0aa6b80efab2%7CMyCustomResource%7Ce2fc8f5c-0391-4a65-a645-7c695646739?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20170313T0212304Z&X-Amz-SignedHeaders=host&X-Amz-Expires=7200&X-Amz-Credential=QWERTYUIOLASDFGBHNZCV%2F20190415%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Signature=dgvg36bh23mk44nj454bjb54689bg43r8v011uerehiubrjrug5689ghg94hb
+  '
+
+
+
+-- u will able to delete successfully 
+
+
+
+
+
+--------------------------------------------------------------------  CloudFormation – StackSets
+
+
+• Create, update, or delete stacks across multiple accounts and regions with a single operation/template
+
+• Target accounts to create, update, delete stack instances from StackSets
+
+• When you update a stack set, all associated stack instances are updated throughout all accounts and regions
+
+• Can be applied into all accounts of an AWS Organization
+
+• Only Administrator account (or Delegated Administrator) can create StackSets
+
+
+        https://www.youtube.com/watch?v=SC6o6FnVt-M
+
+
+
+
+
+
+
+======================================================================= AWS Integration & Messaging =======================================================================
+
+SQS, SNS & Kinesis
+
+
+
+
+---------------------------- Section Introduction
+
+
+• When we start deploying multiple applications, they will inevitably need to communicate with one another
+
+• There are two patterns of application communication
+
+     1) Synchronous communications  (application to application) 
+
+     2) Asynchronous / Event based  (applicahon to queue to application)
+
+
+• Synchronous between applications can be problematic if there are sudden spikes of traffic
+
+• What if you need to suddenly encode 1000 videos but usually it’s 10?
+
+
+• In that case, it’s better to decouple your applications,
+
+   • using SQS: queue model
+   • using SNS: pub/sub model
+   • using Kinesis: real-time streaming model
+
+
+• These services can scale independently from our application!
+
+
+
+
+
+---------------------------------------------------------------------- 1 Amazon SQS What’s a queue?
+
+
+-- SQS is a simple queuing service.
+
+-- So we have an SQS queue, and it is going to contain messages. And to contain messages, well, something needs to send messages into our SQS queue and whatever sends a message into our SQS queue is called a producer.
+
+-- So it's possible for us to have one producer, but also have more. You can have multiple producers sending many messages into an SQS queue. And the message could be whatever he wants. For example, it could be process this order, or process this video. Whatever message you create goes into the queue.
+
+-- Then something needs to process the messages from the queue and receive them, and it's called consumers.
+
+-- So consumers will poll the messages from the queue, so that means that they will ask the queue, do you have any message for me? And the queue says, yes, here it is. And the consumer will poll these messages and get some information.
+
+-- And then with that message, it will process it and then delete it back from the queue. And you may have multiple consumers consuming messages from an SQS queue.
+
+-- So a queuing service is here to be a buffer to decouple between your producers and your consumers.
+
+
+
+               Producer -----------------(send messagaes)-----------------> SQS Queue -----------------(Poll messages)---------------> Consumer
+
+
+
+
+--------------------------------------- Amazon SQS – Standard Queue
+
+
+
+• Oldest offering (over 10 years old)
+
+• Fully managed service, used to decouple applications
+
+
+• Attributes:
+
+     • Unlimited throughput, unlimited number of messages in queue
+
+     • Default retention of messages: 4 days, maximum of 14 days
+
+     • Low latency (<10 ms on publish and receive)
+
+     • Limitation of 256KB per message sent
+
+
+• Can have duplicate messages (at least once delivery, occasionally)
+
+• Can have out of order messages (best effort ordering)
+
+
+
+
+
+--------------------------------------- SQS – Producing Messages
+
+
+-- So, messages that are up to 256 kilobytes are sent into SQS by producers. how does this happen?
+
+-- Well, the producers will send the messages to SQS using an SDK, software development kits. And the API to send a message to SQS is called SendMessage.
+
+• Produced to SQS using the SDK (SendMessage API)
+
+• The message, it will be written, it will be is persisted in SQS until a consumer deletes it , which signifies that the message has been processed.
+
+• Message retention: default 4 days, up to 14 days
+
+
+• Example: send an order to be processed
+
+    • Order id
+    • Customer id
+    • Any attributes you want
+
+
+-- so you will send a message into the SQS queue with maybe some information, such as the order ID, the customer ID, and any attributes you may want. For example, the address, and so on.
+
+-- And then your consumer, that is in application rights, will have to deal with that message itself.
+
+• SQS standard: unlimited throughput
+
+
+
+
+--------------------------------------- SQS – Consuming Messages
+
+
+• Consumers (running on EC2 instances, servers, or AWS Lambda)...
+
+• Poll SQS for messages (receive up to 10 messages at a time)
+
+• Process the messages (example: insert the message into an RDS database)
+
+• Delete the messages using the DeleteMessage API
+
+
+
+ 
+
+
+--------------------------------------- SQS – Multiple EC2 Instances Consumers
+
+
+• Consumers receive and process messages in parallel
+
+--  so each consumer will receive a different set of messages by calling the poll function.
+
+-- if somehow a message is not processed fast enough by a consumer, it will be received by other consumers, and so this is why we have at least once delivery.
+
+• At least once delivery
+
+• Best-effort message ordering
+
+• Consumers delete messages after processing them
+
+     -- when the consumers are done with the messages, they will have to delete them, otherwise, other consumers will see these messages.
+
+-- if we need to increase the throughputs because we have more messages, then we can add consumers and do horizontal scaling to improve the throughput of processing.
+
+• We can scale consumers horizontally to improve throughput of processing
+
+
+
+
+--------------------------------------- SQS with Auto Scaling Group (ASG)
+
+
+-- Well, that means that your consumers will be running on EC2 instances inside of an Auto Scaling group and they will be polling for messages from the SQS queue.
+
+-- But now your Auto Scaling group has to be scaling on some kind of metric, and a metric that is available to us is the Queue Length. It's called "ApproximateNumberOfMessages."
+
+-- It is a CloudWatch Metric that's available in any SQS queue. And we could set up an alarm, such as whenever the queue length go over a certain level, then please set up a CloudWatch Alarm, and this alarm should increase the capacity of my Auto Scaling group by X amount.
+
+-- this will guarantee that the more messages you have in your SQS queue, maybe because there's a surge of orders on your websites, the more EC2 instances will be provided by your Auto Scaling group, and you will accordingly process these messages at a higher throughputs.
+
+
+
+
+
+--------------------------------------- SQS to decouple between application tiers
+
+
+-- the use case is to decouple between applications, so application tiers.
+
+-- So, for example, let's take an example of an application that processes videos. 
+
+-- We could have just one big application that's called a front-end that will take the request and whenever a video needs to be processed, it will do the processing and then insert that into an S3 bucket.
+
+-- But the problem is that processing may be very, very long to do and it may just slow down your websites if you do this in the front-end here.
+
+-- So instead, you can decouple your application here the request of processing a file and the actual processing of a file can happen in two different applications.
+
+-- therefore, whenever you take a request to process a file, you will send a message into an SQS queue.
+
+-- Now, when you do the request to process, that file will be in the SQS queue and you can create a second processing tier called the back-end processing application that will be in its own Auto-Scaling group to receive these messages, process these videos, and insert them into an S3 bucket.
+
+-- So as we can see here with this architecture, we can scale the front-end accordingly, and we can scale the back-end accordingly as well, but independently.
+
+-- because the SQS queue has unlimited throughputs and it has unlimited number of messages in terms of the queue, then you are really safe, and this is a robust and scalable type of architecture.
+
+
+
+
+   requests ------------ fronted ---------- (SendMessage)----------> SQS Queue -----------(ReceiveMessages) ----------> Back-end processing Application(video processing) -------------(insert) -----> S3
+
+
+
+
+
+--------------------------------------- Amazon SQS - Security
+
+
+• Encryption:
+
+    • So we have encryption in-flight encryption by sending and producing messages  HTTPS API
+
+    • At-rest encryption using KMS keys
+
+    • Client-side encryption if the client wants to perform encryption/decryption itself (It's not something that's supported by SQS)
+
+
+• Access Controls: IAM policies to regulate access to the SQS API
+
+• SQS Access Policies (similar to S3 bucket policies)
+
+     • Useful for cross-account access to SQS queues
+
+     • Useful for allowing other services (SNS, S3...) to write to an SQS queue
+
+
+
+
+--------------------------------------- LAB for SQS standard queue
+
+
+-- refer to Solution Architect course
+
+
+
+
+-----------------------------------------------------  SQS Queue Access Policy
+
+
+-- SQS Queue Access Policies. And there are two good use cases for SQS Queue Access Policies.
+
+-- They're similar to S3 Bucket policies in terms that they are resource policies, so JSON IAM policies that you're going to add directly onto your SQS Queue.
+
+
+----------------- 1st use case : Cross Account Access
+
+
+
+
+Account 444455556666 (SQS Queue (queue1))---------------(poll for messages)-------> Account 111122223333(ec2 insances)
+
+
+
+
+-- Say you have a queue in an account and another account needs to access that queue. Maybe it has an EC2 Instance.
+
+-- So for that EC2 Instance to be able to pull message across accounts, what you need to do is to create a Queue Access Policy look like this , and you attach it to the SQS Queue in the first account.
+
+
+{
+   "Version": "2012-10-17",
+   "Id": "Queue1_Policy_UUID",
+   "Statement": [{
+      "Sid":"Queue1_Send_Receive",
+      "Effect": "Allow",
+      "Principal": {
+         "AWS": [
+            "111122223333"
+         ]
+      },
+      "Action": [
+         "sqs:SendMessage",
+         "sqs:ReceiveMessage"
+      ],
+      "Resource": "arn:aws:sqs:*:444455556666:queue1"
+   }]
+}
+
+
+-- What this Queue access policy will do 
+
+-- it will allow the principle of AWS to be 111122223333, which represents the account on the right hand side on the sqs ReceiveMessage on this resource right here.
+
+-- so this Queue Access Policy is really what will allow your EC2 Instance to pull from the SQS Queue in another account.
+
+
+
+
+
+----------------------- 2nd use case : Publish S3 Event Notifications To SQS Queue
+
+
+-- for example, when you have an S3 Bucket, and it will publish event notifications to an SQS Queue.
+
+-- for example, you upload an object into an S3 Bucket, and what you want is to get automatically a message sent to the SQS Queue.
+
+
+
+      Upload object ------------------>  S3 Bucket (bucket1) ---------(Send message)-------------> SQS Queue (queue1)
+
+
+-- As you can see the SQS Queue, wIll need to give permission to the S3 Bucket to write a message to it.
+
+
+
+{
+"Version": "2012-10-17", "Statement" : [{
+"Effect": "Allow",
+"Principal": { "AWS": "*"},
+"Action": [ "sqs:SendMessage" ],
+"Resource": "arn:aws:sqs:us-east-1:444455556666:queue1", "Condilon": {
+"ArnLike": { "aws:SourceArn": "arn:aws:s3:*:*:bucket1" },
+"StringEquals": { "aws:SourceAccount": "<bucket1_owner_account_id>" }, }
+}] }
+
+
+-- look at the details for example, the action is sqs:SendMessage,
+
+-- the condition is that the sourceArn of the bucket represents the S3 Bucket named bucket1, 
+
+-- and that the source accounts needs to be the account owner of the S3 buckets.
+
+-- So once you have this, then the S3 bucket is allowed to write to an SQS Queue.
+
+
+
+
+---------------------------------------------- LAB for s3 event notifications 
+
+
+-- create standard queue , IMP : encryption = disable
+
+-- now create one s3 bucket --> properties --> create event notificatin for all prefix and suffix  --> choose destination is SQS queue , try to create event notificatin
+
+              link : https://docs.aws.amazon.com/AmazonS3/latest/userguide/ways-to-add-notification-config-to-bucket.html#step1-create-sqs-queue-for-notification
+
+-- here , u will get an Error "Unable to validate the following destination configurations"
+
+-- to resolve this error , we need to modify it to allow our S3 Bucket to write into our SQS Queue.
+
+-- go to queue --> Access policy --> c.o info (Access policy (Permissions) ) --> in the last right corner down side u will get documentation link --> open that Walkthrough: Configuring SNS or SQS 
+
+-- the SQS queue will look like this 
+
+
+
+{
+    "Version": "2012-10-17",
+    "Id": "example-ID",
+    "Statement": [
+        {
+            "Sid": "example-statement-ID",
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "s3.amazonaws.com"
+            },
+            "Action": [
+                "SQS:SendMessage"
+            ],
+            "Resource": "SQS-queue-ARN",
+            "Condition": {
+                "ArnLike": {
+                    "aws:SourceArn": "arn:aws:s3:*:*:awsexamplebucket1"
+                },
+                "StringEquals": {
+                    "aws:SourceAccount": "bucket-owner-account-id"
+                }
+            }
+        }
+    ]
+}
+
+
+
+-- paste this sqs queue policy in the sqs standard queue that u have created
+
+-- u have modify some items in this policy like   "Resource": "SQS-queue-ARN",  "aws:SourceArn": "arn:aws:s3:*:*:awsexamplebucket1" ,  "aws:SourceAccount": "bucket-owner-account-id"
+
+-- once u change these , save policy  , now go to s3 and try to create event notification , now u will able to create successfully
+
+-- now do upload any file in the s3 and check in SQS , u will get details of that object 
+
+
+
+
+
+
+
+
+
+
+----------------------------------------------  SQS – Message Visibility Timeout
+
+
+-- we have a consumer doing a ReceiveMessage request, and therefore, a message will be returned from the queue. Now the visibility timeout begins.
+
+• After a message is polled by a consumer, it becomes invisible to other consumers
+
+• By default, the “message visibility timeout” is 30 seconds
+
+-- That means that during these 30 seconds, the message has to be processed, if you do so, that means that if the same or other consumers do a message request API call, then the message will not be returned.
+
+• After the message visibility timeout is over, the message is “visible” in SQS
+
+-- So effectively, during the visibility timeout, that message is invisible to other consumers.
+
+-- But after the visibility timeout is elapsed and if the message has not been deleted, then the message will be put back into the queue and therefore, another consumer or the same consumer doing a receive message API call will receive the message again, the same message as before.
+
+
+
+IMP to know 
+
+• If a message is not processed within the visibility timeout, it will be processed twice Because it will be received by two different consumers, or twice by the same consumer.
+
+-- And so, if a consumer is actively processing a message but knows that it needs a bit more time to process the message because otherwise, it will go out of the visibility timeout window, there is an API called "ChangeMessageVisibility."
+
+• A consumer could call the ChangeMessageVisibility API to get more time
+
+-- so if a consumer knows that a message needs a bit more time to be processed and you don't want to process that message twice, then the consumer should call the ChangeMessageVisibility API to tell SQS, hey, do not make that message visible for now, I just need a bit more time to process this message.
+
+-- how do you set this message visibility timeout ?
+   
+   • If visibility timeout is high (hours), and consumer crashes, re-processing will take time
+
+   - if you set it to a really, really high value by default, say, hours, and the consumer crashes, then it will take hours until this message reappears, re-becomes visible in your SQS queue, and that will take a lot of time.
+
+   • If visibility timeout is too low (seconds), we may get duplicates
+
+   - If you set it to something really, really low, like a few seconds, what happens that if the consumer doesn't end up having enough time to process that message for whatever reason, then it will be read many times by different consumers and you may get duplicate processing.
+
+
+-- So the idea is that the visibility timeout should be set to something reasonable for your application and your consumer should be programmed that if they know they need a bit more time, then they should call the ChangeMessageVisibility API to get more time and increase the timeout of that visibility window.
+
+
+
+
+
+-------------- LAB to observe Visibility Timeout 
+
+-- create one std queue
+
+-- open 2 windows , in 1st window send some message and go to 2nd window try to refresh ,
+
+-- in 2nd window u can't get any messages 'coz it is in visibility timeout period , after 30 sec it will visible to U
+
+-- the more u poll , the receive count will increase for same message 
+
+--  u can also change visibility time , but default is better 
+
+
+
+
+
+
+---------------------------------------------- Amazon SQS – Dead Letter Queue (DLQ)
+
+
+• If a consumer fails to process a message within the Visibility Timeout...the message goes back to the queue!
+
+• We can set a threshold of how many times a message can go back to the queue
+
+• After the "MaximumReceives" threshold is exceeded, the message goes into a Dead Letter Queue (DLQ)
+
+• Useful for debugging!
+
+• DLQ of a FIFO queue must also be a FIFO queue
+
+• DLQ of a Standard queue must also be a Standard queue
+
+• Make sure to process the messages in the DLQ before they expire:
+
+      • Good to set a retention of 14 days in the DLQ
+
+
+
+
+
+---------------------------------------------- SQS DLQ – Redrive to Source 
+
+
+• Feature to help consume messages in the DLQ to understand what is wrong with them
+
+-- So you have your messages now you know they haven't been processed in the source queue and therefore they are in the Dead Letter Queue and you're going to do a manual inspection and debugging of these messages.
+
+-- then you're going to fix your consumer code understand why the message wasn't processed in case the message was correct.
+
+-- And then what you can do is re drive that message from the dead letter queue into the source SQS queue
+
+-- what's going to happen with this is that the consumer can now reprocess that message without even knowing that the message went into the Dead Letter Queue and then the message processing has happened and as a cool feature. 
+
+• When our code is fixed, we can redrive the messages from the DLQ back into the source queue (or any other queue) in batches without writing custom code
+
+
+
+
+
+
+---------------------------------------------- LAB DLQ 
+
+
+-- create one std queue and one dead letter queue with all default values 
+
+-- now go to std queue --> change visibility time = 5 , and add DLQ , Maximum receives = 3 (keep below 5 ) , do save this queue
+
+-- go to std queue --> send message --> poll message 
+
+-- So here we're receiving the messages once and after five seconds, we will receive it a second time. And after, again, five seconds, we're going to receive a third time,
+
+-- stop polling now , try to poll for messages again , u can not see any messages 
+
+-- go to DLQ --> poll for messages --> u will see that message 
+
+-- let me show you how to redrive that message from the DLQ into this first queue.
+
+-- go to DLQ queue --> start DLQ redrive 
+
+-- go to main Std queue --> start polling for messagaes , u will get message from the DLQ 
+
+
+
+
+
+
+---------------------------------------------- Amazon SQS – Delay Queue
+
+
+• Delay a message (consumers don’t see it immediately) up to 15 minutes
+
+• Default is 0 seconds (message is available right away), That means that as soon as you send the message into an SQS queue, the message will be available right away to be read 
+
+• Can set a default at queue level , to say all the messages should be delayed by X number of seconds
+
+• Can override the default on send using the DelaySeconds parameter 
+
+    - every time you send a message you can set a per-message delay if you wanted to using the DelaySeconds parameter.
+
+
+
+Producer--------------------(Send messages)-----> SQS queue ----------(Poll messages) -------------> Consumer
+
+
+
+----------------------------- LAB for Delay Queue
+
+
+-- create new Delayqueue 
+
+-- set Delivery delay = 10 sec , so that messages will wait 10 seconds before being read by a consumer.
+
+-- create Queue , now type some message and poll first , now c.o send message , u will get message after 10 sec 
+
+-- so, as you can see, there was a delay between the send and the actual delivery of that message.
+
+
+
+
+
+-------------------------------------------------------------------------------  Certified Developer concepts
+
+
+---------------------------------------------- 1 Amazon SQS - Long Polling
+
+
+• When a consumer requests messages from the queue, it can optionally “wait” for messages to arrive if there are none in the queue
+
+• This is called Long Polling
+
+-- So why do we do long polling ?
+
+• LongPolling decreases the number of API calls made to SQS while increasing the efficiency and decreasing the latency of your application.
+
+-- we do long polling because we are doing less API calls into the SQS queue. And on top of it, we know that as soon as the message will arrive in the SQS queue, then the SQS queue will send it back to the consumer. 
+
+-- So we are increasing the efficiency, because we do less API calls, so less CPU cycles are used. And we are also decreasing the latency because as soon as a message will be received by your SQS queue, it will be received by your consumer.
+
+• The wait time can be between 1 sec to 20 sec (20 sec preferable)
+
+• Long Polling is preferable to Short Polling
+
+• Long polling can be enabled at the queue level or at the API level using "ReceiveMessageWaitTimeSeconds"
+
+
+--------important thing that you need to understand the difference is in short polling Amazon SQS sends the response right away even if the query found is no message 
+
+------- long pooling Amazon SQS asked you sends and empty response only if the polling wait time expires and that is why we use long polling if we want to save API call costs.
+
+
+
+
+
+---------------------------------------------- 2 SQS Extended Client
+
+
+• Message size limit is 256KB, how to send large messages, e.g. 1GB?
+
+
+• Using the SQS Extended Client (Java Library) , which does something very simple that you could implement in any other language, but the idea is that it will use an Amazon S3 buckets as a repository for the large data.
+
+
+IMP :
+
+
+-- for example , your producer wants to send a large message into SQS, but first what's going to happen is that the actual large message will end up in Amazon S3,
+
+-- what will be sent into your SQS queue is it will be a small metadata message that has a pointer to the larger message in your Amazon S3 buckets.
+
+-- So the SQS queue will contain small messages, and your Amazon S3 bucket will contain large objects.
+
+-- your consumer when it reads from the SQS queue using this library, the SQS extended clients, then it will consume this small metadata message,
+
+-- which will say to the consumer, "Hey, go read "that bigger message out of Amazon S3," and the consumer will be able to read and retrieve large messages from S3.
+
+-- So a typical use case for this is if you're processing video files, you don't send the entire video file into your SQS queue node, you upload that video file into your Amazon S3 bucket, 
+
+-- and you send a small message with a pointer to that video file into your SQS queue. And that allows you to accommodate any message size really through this pattern.
+
+
+
+----------- WORKFLOW Structure
+
+
+        Producer -------> Small metadata message ------------> SQS Queue ------------> Small metadata message -----------> Consumer
+           |                                                                                                                 |
+           |                                                                                                                 |
+           |                                                                                                                 |
+           |                                                                                                                 |
+            -------------(Send large message to S3)-----------> S3 Bucket ------------(Retrieve large message from S3)--------
+   
+                         
+
+
+
+---------------------------------------------- 3 SQS – Must know API
+
+
+-- we'll, you will maybe see some API calls given through by the exam. And so it's just normal API calls
+
+
+• CreateQueue (MessageRetentionPeriod), DeleteQueue
+
+    - So CreateQueue is used to create a queue, and you can use the argument "MessageRetentionPeriod" to set how long a message should be kept in a queue before being discarded.
+
+    - DeleteQueue is used to delete a queue and delete all the messages in the queue at the same time.
+
+
+• PurgeQueue: delete all the messages in queue 
+
+
+• SendMessage (DelaySeconds), ReceiveMessage, DeleteMessage
+
+    - when we are sending messages, we use to SendMessage API, and if we want to send messages with a delay, we can use the DelaySeconds parameter.
+
+    - ReceiveMessage is to do polling, and DeleteMessage is to delete a message once it has been processed by a consumer.
+
+• MaxNumberOfMessages: default 1, max 10 (for ReceiveMessage API)
+
+    - So when you receive a message, by default, the parameter MaxNumberOfMessages is set to 1. That means that you receive one message at a time, but you can receive up to 10 messages in a time in SQS. So you can set the max number of messages parameter for the ReceiveMessage API to 10 to receive a batch of messages from SQS.
+
+
+• ReceiveMessageWaitTimeSeconds: Long Polling
+
+    - telling your consumer how long to wait before getting a response for from the queue. And this is equivalent of enabling long polling. 
+    
+
+• ChangeMessageVisibility: change the message timeout
+
+    - And the ChangeMessageVisibility, it is used to change the message timeout in case you need more time to process a message.
+
+
+• if you want to use Batch APIs for SendMessage, DeleteMessage, ChangeMessageVisibility this helps decrease the number of API calls you're doing into API and therefore helps decrease your costs
+
+
+
+--------------------------- LAB for Long Polling in AWS 
+
+
+-- go to std queue --> edit --> Receive message wait time = 20 (0 - 20 sec ) --> save 
+
+-- this is saying that you should wait up to 20 seconds to receive a message if the queue is empty.
+
+-- send and receive messagaes , here I'm gonna go ahead and start a consumer. Now this consumer is doing long polling, and so that means that only one API call is happening, and it's waiting for a message coming from the SQS queue because right now there is none.
+
+-- But if I say say hello world and just press Send, as soon as I press Send, the message was received by my consumer.
+
+-- This was extremely low latency, because my consumer was in long polling mode, and it was waiting for a message from SQS thanks to the WaitMessageTime setting that we set from before.
+
+
+
+
+
+------------------------------------------------------------------------ Amazon SQS – FIFO Queue
+
+
+• FIFO = First In First Out (ordering of messages in the queue)
+
+
+
+    Producer --------(Send messages 4,3,2,1) ---------> SQS Queue -----------(Poll messages 4,3,2,1)------------> Consumer
+
+
+-- Now, because we have such a constraint and guarantee about ordering, this SQS queue has limited throughput.
+
+• Limited throughput: 300 msg/s without batching, 3000 msg/s with Batching
+
+• Exactly-once send capability (by removing duplicates) 
+
+• Messages are processed in order by the consumer
+
+-- So FIFO queue is something you should see whenever you have decoupling, but also the need to maintain the ordering of messages, and also make sure that you are on this throughput's constraints that you are not sending too many messages into SQS,
+
+-- the FIFO queue is ends with .fifo only while u create any FIFO queue 
+
+
+
+
+---------------- LAB 
+
+
+-- create our first FIFO Queue , with all default settings 
+
+-- send message and observe the things 
+
+
+
+
+---------------------------------------------- SQS FIFO – Deduplication
+
+
+• De-duplication interval is 5 minutes
+
+• Two de-duplication methods:
+
+      • Content-based deduplication: will do a SHA-256 hash of the message body , And if the same message body is encountered twice, the same hash will be the same twice. And so therefore, the second message will be refused.
+
+      • Explicitly provide a Message Deduplication ID directly while sending a message. And if the same deduplication ID is encountered twice then the message will be gone.
+
+
+
+---------------------------------------------- SQS FIFO – Message Grouping
+
+
+-- The second advanced concept we need to look at is message grouping.
+
+• If you specify the same value of MessageGroupID in an SQS FIFO queue, you can only have one consumer, and all the messages are in order
+
+• To get ordering at the level of a subset of messages, specify different values for MessageGroupID
+
+      • The idea is that the Messages that share a common Message Group ID will be in order within the group
+
+      • Each Group ID can have a different consumer ( So you can enable parallel processing!) on your SQS FIFO queue.
+
+
+• Ordering across groups is not guaranteed
+
+
+for example , And we're grouping messages into three groups: A, B, and C. 
+
+-- Say we have message A1, A2, A3. Then we can have a consumer for the group A.
+
+-- Then we have another group of messages: B1, B2, B3, B4. We can have another consumer for that group B.
+
+--  for consumer group C , we have C1 and C2.
+
+-- The idea is that, for example, maybe sometimes you don't need the total ordering of all the messages. But you want ordering of all the messages for a specific customer ID.
+
+-- for that one specific customer ID, you can use this as your message group ID.
+     
+      
+
+                   ----------------(A3, A2 , A1) --------------------> Consumer for Group “A”
+
+      SQS FIFO     ----------------(b4, b3, b2 , b1) --------------------> Consumer for Group “B” 
+                  
+                   ----------------(c2 , c1) --------------------> Consumer for Group “C”
+
+
+
+
+
+--------------------------- LAB 
+
+
+-- go to FIFO queue --> edit --> enable contenct based deduplication --Save 
+
+-- now try to send message with group ID , u willl receive message , now try to send message again u can't send 'coz the deduplication is occuring here , now change the contect with same group id , u will able to send the message 'coz we have changed our content 
+
+
+IMP to know 
+
+-- here during the polling period only u can able to delete the messages once it gets polled after u cannot delete in the FIFO queue(The receipt handle has expired.)
+
+-- where u can delete in std queue
+
+-- now try to delete during the polling time , u can able to delete the message 
+
+
+
+
+
+----------------------------------------------------------------- Amazon Simple Queue Service (Amazon SQS) temporary queues
+
+
+-- Temporary queues help you save development time and deployment costs when using common message patterns such as request-response.
+
+-- You can use the Temporary Queue Client to create high-throughput, cost-effective, application-managed temporary queues.
+
+-- The following are the benefits of temporary queues:
+
+   - They serve as lightweight communication channels for specific threads or processes.
+   - They can be created and deleted without incurring additional costs.
+   - They are API-compatible with static (normal) Amazon SQS queues. This means that existing code that sends and receives messages can send messages to and receive messages from virtual queues.
+
+-- To better support short-lived, lightweight messaging destinations, AWS recommends Amazon SQS Temporary Queue Client.
+
+-- This client makes it easy to create and delete many temporary messaging destinations without inflating your AWS bill. 
+
+-- The key concept behind the client is the virtual queue. 
+
+-- Virtual queues let you multiplex many low-traffic queues onto a single Amazon SQS queue. 
+
+-- Creating a virtual queue only instantiates a local buffer to hold messages for consumers as they arrive; there is no API call to SQS and no costs associated with creating a virtual queue.
+
+
+
+
+
+----------------------------------------------------------------- Amazon Simple Notification Service (SNS)
+
+
+• What if you want to send one message to many receivers?
+
+
+Method 1 : Direct integration 
+
+   - So you could have a direct integration where for example a buying service application could send an email notification, then send a message to a fraud service send a message to a shipping service and maybe even send a message into an SQS Queue.
+
+   - This is cumbersome because every time you have to add a new receiving service. You need to create and write that integration.
+
+
+Method 2 :  Pub / Sub (Publish-subscribe.)
+    
+   - The idea is that the buying service will send a message into an SNS topic which is publishing a message into a topic. And that topic will have many subscribers.
+
+   - And each of the subscriber will be able to receive that message from the SNS topic and have it for their own.
+
+
+
+---------------------------------------- Amazon SNS
+
+
+• The “event producer” only sends message to one SNS topic
+
+• As many “event receivers” (subscriptions) as we want to listen to the SNS topic notifications 
+
+• Each subscriber to the topic will get all the messages (note: new feature to filter messages), except if you're using a feature to filter messages and it is possible as well.
+
+• Up to 12,500,000 subscriptions per topic
+
+• 100,000 topics limit , and you can increase that limit as well.
+
+
+        SNS -----------------(publish)------------> SQS / Lambda / Kinesis Data Firehose / HTTP(S) Endpoints / Emails / SMS and Mobile Nonficanons 
+
+
+
+
+------------------------ SNS integrates with a lot of AWS services
+
+
+• Many AWS services can send data directly to SNS for notifications
+
+CloudWatch Alarms / AWS Budgets / Lambda / DynamoDB / S3 Bucket (Events) / Auto Scaling Group (Notifications) / RDS Events / AWS DMS (New Replic) / CloudFormation (State Changes) ------------(publish)--------> SNS
+
+
+
+----------------------- Amazon SNS – How to publish
+
+
+• Topic Publish (using the SDK)
+  • Create a topic
+  • Create a subscription (or many)
+  • Publish to the topic
+
+• Direct Publish (for mobile apps SDK)
+  • Create a platform application
+  • Create a platform endpoint
+  • Publish to the platform endpoint
+  • Works with Google GCM, Apple APNS, Amazon ADM...
+
+
+
+----------------------  Amazon SNS – Security
+
+• Encryption:
+  • In-flight encryption using HTTPS API
+  • At-rest encryption using KMS keys
+  • Client-side encryption if the client wants to perform encryption/decryption itself
+
+• Access Controls: IAM policies to regulate access to the SNS API
+
+• SNS Access Policies (similar to S3 bucket policies)
+  • Useful for cross-account access to SNS topics
+  • Useful for allowing other services ( S3...) to write to an SNS topic 
+
+
+
+
+---------------------- SNS + SQS: Fan Out
+
+
+
+
+
+
+
 
 
 

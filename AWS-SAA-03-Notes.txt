@@ -6507,7 +6507,7 @@ EXP : Let's analyze the bucket policy one step at a time:
 -- Can move between classes manually or using S3 Lifecycle configurations
 
 
-----------------1 Standared frequently Access(FA) General Purpose
+---------------- 1 Standared frequently Access(FA) General Purpose
 
 - this is used for frequently access data 
 
@@ -14496,7 +14496,7 @@ IAM --> roles --> creatae role for EC2 --> attach AmazonSSMManagedInstanceCore p
 
 
 
-=======================Automatically start and stop ur instance with instance scheduler=========================================
+=======================  Automatically start and stop ur instance with instance scheduler=========================================
 
 -- launch the instance schedular task hub
 
@@ -14835,7 +14835,9 @@ what is Delivery delay (DelaySeconds)?
  -- Maximum number of receives per message(maxReceiveCount): If the ReceiveCount for a message exceeds the maximum receive count for the queue, Amazon SQS moves the message to the associated DLQ.
 
 
+
 ----------------------------------------------------------------- Amazon Simple Queue Service (Amazon SQS) temporary queues
+
 
 -- Temporary queues help you save development time and deployment costs when using common message patterns such as request-response.
 
@@ -14894,11 +14896,11 @@ Amazon SQS - Long Polling
 
 
 
-------- short polling : by default use use short pooling not the long pooling , with short pooling the received message requests queries only a subset of their service to find messages that are available to include in the response
+------- short polling : by default  use short pooling not the long pooling , with short pooling the received message requests queries only a subset of their service to find messages that are available to include in the response
 
 
 
---------important thing that you need to understand the difference is in short pooling Amazon SQS sends the response right away even if the query found is no message 
+--------important thing that you need to understand the difference is in short polling Amazon SQS sends the response right away even if the query found is no message 
 
 ------- long pooling Amazon SQS asked you sends and empty response only if the polling wait time expires and that is why we use long polling if we want to save API call costs.
 
@@ -14969,7 +14971,7 @@ eg : ur retried policy number is 5 , it will picked by lambda only for 5 times a
 
 -- create std queue , u have 2 sections these are producers and consumers 
 
--- send message and do pollto receive message 
+-- send message and do poll to receive message 
 
 -- now here we do not have any Dead letter queue , even if the message is fails to send it won't go to DLQ 'coz we do not have DLQ here , after 14 days it will get deleted 
 
@@ -15012,6 +15014,7 @@ eg : ur retried policy number is 5 , it will picked by lambda only for 5 times a
 
 
 =================================================LAB 2 =================
+
 
 AWS SQS Trigger To Lambda Function
 
@@ -15084,6 +15087,7 @@ CloudWatch Alarms / AWS Budgets / Lambda / DynamoDB / S3 Bucket (Events) / Auto 
   • Publish to the platform endpoint
   • Works with Google GCM, Apple APNS, Amazon ADM...
 
+
 ------------ Amazon SNS – Security
 
 • Encryption:
@@ -15096,6 +15100,7 @@ CloudWatch Alarms / AWS Budgets / Lambda / DynamoDB / S3 Bucket (Events) / Auto 
 • SNS Access Policies (similar to S3 bucket policies)
   • Useful for cross-account access to SNS topics
   • Useful for allowing other services ( S3...) to write to an SNS topic 
+
 
 
 ------------ SNS + SQS: Fan Out
