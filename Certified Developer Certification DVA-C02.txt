@@ -4789,6 +4789,45 @@ IMP to know
 
 
 
+
+
+---------------- the differences are , IMP to Know
+
+1  Message Order
+
+-- Standard queues provide best-effort ordering which ensures that messages are generally delivered in the same order as they are sent. Occasionally (because of the highly-distributed architecture that allows high throughput), more than one copy of a message might be delivered out of order.
+
+-- FIFO queues offer first-in-first-out delivery and exactly-once processing: the order in which messages are sent and received is strictly preserved.
+
+2  Delivery
+
+-- Standard queues guarantee that a message is delivered at least once and duplicates can be introduced into the queue.
+
+-- FIFO queues ensure a message is delivered exactly once and remains available until a consumer processes and deletes it; duplicates are not introduced into the queue.
+
+3  Transactions Per Second (TPS)
+
+-- Standard queues allow nearly-unlimited number of transactions per second.
+
+-- FIFO queues allow to process up to 3000 messages per second per API action.
+
+4  Regions
+
+-- Standard queues are available in all the regions.
+
+-- FIFO queues are currently available in limited regions only.
+
+5  AWS Services Supported
+
+-- Standard Queues are supported by all AWS services.
+
+-- FIFO Queues are currently not supported by all AWS services like: CloudWatch Events, S3 Event Notifications, SNS Topic Subscriptions, Auto Scaling Lifecycle Hooks, AWS IoT Rule Actions, AWS Lambda Dead Letter Queues.
+
+
+
+
+
+
 ----------------------------------------------------------------- Amazon Simple Queue Service (Amazon SQS) temporary queues
 
 
@@ -4816,7 +4855,7 @@ IMP to know
 
 
 
------------------------------------------------------------------ Amazon Simple Notification Service (SNS)
+----------------------------------------------------------------- Amazon Simple Notification Service (SNS) --------------------------------------------------------------
 
 
 • What if you want to send one message to many receivers?
@@ -4897,7 +4936,108 @@ CloudWatch Alarms / AWS Budgets / Lambda / DynamoDB / S3 Bucket (Events) / Auto 
 
 
 
----------------------- SNS + SQS: Fan Out
+-------------------------------- SNS + SQS: Fan Out
+
+
+-- The idea is that you want a message to be sent to multiple SQS queues, but if you send them individually to every SQS queue, there can be problems associated with it.
+
+-- For example, if your application crashes in between, if there are delivery failures, or if you add more SQS queues down the road. Therefore we want to use the fan-out pattern.
+
+• The idea is that you're going to Push once in SNS, receive in all SQS queues that are subscribers
+
+    - The idea is that you're going to push once an SNS topic and then you're going to subscribe as many SQS queues as you want to the SNS topic. These queues are subscribers and they will all receive the messages sent into SNS.
+
+-- So for example, we have a buying service that wants to send messages to two SQS queues. What it will do instead, it will send one message into an SNS topic, 
+
+-- and the queues are subscribers of that SNS topic so that the fraud service and the shipping service can read all messages from their own SQS queues.
+
+• Fully decoupled, no data loss 
+
+• SQS allows for: data persistence, delayed processing and retries of work
+
+• Ability to add more SQS subscribers over time
+
+• Make sure your SQS queue access policy allows for SNS to write
+
+• Cross-Region Delivery: works with SQS Queues in other regions
+
+    - we have cross-region delivery. So it's definitely possible for an SNS topic in one region to send messages to SQS queues in other regions if the security allows it.
+
+
+
+
+
+
+------------------------------------------- Next, so how do we use this pattern for other purposes?
+
+
+
+------------------------------------- 1 Application: S3 Events to multiple queues
+
+
+• For the same combination of: event type (e.g. object create) and prefix (e.g. images/) you can only have one S3 Event rule
+
+   - So there is a limitation of S3 event rules is that for a combination of event type, for example, an object is being created and a prefix, for example, images/, you can only have one S3 event rule.
+
+
+----------- But what if you want to send the same S3 event notification to multiple SQS queues?
+
+
+• If you want to send the same S3 event to many SQS queues, use fan-out
+
+    
+
+       S3 object created -----------(events)----------> A S3 ----------------> SNS Topic -----(FAN-OUT)------> SQS Queues / Lambda function 
+
+
+
+
+------------------------------------- 2 Application: SNS to Amazon S3 through Kinesis Data Firehose
+
+
+-- Another architecture is that you can send data directly from SNS to Amazon S3 through Kinesis Data Firehose.
+
+-- So because SNS has a direct integration with KDF
+
+• SNS can send to Kinesis and therefore we can have the following solutions architecture:
+
+     
+
+          Buying Service ----------------------> SNS Topic --------------- Kinesis Data Firehose ------------- Amazon S3 / Any supported KDF Destination
+
+
+
+
+
+------------------------------------- 3 Amazon SNS – FIFO Topic
+
+
+-- So we can apply the fan-out pattern to FIFO topics as well.
+
+• FIFO = First In First Out (ordering of messages in the topic)
+
+ 
+     Producer -----------(Send messages 4,3,2,1)-------------- SNS TOPIC --------------(Receive messages 4,3,2,1)-----------------> Subscribers SQS FIFO
+
+
+• Similar features as SQS FIFO:
+
+     • Ordering by Message Group ID (all messages in the same group are ordered)
+
+     • Deduplication using a Deduplication ID or Content Based Deduplication
+
+
+• Can have SQS Standard and FIFO queues as subscribers
+
+• Limited throughput (same throughput as SQS FIFO)
+
+
+
+
+----------------- SNS FIFO + SQS FIFO: Fan Out
+
+
+• In case you need fan out + ordering + deduplication
 
 
 
@@ -4905,7 +5045,236 @@ CloudWatch Alarms / AWS Budgets / Lambda / DynamoDB / S3 Bucket (Events) / Auto 
 
 
 
+------------------------------------- SNS – Message Filtering
 
 
+• JSON policy used to filter messages sent to SNS topic’s subscriptions
+
+• If a subscription doesn’t have a filter policy, it receives every message
+
+
+
+
+
+---------------------------------------------------------- Kinesis Overview -------------------------------------------------
+
+
+• Makes it easy to collect, process, and analyze streaming data in real-time
+
+• Ingest real-time data such as: Application logs, Metrics, Website clickstreams, IoT telemetry data...
+
+-- As long as the data is generated fast and in real time, this counts as a real time stream of data.
+
+
+
+------------------ So there are four services that comprise Kinesis.
+
+
+• Kinesis Data Streams: capture, process, and store data streams
+
+• Kinesis Data Firehose: load data streams into AWS data stores
+
+• Kinesis Data Analytics: analyze data streams with SQL or Apache Flink
+
+• Kinesis Video Streams: capture, process, and store video streams
+
+
+
+
+-------------------------------- 1 Kinesis Data Streams
+
+
+-- Kinesis Data Streams is a way for you to stream big data in your systems.
+
+-- So a Kinesis Data Stream is made of multiple shards, and shards are numbered. Number one, number two, all the way to number N.
+
+-- And this is something you have to provision ahead of time. So when you start with Kinesis Data Streams, you're saying, hey, I want a stream with six shards. And so the data is going to be split across all the shards.
+
+-- And the shards are going to be defining your stream capacity in terms of ingestion and consumption rates.
+
+-- then we have producers. So producers send data into Kinesis Data Streams, and producers can be manyfold. like they could be Applications / Client / Kinesis Producer Library (KPL)/ Kinesis Agent
+
+-- So all these producers do the exact same thing. They rely on the SDK at a very, very low level, and they're going to produce records into our Kinesis Data Stream.
+
+
+
+---RECORD : So a record, at its fundamental, is made of two things, it's made of a partition key and it is made of the data blob, or the value that is up to one megabytes.
+
+    - So the partition key will define and help determine in which shard will the record go to.       
+
+    - And the data blob is the value itself. (Up to 1 MB)
+
+    - So when you have the producers sending data to Kinesis Data Streams, they can send data at a rate of one megabytes per second, or a thousand messages per second, per shard.
+ 
+    - So if you have six shards, you get six megabytes per second, or 6,000 messages per second, overall,
+
+
+
+-- Now, once the data is in Kinesis Data Streams, it can be consumed by many consumers, and these consumers, again, can have many forms like Apps (KCL, SDK) / Lambda / Kinesis Data Firehose / Kinesis Data Analytics
+
+
+-- So when the consumer receives a record, it receives, again, the partition key, also a sequence number which represents where the record was in the shard, as well as the data blob, so the data itself.
+
+
+--- Now we have different consumption modes for Kinesis Data Streams.
+
+     - We have two megabytes per second of throughput shared for all the consumers, per shard,
+
+                                 OR
+
+     - you get two megabytes per second, per shard, per consumer if you are enabling the enhanced consumer mode, the enhanced fan-out.
+
+
+
+-- So again, producers send data to Kinesis Data Streams. It stays in there for a while, and then it is read by many different consumers.
+
+
+
+
+WORKFLOW : 
+
+
+  Producers --------------------------------------------(Record , 1 MB/sec or 1000 msg/sec per shard) -----------> KDS (it has shards)-----------------(Record, 2 MB/sec (shared) Per shard all consumers or 2 MB/sec (enhanced) Per shard per consumer)------------------> consumers (Apps (KCL, SDK) / Lambda / Kinesis Data Firehose / Kinesis Data Analytics) 
+
+   Applications / Client                                   Partition Key and Data Blob (upto1MB)                                                                       Partition Key , Sequence no.,  Data Blob 
+   / Kinesis Producer Library (KPL)                                                                                                                                            
+   / Kinesis Agent     
+
+
+
+
+---------------------------------------------------------------- some properties of Kinesis Data Streams.
+
+
+• Retention between 1 day to 365 days
+
+• Ability to reprocess (replay) data
+
+• Once data is inserted in Kinesis, it can’t be deleted (immutability)
+
+• Data that shares the same partition goes to the same shard (ordering)
+
+• Producers: AWS SDK, Kinesis Producer Library (KPL), Kinesis Agent
+
+• Consumers:
+
+     • Write your own: Kinesis Client Library (KCL), AWS SDK
+
+     • Managed: AWS Lambda, Kinesis Data Firehose, Kinesis Data Analytics,
+
+
+
+
+---------------------------------------------------------------- Kinesis Data Streams – Capacity Modes
+
+
+• Provisioned mode:
+  • You choose the number of shards provisioned, scale manually or using API
+  • Each shard gets 1MB/s in (or 1000 records per second)
+  • Each shard gets 2MB/s out (classic or enhanced fan-out consumer) 
+  • You pay per shard provisioned per hour
+
+• On-demand mode:
+  • No need to provision or manage the capacity
+  • Default capacity provisioned (4 MB/s in or 4000 records per second)
+  • Scales automatically based on observed throughput peak during the last 30 days
+  • Pay per stream per hour & data in/out per GB
+
+
+
+
+---------------------------------------------------------------- Kinesis Data Streams Security 
+
+
+-- it is deployed within a region. And so you have your shards.
+
+• Control access / authorization using IAM policies
+
+• Encryption in flight using HTTPS endpoints
+
+• Encryption at rest using KMS
+
+• You can implement encryption/decryption of data on client side (harder)
+
+• VPC Endpoints available for Kinesis to access within VPC
+
+• Monitor API calls using CloudTrail
+
+
+
+
+---------------------------------------------------------------- Kinesis Producers 
+
+
+• Puts data records into data streams
+
+• Data record consists of:
+
+     • Sequence number (unique per partition-key within shard)
+     • Partition key (must specify while put records into stream)
+     • Data blob (up to 1 MB)
+
+• Producers:
+
+     • AWS SDK: simple producer
+     • Kinesis Producer Library (KPL): C++, Java, batch, compression, retries
+     • Kinesis Agent: monitor log files
+
+
+• Write throughput: 1 MB/sec or 1000 records/sec per shard
+
+• PutRecord API : the API to send data into Kinesis is called the PutRecord API.
+
+• Use batching with PutRecords API to reduce costs & increase throughput 
+
+
+
+IMP to Know :
+
+
+-- while you produce to Kinesis data streams with a partition key.
+
+-- if one device is very chatty and sends a lot of data it may overwhelm a shard. Also, you need to make sure your partition key is very well distributed to avoid the concept of a hot partition,
+
+-- because then you will have one shard that's going to have more throughputs than the others and they will bring some imbalance.
+
+-- So you need to think about a way to have a distributed partition key.
+
+-- For example, if you have six shards and 10,000 users the user ID is very distributed.
+
+-- But if you have six shards and you just look at Chrome, Firefox and Safari as web browser and the name of the web browser as a partition key, 
+
+-- then it's going to be very hot maybe for Chrome, because there are many, many Chrome users in the world versus Firefox or Safari.
+
+
+        Use highly distributed partition key to avoid “hot partition”
+
+
+
+
+-------------- Kinesis - ProvisionedThroughputExceeded
+
+
+-- So when we produce to Kinesis data streams from our applications, we know that we can produce 1 megabyte per second or 1,000 records per second and so as long as we do so it goes well.
+
+-- But if we start over-producing into a shard we're going to get an exception because we are going over the provision throughput.
+
+-- So we get the ProvisionedThroughputExceeded exception.
+
+
+-- the solution for this exception is 
+
+      • Use highly distributed partition key
+
+      • Retries with exponential backoff , to ensure that we can retry these exceptions
+
+      • Increase shards (scaling) , you need to scale the shard, maybe it's called shard-splitting to split a shard into and augment the throughputs , by increasing the number of shards this can help address throughput exceptions 
+
+
+
+
+
+
+---------------------------------------------------------------- Kinesis Data Streams Consumers
 
 
