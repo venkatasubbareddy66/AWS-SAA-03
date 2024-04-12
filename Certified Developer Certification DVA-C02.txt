@@ -3876,7 +3876,7 @@ Resources:
 
 
 
--- suppose u ahve s3 bucket already and have files in it so , u have to change 2 items in the 'CustomResource' resource:
+-- suppose u have s3 bucket already and have files in it so , u have to change 2 items in the 'CustomResource' resource:
 
      1 - Change the `DependsOn` property to the logical name of the S3 bucket in your template
 
@@ -4527,6 +4527,9 @@ IMP to know
     - every time you send a message you can set a per-message delay if you wanted to using the DelaySeconds parameter.
 
 
+-- SQS Delay Queues is a period of time during which Amazon SQS keeps new SQS messages invisible to consumers. In SQS Delay Queues, a message is hidden when it is first added to the queue. (default: 0 mins, max.: 15 mins)
+
+
 
 Producer--------------------(Send messages)-----> SQS queue ----------(Poll messages) -------------> Consumer
 
@@ -4893,6 +4896,9 @@ Method 2 :  Pub / Sub (Publish-subscribe.)
         SNS -----------------(publish)------------> SQS / Lambda / Kinesis Data Firehose / HTTP(S) Endpoints / Emails / SMS and Mobile Nonficanons 
 
 
+Note: Kinesis Data Firehose is now supported, but not Kinesis Data Streams.
+
+
 
 
 ------------------------ SNS integrates with a lot of AWS services
@@ -5142,6 +5148,15 @@ WORKFLOW :
 
 
 
+Question : You have a Kinesis data stream with 6 shards provisioned. This data stream usually receiving 5 MB/s of data and sending out 8 MB/s. Occasionally, your traffic spikes up to 2x and you get a ProvisionedThroughputExceededException exception. What should you do to resolve the issue?
+
+ANS : Add more shards
+
+EXP : The capacity limits of a Kinesis data stream are defined by the number of shards within the data stream. The limits can be exceeded by either data throughput or the number of reading data calls. Each shard allows for 1 MB/s incoming data and 2 MB/s outgoing data. You should increase the number of shards within your data stream to provide enough capacity.
+
+
+
+
 
 ---------------------------------------------------------------- some properties of Kinesis Data Streams.
 
@@ -5349,7 +5364,7 @@ Shared (Classic) Fan-out Consumer - pull                                        
 
 • Read throughput: 2 MB/sec per shard across all consumers                             • 2 MB/sec per consumer per shard
 
-• Max. 5 GetRecords API calls/sec                                                     
+• Max. 5 GetRecords API calls/sec  per shard                                                   
 
 • Latency ~200 ms                                                                      • Latency ~70 ms
 
@@ -5366,3 +5381,1851 @@ Shared (Classic) Fan-out Consumer - pull                                        
 ----------------------------------------------------------- Kinesis Consumers – AWS Lambda
 
 
+-- it is a way for you to consume data without using servers.
+
+-- So we have Kinesis Data Stream and say has three shards. so we are going to have lambda functions and their role will be to process records and save the record into dynamodb which is a serverless database.
+
+-- So the Lambda functions are going to call get batch onto the Kinesis Data Stream.
+
+-- And the data is going to be sent to lambda the functions by partition key to be processed.
+
+-- The Lambda functions can then send data into dynamodb and we have a way to process our Kinesis Data Stream using a serverless mechanism.
+
+
+• Supports Classic & Enhanced fan-out consumers
+
+• Read records in batches
+
+• Can configure batch size and batch window
+
+• If error occurs, Lambda retries until succeeds or data expired
+
+• Can process up to 10 batches per shard simultaneously
+
+
+
+
+
+------------------------------------------------------------- LAB for Kinesis Data Streams 
+
+
+#!/bin/bash
+
+# get the AWS CLI version
+aws --version
+
+# PRODUCER
+
+# CLI v2
+aws kinesis put-record --stream-name test --partition-key user1 --data "user signup" --cli-binary-format raw-in-base64-out
+
+# CLI v1
+aws kinesis put-record --stream-name test --partition-key user1 --data "user signup"
+
+
+# CONSUMER 
+
+# describe the stream
+aws kinesis describe-stream --stream-name test
+
+# Consume some data
+aws kinesis get-shard-iterator --stream-name test --shard-id shardId-000000000000 --shard-iterator-type TRIM_HORIZON
+
+aws kinesis get-records --shard-iterator <>
+
+
+
+
+
+-- open Kinesis --> choose data streams --> Data stream capacity  = provisioned (1 shard is enough for demo ) ----> create stream
+
+-- in the data streams section , u will able to see producers and consumers and monitoring also 
+
+-- let's keep it simple. We just want to write and read from our stream,
+
+-- so therefore, we're going to use the SDK for producing and for consuming.
+
+-- to do so , open cli in AWS Console 
+
+-- As an alternative, you could be using your own terminal or CLI if it's preconfigured,
+
+-- we have follow some commands to do this LAB 
+
+-- 1st command 
+
+          aws --version
+
+-- u will get version of ur AWS CLI
+
+-- 2nd cmd 
+
+          aws kinesis put-record --stream-name test --partition-key user1 --data "user signup" --cli-binary-format raw-in-base64-out
+
+
+-- here instead of test (replace ur data stream name ) , press enter , u will get 
+
+
+-- {
+    "ShardId": "shardId-000000000000",
+    "SequenceNumber": "49651005991449160444837921106981744793678338524213936130"
+}
+
+
+-- u will get this ID's of shard and sequence
+
+-- do same for login and logout messages 
+
+--  aws kinesis put-record --stream-name mystream --partition-key user1 --data "user login" --cli-binary-format raw-in-base64-out
+
+
+--  aws kinesis put-record --stream-name mystream --partition-key user1 --data "user logout" --cli-binary-format raw-in-base64-out
+
+
+
+-- if you waited a little bit, and went into monitoring, and look at the stream metrics,
+
+-- So next we want to be able to consume from Kinesis Data Stream.
+
+-- So to do so, we're going to first describe the stream, to get some information around what this stream is made of, because we need to be able to consume from a specific shard.
+
+--  3 rd cmd # describe the stream 
+ 
+         aws kinesis describe-stream --stream-name test
+
+-- change test , put ur datastream name 
+
+-- as you can see here, we have this StreamDescription. 
+
+-- We have one shard called shardId-0000000000000, and so we need to keep this in our mind. To be able to read from this stream.
+
+IMP : 
+
+-- so when you use the CLI, the SDK at a very, very low level, you need to specify from which shard you are reading from.
+
+-- But if you are using Kinesis Client Library, all of this is handled for you by the library itself.
+
+-- But we are using the CLI, so we have to specify the shard ID.
+
+
+
+
+-- 4th cmd  # Consume some data
+
+        aws kinesis get-shard-iterator --stream-name test --shard-id shardId-000000000000 --shard-iterator-type TRIM_HORIZON
+
+
+-- "ShardIterator": "AAAAAAAAAAGSYiojmBSCJQpNaQz0qWSwWlj8yGA5j6QASza3PdcI4rAGHwggraCdkYpPqT47zlgorq92fYLSsrhfQuckhtteKHuzZ6O1AYq9P5G1dOyh4Xd4CDxEecYe0YZBiYlrR3/ySB1xt2IkjHIibWcyvyaQBrzHexR0d5jj8sY0dpSPkYUh4YlBkSodUSoIFqbywWwJQRmn1eqSKjZWEIExBGtIWF1WKkNVTB1qZKlUrarQpg=="
+
+-- u will get like this 
+
+
+-- here , we have the shard-iterator-type is TRIM-HORIZON.this means that you're going to read from the very beginning of the stream, so it will read all the records that were sent for from the beginning.
+
+-- this ShardIterator can be reused to consume records,
+
+
+-- 5th cmd 
+
+       aws kinesis get-records --shard-iterator <"ShardIterator" content>
+
+
+eg :  aws kinesis get-records --shard-iterator "AAAAAAAAAAGSYiojmBSCJQpNaQz0qWSwWlj8yGA5j6QASza3PdcI4rAGHwggraCdkYpPqT47zlgorq92fYLSsrhfQuckhtteKHuzZ6O1AYq9P5G1dOyh4Xd4CDxEecYe0YZBiYlrR3/ySB1xt2IkjHIibWcyvyaQBrzHexR0d5jj8sY0dpSPkYUh4YlBkSodUSoIFqbywWwJQRmn1eqSKjZWEIExBGtIWF1WKkNVTB1qZKlUrarQpg=="
+
+
+-- So this consumption mode I'm doing right now, by using the low level API, describing the stream, getting a ShardIterator, and getting records is using the shared consumption mode.
+
+-- This is not using enhanced Fan-Out,which in my opinion, should be using the Kinesis Client Library, Consumer Library for you to really leverage, and have a nice API to do so.
+
+
+-- once u enter this u will get all the records like this 
+
+
+  "Records": [
+        {
+            "SequenceNumber": "49651005991449160444837921106981744793678338524213936130",
+            "ApproximateArrivalTimestamp": "2024-04-11T02:57:35.479000+00:00",
+            "Data": "dXNlciBzaWdudXA=",
+            "PartitionKey": "user1"
+        },
+        {
+            "SequenceNumber": "49651005991449160444837921106982953719497975830815965186",
+            "ApproximateArrivalTimestamp": "2024-04-11T03:03:05.345000+00:00",
+            "Data": "dXNlciBsb2dpbg==",
+            "PartitionKey": "user1"
+        },
+        {
+            "SequenceNumber": "49651005991449160444837921106984162645317591353343868930",
+            "ApproximateArrivalTimestamp": "2024-04-11T03:03:18.207000+00:00",
+            "Data": "dXNlciBsb2dvdXQ=",
+            "PartitionKey": "user1"
+        },
+        {
+            "SequenceNumber": "49651005991449160444837921107080876710886870538971512834",
+            "ApproximateArrivalTimestamp": "2024-04-11T03:29:42.186000+00:00",
+            "Data": "dXNlciBzaWdudXA=",
+            "PartitionKey": "user1"
+        },
+        {
+            "SequenceNumber": "49651005991449160444837921107082085636706486336377323522",
+            "ApproximateArrivalTimestamp": "2024-04-11T03:29:59.749000+00:00",
+            "Data": "dXNlciBsb2dpbg==",
+            "PartitionKey": "user1"
+        },
+
+  ]
+
+
+
+-- we get a batch of records out of it. So we used to have record one right here, which is PartitionKey user1.
+
+-- moe open in google , base64 data decode online , decode the data 
+
+
+
+IMP : it will expire after 5 min ,  If u get timeout error like this , do this again from step 1 within below 5 min
+
+-- An error occurred (ExpiredIteratorException) when calling the GetRecords operation: Iterator expired. The iterator was created at time Thu Apr 11 03:18:15 UTC 2024 while right now it is Thu Apr 11 03:25:34 UTC 2024 which is further in the future than the tolerated delay of 300000 milliseconds.
+         
+
+
+
+
+
+---------------------------------------------------------------- Kinesis Client Library (KCL)
+
+
+• A Java library that helps read record from a Kinesis Data Stream with distributed applications sharing the read workload
+
+• Each shard is to be read by only one KCL instance
+
+     • 4 shards = max. 4 KCL instances
+
+     • 6 shards = max. 6 KCL instances
+
+
+IMP : When using Kinesis Client Library, each shard is to be read-only by one KCL instance. So, if you have 10 shards, then the maximum KCL instances you can have is 10.
+
+
+
+--------------------------- how the Kinesis Client Library works ?
+
+
+• Progress is checkpointed into DynamoDB (needs IAM access) 
+
+    - So, the Kinesis Client Library will be reading from our Kinesis Data Stream and the progress of how far it's been reading is going to be checkpointed into DynamoDB, and so your application running KCL will need IAM access to DynamoDB.
+
+
+• Track other workers and share the work amongst shards using DynamoDB
+
+    - It will be able, thanks to DynamoDB to track the other workers of your KCL application and share the work among shards.
+
+
+• KCL can run on EC2, Elastic Beanstalk, and on-premises as long as they have correct IAM credentials.
+
+• Records are read in order at the shard level
+
+-- there are two versions of the Kinesis Client Library,
+
+     • KCL 1.x (supports shared consumer)
+
+     • KCL 2.x (supports shared & enhanced fan-out consumer)
+
+
+
+
+------------------------------------ KCL Example: 4 shards
+
+
+look at picture in pdf for better understanding 
+
+
+
+-- if we look at an example of 4 shards into our stream, we can have a DynamoDB table to check on the progress,
+
+-- so we can run two KCL apps of the same coherent application running on two different EC2 instances.
+
+-- in this case, thanks to DynamoDB, they will know how to share the work, so the first KCl app is going to be reading from shard 1 and 2, and the second KCL app is going to be reading from shard 3 and 4.
+
+-- Now, the progress of how far the app has been reading into the Kinesis Data Stream will be checkpointed into DynamoDB.
+
+-- And so, for example, if one of these application goes down, DynamoDB and KCL apps working together, will know that an app will go down, and so reading from the other shards will be resumed from where it was checkpointed.
+
+
+
+
+------------------------------------ KCL Example: 4 shards, Scaling KCL App
+
+
+-- if you have 4 shards and now you run 4 KCL applications, then it will be each reading from one shard.
+
+-- And therefore the progress will be resumed from DynamoDB and checkpointed again.
+
+-- But we can not have more KCL apps than shards, because well, otherwise one will be doing nothing.
+
+
+
+
+------------------------------ KCL Example: 6 shards, Scaling Kinesis
+
+
+-- So if you want to read to scale Kinesis, you can scale Kinesis and add 6 shards, so now we still have our 4 KCL applications, but now we have six shards in Kinesis in the streams.
+
+-- And so again, they will detect this change, and working together with DynamoDB, they will again, split the work between each KCL application and the shard assignments.
+
+
+
+
+--------------------------------- KCL Example: 6 shards, Scaling KCL App
+
+
+-- So that means that once we have 6 shards Kinesis Data Stream then we can have 6 KCL applications reading from them, and checkpointing the progress into DynamoDB.
+
+
+
+
+
+---------------------------------------------------------------- Kinesis Operation – Shard Splitting 
+
+
+
+• Used to increase the Stream capacity (1 MB/s data in per shard)
+
+    - So Shard Splitting is used to split a shard into two. So that means we have more shards and so it's used to increase the Stream capacity.
+
+    - So if we add more shards by splitting a shard we get an extra one megabyte per second of throughput per shard.
+
+
+• Used to divide a “hot shard”
+
+    - So it's used for example, when you want to divide a hot shard,
+
+    - for example , we have 3 shards into our KDS , here shard 2 is very hot, a lot of data is sent to it.
+
+    - here , We're going to split the shard and we're gonna get shard 4 and 5 out of it
+
+    - and by having the new shards, we've increased our stream throughput from three megabytes per second to four megabytes per second.
+
+    - So we've increased the capacity but because we are being built in terms of how many shards we have in our stream we've also increased the cost of our Kinesis Data Stream .
+
+
+• The old shard is closed and will be deleted once the data is expired
+
+    - The old shard is going to be closed or Shard two will not be written two anymore and the old data will be expired after some time.
+
+    - So depending on what your retention period is between one to 365 days, you will have to wait this long.
+  
+    - Then the data is expired and then finally, the shard will be deleted.
+
+
+• No automatic scaling (manually increase/decrease capacity)
+
+    - There is no auto-scaling in Kinesis Data Streams although you can find a way to create your own auto-scaling and there is a solution architecture for that 
+    
+    - but there's no setting to do auto-scaling with Kinesis Data Streams and so it is for you to manually increase or decrease capacity.
+
+
+• Can’t split into more than two shards in a single operation
+
+
+
+
+---------------------------------------------------------------- Kinesis Operation – Merging Shards
+
+
+-- the opposite operation of Shard Splitting is Merging Shards .
+
+• So you realize that you want to Decrease the Stream capacity and save costs
+
+• Can be used to group two shards with low traffic (cold shards) , you're going to merge them together into a new shard.
+
+-- So in this example, Shard one and four are merged into Shard six and this is used to decrease capacity and the cost. (look at picture for better understanding from pdf)
+
+• Old shards are closed and will be deleted once the data is expired
+
+• Can’t merge more than two shards in a single operation
+
+-- with Shard Splitting and Shards Merging you've seen how to scale up and down Kinesis.
+
+
+
+
+
+
+
+---------------------------------------------------------------------- Kinesis Data Firehose (delivery stream)
+
+
+
+-- So it is a very helpful service that can take data from producers. And producers can be everything we've seen for Kinesis Data Stream, so applications, clients, SDK, or the Kinesis agents can all produce into your Kinesis Data Firehose.
+
+-- But also, a Kinesis Data Stream can produce into Kinesis Sata Firehose. Amazon CloudWatch logs and events can produce into Kinesis Data Firehose.
+
+-- all these applications are going to send records into Kinesis Data Firehose, and then Kinesis Data Firehose can optionally choose to transform the data using a Lambda function, but this is optional.
+
+-- once the data is transformed optionally, then it can be written in batches into destinations.
+
+-- So Kinesis Data Firehose take data from sources. Usually the most common is going to be Kinesis Data Streams and it's going to write this data into destinations without you writing any kind of code, because Kinesis Data Firehose knows how to write data.
+
+
+
+---------------------- So there are three kinds of destinations with Kinesis Data Firehose.
+
+
+1 AWS Destinations :
+
+    1 the first one is Amazon S3, so you can write all your data into Amazon S3.
+
+    2 The second one is Amazon Redshift, which is a warehousing database. to do so, it first writes the data into Amazon S3. And then Kinesis Data Firehose will issue a copy command, and this copy command is going to copy data from Amazon S3 into Amazon Redshift.
+
+    3 Amazon OpenSearch
+
+
+2 There are also some third party partner destinations.
+
+    - So Kinesis Data Firehose can send data into Datadog, Splunk, New Relic, MongoDB. And this list can get bigger and bigger over time,
+
+
+3 Custom Destinations
+
+    - if you have your own API with an HTTP endpoint, it is for you to send data from Kinesis Data Firehose into a custom destination.
+
+
+
+-- so once the data is sent into all these destinations, you have two options.
+
+      - You can also send all the data into an S3 bucket as a backup or just send the data that was failed to be written into these destinations into a failed S3 buckets. 
+
+
+
+• Fully Managed Service, no administration, automatic scaling, serverless
+
+    • AWS: Redshift / Amazon S3 / OpenSearch
+    • 3rd party partner: Splunk / MongoDB / DataDog / NewRelic / snowflake ...
+    • Custom: send to any HTTP endpoint
+
+
+• Pay for data going through Firehose
+
+• Near Real Time - Why?
+
+     - because we write data in batches from Firehose to the destination.
+
+     • Buffer interval: 0 seconds (no buffering) to 900 seconds
+
+     • Buffer size: minimum 1MB
+
+     - So in case you have buffering, well, that makes Kinesis Data Firehose a near real-time service.
+
+     - And if you don't have buffering, if you have zero seconds for your buffer interval, it's still going to be considered near real-time because going to take a few seconds to deliver your data into your destination.
+
+
+
+• Supports many data formats, conversions, transformations, compression
+
+• Supports custom data transformations using AWS Lambda
+
+• Can send failed or all data to a backup S3 bucket 
+
+
+
+
+-------------------------------------------------------------- diff b/w Kinesis Data Streams vs Firehose
+
+
+
+          Kinesis Data Streams                                                           Kinesis Data Firehose
+
+
+• Streaming ser vice for ingest at scale                                      • Load streaming data into S3 / Redshift / OpenSearch / 3rd party / custom HTTP / snowflake
+
+
+• Write custom code (producer /consumer)                                      • Fully managed
+
+
+• Real-time (~200 ms)                                                         • Near real-time
+
+
+• Manage scaling (shard splitting / merging)                                  • Automatic scaling
+
+• Data storage for 1 to 365 days                                              • No data storage
+
+• Supports replay capability                                                  • Doesn’t support replay capability
+
+
+
+
+
+
+--------------------------------------------------------------  Kinesis Data Firehose 
+
+
+-- create KDF ---> source = KDS --> destinations = s3 --> select KDS ARN ---> buffer interval = 60 sec for demo --> create bucket and choose that bucket as destination
+
+-- create KDF,  reamin all are default 
+
+-- here we have our producer is KDS , so go to KDS and create records as we did before like for signup , login and logout
+
+-- so three records have been sent. And what I can do now is go into Amazon S3 and see if they have appeared in Amazon S3.
+
+-- currently, there are zero objects in my bucket. That's because the Kinesis Data Firehose has a buffer of 60 seconds. So we need to wait 60 seconds until the data makes it into Amazon S3.
+
+-- after 60 sec , it will store into s3 bucket , open n see 
+
+-- now delete the resources 
+
+
+
+
+-------------------------------------------------------------- Kinesis Data Analytics (Managed Apache Flink)
+
+
+-- there are two flavors of it.
+
+
+--------------- 1 Kinesis Data Analytics for SQL applications
+
+
+-- So it sits in the center. And the two data sources that it's able to read from are Kinesis Data Streams and Kinesis Data Firehose.
+
+-- So you can read from either of those, and then you can apply SQL statements to perform your real-time analytics.
+
+-- It's also possible for you to join some reference data by referencing it from an Amazon S3 bucket. This will, for example, allow you to enrich the data in real-time.
+
+-- Then you can send data to various destinations, and there are two of them.
+
+      1 The first one is a Kinesis data stream. So you can create a stream out of a Kinesis Data Analytics real-time query, or  
+      
+      2 you can send it directly into Kinesis Data Firehose, 
+      
+      
+-- each with their own use cases.If you send directly into Kinesis Data Firehose, then you can send into Amazon S3, Amazon Redshift, or Amazon OpenSearch, or any other Firehose destinations.
+
+-- Whereas if you send it into a Kinesis data stream, you can do real-time processing of that stream of data using AWS Lambda or whatever applications you are running on EC2 instances.
+
+-- remember the diagram(structure, get picture from pdf )
+
+-- this is for Kinesis Data Analytics for SQL Applications.
+
+
+• Real-time analytics on Kinesis Data Streams & Firehose using SQL
+
+• Add reference data from Amazon S3 to enrich streaming data
+
+• Fully managed, no servers to provision
+
+• Automatic scaling
+
+• Pay for actual consumption rate
+
+• Output:
+
+      • Kinesis Data Streams: create streams out of the real-time analytics queries
+
+      • Kinesis Data Firehose: send analytics query results to destinations
+
+• Use cases:
+
+    • Time-series analytics 
+    • Real-time dashboards 
+    • Real-time metrics
+
+
+
+
+------------------  2 Kinesis Data Analytics for Apache Flink
+
+
+• Use Flink (Java, Scala or SQL) to process and analyze streaming data
+
+   - So Flink are special applications you need to write as code. And what it allows you is that you can actually run these Flink applications on the cluster that's dedicated to it on Kinesis Data Analytics.
+
+
+-- But it's all behind the scenes. And with Apache Flink, you can read from two main data sources, you can read from Kinesis Data Streams or Amazon MSK.
+
+
+• So with this service, you Run any Apache Flink application on a managed cluster on AWS , the idea is that Flink is going to be a lot more powerful than just standard SQL.
+
+     - So if you need advanced querying capability, or to read streaming data from other services such as Kinesis Data Streams or Amazon MSK, which is managed Kafka on AWS, then you would use this service.
+     
+     • provisioning compute resources, parallel computation, automatic scaling
+
+     • application backups (implemented as checkpoints and snapshots)
+
+     • Use any Apache Flink programming features
+
+     • Flink does not read from Firehose (use Kinesis Analytics for SQL instead)
+         
+         - You cannot read from Kinesis Data Firehose. If you need to read and do real-time analytics on Kinesis Data Firehose, then you must use Kinesis Data Analytics for SQL.
+
+
+
+
+
+--------------------------------------------------------------  Ordering data into Kinesis
+
+
+
+-- how data is being ordered for Kinesis and SQS FIFO. Because even though these technologies look similar and have some similar capabilities, they're actually very, very, very different.
+
+
+• Imagine you have 100 trucks (truck_1, truck_2, ... truck_100) on the road sending their GPS positions regularly into AWS.
+
+      - So let's have a little case study. Imagine you have 100 trucks on the road, and each truck will have a truck ID. and they're on the road and they're going to send their GPS positions very regularly into AWS.
+
+
+• You want to consume the data in order for each truck, so that you can track their movement accurately.
+
+• How should you send that data into Kinesis?
+
+• Answer : send using a “Par tition Key” value of the “truck_id”
+
+--  the value of that partition key is the truck ID. So the truck one will send it for the  partition key truck one and then truck two will send for partition key truck two .....
+
+• The same key will always go to the same shard
+
+
+------- EG : see picture in pdf for better understanding 
+
+
+Explanation :
+
+
+-- So we have our Kinesis Data Stream and it has three shards , to simplify things, I'm not going to show you 100 trucks, but five should be enough. So we have five trucks, and they're on the road and they're sending the data into Kinesis.
+
+-- As I said, we choose the partition key to be truck ID.
+
+-- So that means that my truck one, when it's sending it's GPS data, it will send it to Kinesis with the partition key, truck one and Kinesis will say, okay, partition key truck one, I will hash it I mean we'll do a computation. And in this instance, it figures out that truck one should go into shard number one.
+
+-- So my data will go into shard number one.
+
+-- Then the truck two will be sending its data as well and will send a partition key of truck two. And Kinesis will look at this partition key and say I've hashed it and now it looks like you should go into shard two.
+
+-- Same for truck three so truck three will be on the road. And it will send truck three as the partition key. But this time, the Kinesis Data Stream service will hash that truck three as the key and say you should go to shard one and that's fine.
+
+-- It just says it doesn't have to be shard three it just says, this partition key should go to shard one.
+
+-- Now for truck four, it will go to shard three and for truck five, it will go to shard two.
+
+-- So this is the idea now we have a repartition and it's called partition hence the name partition key of each truck on each shard based on the partition key.
+
+-- because truck one keeps on sending the same partition key which is truck one, then the data will always go to the same shard.
+
+-- Hence so on the next data point for the truck one will be in shard one and the next data point for truck three will be in shard one as well and so on.
+
+-- So anytime the truck one sends data, it will be in shard one and anytime the blue truck, the shard three sends data then it will be in shard one as well, because we are specifying to use the same partition key over time
+
+-- So we see here is that truck one and three will always have the data into shard one.
+
+-- Now if we look at the shard two, then only truck two and five will have the data into shard two.
+
+-- if you look at shard three, in this example, we only have the truck four that will send its data into shard three.
+
+-- So now imagine you have 100 trucks and maybe five shards, then each shard on average will have about 20 trucks.
+
+-- But there is no linkage directly, you can tell between the truck and each shard.
+
+-- Kinesis will have to hash the partition key to determine which shard to go to. 
+
+-- The idea is though that as soon as we have a stable partition key, then each truck will be sending this data to the same shard and therefore we will have the data in order for each truck at the shard level.
+
+
+
+
+
+
+-------------------------------------------------------------- Ordering data into SQS
+
+
+• For SQS standard, there is no ordering.
+
+• For SQS FIFO, if you don’t use a Group ID, messages are consumed in the order they are sent, with only one consumer
+
+• You want to scale the number of consumers, but you want messages to be “grouped” when they are related to each other
+
+• Then you use a Group ID (similar to Partition Key in Kinesis)
+
+
+
+
+
+-------------------------------------------------------------- Kinesis vs SQS ordering
+
+
+• Let’s assume 100 trucks, 5 kinesis shards, 1 SQS FIFO
+
+
+ • Kinesis Data Streams:
+
+      • On average you’ll have 20 trucks per shard , thanks to the hashing, so each truck will be designated one shard and will stay in that shard forever.
+
+      • Trucks will have their data ordered within each shard
+
+      • The maximum amount of consumers in parallel we can have is 5 , because we have five shards and we need one consumer per shard.
+
+      • Can receive up to 5 MB/s of data , So the Kinesis Data Stream though because it has five shards can receive up to five megabytes per second of data, which is quite a high throughput.
+
+
+• SQS FIFO
+
+      • You only have one SQS FIFO queue
+
+      • You will have 100 Group ID, because we have 100 trucks, then we can create 100 group ID, each equal to the truck ID.
+
+      • You can have up to 100 Consumers (due to the 100 Group ID) , Each consumer will be hooked to one specific group ID.
+
+      • You have up to 300 messages per second (or 3000 if using batching)
+
+
+
+---- conclusion
+
+
+-- sometimes is going to be better to use SQS FIFO. If you want to have a dynamic number of consumers based on the number of group IDs,
+
+-- sometimes it could be better to use Kinesis Data Stream if you have say 10,000 trucks and you need to send it lot of data, and also have data ordering per shard in your Kinesis Data Stream. 
+
+
+
+
+
+
+
+
+--------------------------------------------------------------  SQS vs SNS vs Kinesis
+
+SQS:                                                          SNS:                                         Kinesis
+
+• Consumer“pulldata”                                    • Pushdatatomany subscribers                           • Standard:pulldata (2 MB per shard)
+
+• Data is deleted after being consumed                  • Upto 12,500,000subscribers                           • Enhanced-fanout:pushdata (2 MB per shard per consumer)
+
+• Canhaveasmanyworkers (consumers) as we want           • Data is not persisted(lost if not delivered)         • Possibility to replay data
+
+• Noneedtoprovision throughput                          • Pub/Sub                                              • Meantforreal-timebigdata,analytics and ETL
+
+• Ordering guarantees only on FIFO queues               • No need to provision throughput                      • Ordering at the shard level
+
+• Individual message delay capability                   • Integrates with SQS for fan- out architecture        • Data expires after X days
+                                                          pattern     
+
+                                                        • FIFO capability for SQS  FIFO                        • Provisioned mode or on- demand capacity mode   
+
+
+
+
+
+
+
+
+
+================================================== AWS Monitoring, Troubleshooting & Audit (CloudWatch, X-Ray and CloudTrail)========================================
+
+
+-- we have our application it's in the cloud. It's running. And your manager calls you at 2:00 a.m. and say it's not running anymore.
+
+-- What happened?
+
+-- Well we've deployed our application but we forgot to turn on monitoring.
+
+-- Monitoring is so important and it will make sure that your applications are running the right way. 
+
+-- Such as you can see what's happening with the logs with the metrics with tracing and audits who made what's in your AWS infrastructure.
+
+
+
+
+
+---------------------------------------- Why Monitoring is Important
+
+
+• We know how to deploy applications
+
+     • Safely
+     • Automatically
+     • Using Infrastructure as Code
+     • Leveraging the best AWS components!
+
+
+• Our applications are deployed, and our users don’t care how we did it...
+
+• Our users only care that the application is working!
+
+     • Application latency: will it increase over time?
+
+     • Application outages: customer experience should not be degraded
+
+     • Users contacting the IT department or complaining is not a good outcome
+
+     • Troubleshooting and remediation
+
+
+• Internal monitoring:
+
+     • Can we prevent issues before they happen? 
+     • Performance and Cost
+     • Trends (scaling patterns)
+     • Learning and Improvement
+
+
+
+
+
+---------------------------------------- Monitoring in AWS
+
+
+1 • AWS CloudWatch:
+
+      • Metrics: Collect and track key metrics
+      • Logs: Collect, monitor, analyze and store log files
+      • Events: Send notifications when certain events happen in your AWS 
+      • Alarms: React in real-time to metrics / events
+
+
+2 • AWS X-Ray:
+
+      • Troubleshooting application performance and errors , so we'll see the latency and we'll see the errors just live.
+      • Distributed tracing of microservices
+      - X-Ray is kind of a new service that is not very popular yet, but I think it is one of the most awesome ones.
+
+
+3 • AWS CloudTrail:
+
+      • Internal monitoring of API calls being made
+      • Audit changes to AWS Resources by your users
+
+
+
+
+
+
+---------------------------------------- AWS CloudWatch Metrics
+
+
+• CloudWatch provides metrics for every services in AWS , you need to understand what the metric means.
+
+• Metric is a variable to monitor (CPUUtilization, NetworkIn...), and then based on how the metric is behaving, it gives you an idea of how the service is behaving, and you can do some troubleshooting based on this.
+
+• Metrics belong to namespaces
+
+• Dimension is an attribute of a metric (instance id, environment, etc...).
+
+• Up to 30 dimensions per metric
+
+• Metrics have timestamps
+
+• Can create CloudWatch dashboards of metrics
+
+
+-- CloudWatch is all about Alarms,Events and Logs
+
+-- it is regional only 
+
+-- CW is used to monitor performance of all as resource 
+
+-- to monitor the resource , CW need Host level metrics also known as default metrics 
+
+     1 CPU 
+
+     2 Network 
+
+     3 Disk --- volume 
+
+     4 Status Check 
+
+-- memory not comes under HLM 
+
+-- memory is custom metrics 
+
+-- 2 types of moitoring 
+
+     1 Basic and 
+     2 Detailed Moitoiring 
+
+-- Basic is free nad it will tke every 5 min data
+
+-- deatiled monitoiring : every 1 min data points , billable
+
+
+-- u create alaram in CW 
+
+-- alarms can do actions like (terminate , reboot ,stop , recover ) 
+
+-- Alarm has 3 States : 
+
+     1 In Alarm : > 90 
+
+     2 OK : < 90
+
+     3 Insufficient : ec2 stopped due to some reasons
+
+
+
+-- we also have concept called " Composite Alarms"
+
+- CW alarms are single metric
+
+- Composite Alarms are monitoring the states of multiple alarms 
+
+ eg: AND or OR conditions 
+
+
+
+
+
+---------------------------------------- some  terminologies to understand for the Cloudwatch 
+
+
+1  NameSpaces : Containers for monitoring data , it is a way to keep things seperate 
+
+      -- NameSpace has got a name , it can be anythng as long as it stays within the rule set 
+
+      -- All aws data goes to aws namesoace ---> AWS/Service
+
+      -- Namespace contains related metric 
+
+
+2  Metric : it is a collection of related Data Points , in the time ordered structures 
+
+      Eg: cpu usage network IN/OUT 
+
+
+3  Data Point : let us say we have metric called CPU Utilization , everytime any server measures its utilixation and send it into cloudwatch that goes into the CPU utilization metrics and each one of those measures so everytime the server reports the cpu that measure is called "Data Point" 
+
+
+     --it has 2 components 
+
+     1 timestamp 
+
+     2 value 
+
+
+Note : CPU utilization metric could contain data from many servers ,so how do we seperate data for this? so use " Dimesions"
+
+
+4  Dimensions : these are Name Value Pairs that seperate data point for different thngs or perspective withn the same metric 
+
+
+      -- while sending data points to cloud watch ,AWS also send in , these two 
+
+      A  Name = InstanceID , Value =I-xxxx
+
+      B  name = InstanceType , value =t2.micro.......
+
+
+5  ALARM : CW also allows to take actions based on metrics which is done using Alarms 
+
+      -- two states 
+
+      A  OK --> Everything is working fine 
+
+      B  ALARM --> Something bad has happened 
+
+
+
+
+REF : https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/cloudwatch_concepts.html
+
+
+
+
+
+
+---------------------------------------- EC2 Detailed monitoring 
+
+
+• EC2 instance metrics have metrics “every 5 minutes”
+
+• With detailed monitoring (for a cost), you get data “every 1 minute”
+
+• Use detailed monitoring if you want to scale faster for your ASG! , it gives you some benefits for your ASG, if you want to scale out and in faster.
+
+• The AWS Free Tier allows us to have 10 detailed monitoring metrics
+
+
+• Note: EC2 Memory usage is by default not pushed (must be pushed from inside the instance as a custom metric)
+
+
+
+
+
+
+
+---------------------------------------- CloudWatch Logs for EC2 
+
+
+• By default, no logs from your EC2 machine will go to CloudWatch
+
+• You need to run a CloudWatch agent on EC2 to push the log files you want
+
+• Make sure IAM permissions are correct
+
+• The CloudWatch log agent can be setup on-premises too
+
+
+
+------------------------------------- Hands On 
+
+--- u ave to install CW Agent 
+
+-- by deafult CW agent do not have permission to push logs to cloudwatch logs 
+
+-- so we should create ROLE here , and give CWFULL access policy and this role is attach to the ec2 
+
+1  create IAM role and give CW permissions 
+
+2  attach The role to the ec2 instance ,make sure ur kernal version is 5.10....
+
+3  login to te ec2 and install CW agent 
+
+4  configure the files 
+
+5  start the CW agent service 
+
+6  see the logs in CW loogs 
+
+-- crtae IAM role 
+
+-- give CLOUDWATCHFILLACES permissions and attach role to the ec2 
+
+-- now loginto the ec2 and enter cmnds 
+
+1 make sure ur kernal version is 5.10....
+
+
+- login as root user like sudo -s
+
+2 in real time u always do Yum Update 
+
+3 yum install -y awslogs  --- to intall CW Agent
+
+4 once  u install cw packages , u have to create 2 files 
+
+- go to cd /etc/awslogs/
+
+- press enter 
+
+- once u do ls , two files will be created 
+
+-  1  awscli.conf and  2 awslogs.conf
+
+- do sudo cat awscli.conf
+
+- change region as per ur requriemnt , sudo vim awscli.conf (to change the region)
+
+- do cat another file awslogs.conf
+
+- file = var/logs/messages (this is appn log path) , it is the place where it will collects the logs 
+
+- log_stream_name = from here logs coming 
+
+5 now u have to start awslogs , once u start awslogs automatically the log group generated once u start 
+
+6 start the cloudwaatch Agent service
+
+- systemctl start awslogsd 
+
+- press nter 
+
+7 once u pres nter the backend process will run and all the system logs will push to the CW logs 
+
+8 go n check in log groups 
+
+- /var/log/messages  log group created 
+
+- we have given log_stream as Instance _id open n check the log group 
+
+- once u open instnce id u can check all the system logs 
+
+9  u can also push appn logs to CW agent 
+
+
+- insted of var/log/messages u put log path   
+
+
+
+
+---------------------------------------- CloudWatch Custom Metrics
+
+
+• Possibility to define and send your own custom metrics to CloudWatch
+
+• Example: memory (RAM) usage, disk space, number of logged in users ...
+
+• Use API call "PutMetricData"
+
+• Ability to use dimensions (attributes) to segment metrics
+
+     • Instance.id
+     • Environment.name
+
+• Metric resolution (StorageResolution API parameter – two possible value):
+
+      • Standard: 1 minute (60 seconds)
+      • High Resolution: 1/5/10/30 second(s) – Higher cost
+
+
+• Important: Accepts metric data points two weeks in the past and two hours in the future (make sure to configure your EC2 instance time correctly)
+
+     - Something good to know is that with custom metrics, when you push a metric in the past or in the future, this works as well.
+
+     - So this is a very important exam point.
+
+     - So if you are pushing a metric up to two weeks in the past or two hours in the future, you're not going to get an error from CloudWatch,
+
+     - This is going to accept your metric as is. And so that means you need to make sure that your EC2 instance time is currently configured. If you want the metrics to be synchronized with the actual time from AWS.
+
+    - See Timestamp in documentation
+
+
+-- for more custom metrics examples 
+
+REF : https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/publishingMetrics.html
+
+
+
+
+
+----------------------------------------  LAB for custom metrics (Memory)
+
+
+Expore topic : till now we only see Host level metrics , now find how to get metrics for memory 
+
+- By default, we cannot monitor Memory metrics on EC2 Instances.
+
+- https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/monitoring-scripts-intro.html
+
+- use this link for the documentation 
+
+or u can do in another process
+
+- create ec2 instance 
+
+- crate one role and attach policies 
+
+-  attach policies cloudwatchfullacces and AmazonSSMFullAccess
+
+-  why SSM? 
+
+ANs: i have to store particular value(json document which is used to fetch the memory utilixation from aws ec2 and send it to AWS cloudwatch ) in ssm
+
+-  create a parameter in the system manager(system manager --> application --> parameter) with the name (u can give any name) 
+
+eg :  /alarm/AWS-CWAgentLinConfig 
+
+- go system manager -->paramter store --> give name --> in the value place copy json script 
+
+{
+	"metrics": {
+		"append_dimensions": {
+			"InstanceId": "${aws:InstanceId}"
+		},
+		"metrics_collected": {
+			"mem": {
+				"measurement": [
+					"mem_used_percent"
+				],
+				"metrics_collection_interval": 60
+			}
+		}
+	}
+}
+
+
+-- ceate ec2 and attach role to ec2 and create with userdata with cloudwatch agent to install
+
+userdata: 
+
+#!/bin/bash
+wget https://s3.amazonaws.com/amazoncloudwatch-agent/linux/amd64/latest/AmazonCloudWatchAgent.zip
+unzip AmazonCloudWatchAgent.zip
+sudo ./install.sh
+sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c ssm:/alarm/AWS-CWAgentLinConfig -s
+
+
+-- check whether clouwtch agent is instaled or not by using 
+
+-- sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -m ec2 -a status
+
+-- if it is running it is success , after one minute
+
+-- now go to CLoudwatch and --> all metrics --> CW Agent --> give instacne id and chck logs of memory
+
+
+
+
+
+
+---------------------------------------- CloudWatch Logs
+
+
+-- So CloudWatch Logs is the perfect place to store your application logs in AWS.
+
+-- And to do so, you must first define log groups.
+
+• Log groups: arbitrary name, usually representing an application
+
+• Log stream: instances within application / log files / containers
+
+• Can define log expiration policies (never expire, 1 day to 10 years...)
+
+• CloudWatch Logs can send logs to:
+
+     • Amazon S3 (exports)
+     • Kinesis Data Streams
+     • Kinesis Data Firehose
+     • AWS Lambda
+     • OpenSearch
+
+• Logs are encrypted by default
+
+• you Can setup KMS-based encryption with your own keys
+
+
+
+---------------------------------- what types of logs can go into CloudWatch Logs? (CloudWatch Logs - Sources)
+
+
+• we can send the logs using the SDK, CloudWatch Logs Agent, CloudWatch Unified Agent
+
+• Elastic Beanstalk: which is used to collect logs from the application directly into CloudWatch.
+
+• ECS: ECS will send the logs directly from the containers into CloudWatch.
+
+• AWS Lambda: collection from function logs , will send logs from the functions themselves.
+
+• VPC Flow Logs: will send logs specific to your VPC metadata network traffic.
+
+• API Gateway : will send all the requests made to the API Gateway into CloudWatch Logs.
+
+• CloudTrail : you can send the logs directly based on the filter.
+
+• Route53: will log all the DNS queries made to its service.
+
+
+
+
+---------------------------------------- what if you wanted to query the logs in CloudWatch Logs? (CloudWatch Logs Insights)
+
+
+-- So, it's a querying capability within CloudWatch Logs which allows you to write your query.
+
+-- You specify the timeframe you want to apply your query to and then automatically you're going to get a result as a visualization.
+
+-- This visualization can also be exported either as a result or added to a dashboard for being able to rerun it whenever you want.
+
+• Search and analyze log data stored in CloudWatch Logs
+
+• Example: find a specific IP inside a log, count occurrences of “ERROR” in your logs...
+
+      - So there are lots of simple queries provided as part of the console for CloudWatch Logs Insights. 
+
+      - For example, you can find the most 25 most recent events, or you can have a look at how many events had exceptions or errors in your logs, or you can look for a specific IP and so on ..
+ 
+
+• Provides a purpose-built query language
+
+      • Automatically discovers fields from AWS services and JSON log events
+
+      • Fetch desired event fields, filter based on conditions, calculate aggregate statistics, sort events, limit number of events...
+
+      • Can save queries and add them to CloudWatch Dashboards
+
+
+• Can query multiple Log Groups in different AWS accounts
+
+• It’s a query engine, not a real-time engine
+
+
+
+
+
+---------------------------------------- CloudWatch Logs – S3 Export
+
+
+-- CloudWatch Logs can be exported into several destinations.
+
+
+1 CloudWatch Logs – S3 Export
+
+     • Log data can take up to 12 hours to become available for export
+
+        - So this is for a batch export to send all your logs into Amazon S3, and this export can take up to 12 hours to be completed.
+
+     • The API call to initiate this export is called CreateExportTask.
+
+     • So because this is a batch export, this is Not near-real time or real-time... use Logs Subscriptions instead
+
+
+
+
+---------------------------------------- CloudWatch Logs Subscriptions
+
+
+• Get a real-time log events from CloudWatch Logs for processing and analysis
+
+• Send to Kinesis Data Streams, Kinesis Data Firehose, or Lambda
+
+• Subscription Filter – filter which logs are events delivered to your destination
+
+      - So, the subscription filter can send data into Kinesis Data Streams. This would be a great choice if you wanted to use, for example, the integration with Kinesis Data Firehose, Kinesis Data Analytics, or Amazon EC2, or Lambda.
+
+      - You can also directly send it into Kinesis Data Firehose. From there, you can send it in near real-time fashion into Amazon S3 or the OpenSearch Service,
+
+      - So you can write your own custom Lambda function, or you can use a managed Lambda function that is sending data in real-time into the OpenSearch Service.
+
+
+
+
+
+---------------------------------------- CloudWatch Logs Aggregation Multi-Account & Multi Region
+
+
+-- thanks to these subscription filters, it is possible for you to aggregate data from different CloudWatch Logs into different accounts and different regions into a common destination such as the Kinesis Data Stream in one specific accounts. And then Kinesis Data Firehose. And then in near real-time into Amazon S3.
+
+-- So that is very possible, and that is a way for you to perform log aggregation.
+
+
+
+---------------------------------------- Cross-Account Subscription
+
+
+• Cross-Account Subscription – send log events to resources in a different AWS account (KDS, KDF)
+
+-- So, let's say you have a sender account and the recipient accounts.
+
+-- So you create a CloudWatch Log subscription filter in sender account , and then this gets sent into a subscription destination, which is a virtual representant of the Kinesis Data Stream in the recipient accounts.
+
+-- Then you attach a destination access policy to allow the first account to actually send data into this destination.
+
+-- Then you create an IAM role in the recipient account, which has the permission to send records into your Kinesis Data Stream, and you make sure that this role can be assumed by the first account.
+
+-- when you have all these things in place, then it is possible for you to send data from CloudWatch Logs in one account into a destination in another account.
+
+
+
+
+----------------------------------------  Live Tail
+
+
+-- So first let's create a log group
+
+-- go to log group --> create log stream called demostream 
+
+-- go to demostream  , we have option called tailing  , do tailing 
+
+-- select log group as u want and select Select log streams , apply filter 
+
+-- So that means that as events are being posted into Cloudwatch logs, they are going to appear here in our Live Tail,
+
+-- now go to demostream  --> actions --> create log event (Hello world)
+
+-- now check in live tail , it will be there 
+
+-- So this is quite a nice way because if you have log streaming very fast, it can all appear here. And then from this we can get more information around when this happened, the group and so on.
+
+-- So it's just a very cool, very easy feature to debug your CloudWatch logs. And from a pricing perspective,
+
+-- you only get a few hours a day, so maybe one hour a day of free usage of Live Tail. So please make sure to cancel and close your lifetail session so that you don't have any cost, but you have one hour of free every day.
+
+
+
+
+---------------------------------------- CloudWatch Logs Agent & Unified Agent
+
+
+• For virtual servers (EC2 instances, on-premise servers...)
+
+• CloudWatch Logs Agent
+
+      • Old version of the agent
+
+      • Can only send to CloudWatch Logs
+
+
+• CloudWatch Unified Agent
+
+      • Collect additional system-level metrics such as RAM, processes, etc...
+      • Collect logs to send to CloudWatch Logs
+      • Centralized configuration using SSM Parameter Store
+
+
+
+
+---------------------------------------- CloudWatch Unified Agent – Metrics
+
+
+• Collected directly on your Linux server / EC2 instance
+
+• CPU (active, guest, idle, system, user, steal)
+
+• Disk metrics (free, used, total), Disk IO (writes, reads, bytes, iops)
+
+• RAM (free, inactive, used, total, cached)
+
+• Netstat (number of TCP and UDP connections, net packets, bytes)
+
+• Processes (total, dead, bloqued, idle, running, sleep)
+
+• Swap Space (free, used, used %)
+
+
+• Reminder: out-of-the box metrics for EC2 – disk, CPU, network (high level)
+
+
+-- If you want more granularity think CloudWatch Unified Agents,
+
+
+
+
+
+---------------------------------------- CloudWatch Logs Metric Filter
+
+
+• CloudWatch Logs can use filter expressions 
+
+    • For example, find a specific IP inside of a log
+    • Or count occurrences of “ERROR” in your logs 
+    • Metric filters can be used to trigger alarms
+
+
+• So, one thing you should know is that when you create a filter, it  do not retroactively filter data. Filters only publish the metric data points for events that happen after the filter was created.
+
+
+• Ability to specify up to 3 Dimensions for the Metric Filter (optional)
+
+
+
+-- So, let's take an example. We have CloudWatch Logs agent installed on an EC2 instance, which is streaming the logs into CloudWatch Logs.
+
+-- Then an actual metric is going to be created out of it. This is your metric filter.
+
+-- From there, we can, for example, integrate it with a CloudWatch alarm to say that, "Hey, if we count five times error "in less than a minute in your logs, "you may want to know about it "and be alerted in an SNS topic."
+
+
+
+ 
+ CloudWatch Logs Agent (Ec2 instance)--------------(stream)-----------> CW Logs --------------------> Metric Filters ------------------> CW Alarm -----------> SNS 
+
+
+
+
+
+----------------------------------------  CloudWatch Logs Metric Filter - Hands On
+
+
+-- see in course 
+
+
+
+
+---------------------------------------- CloudWatch Alarms
+
+
+• Alarms are used to trigger notifications for any metric
+
+• Various options (sampling, %, max, min, etc...)
+
+• Alarm States:
+
+    • OK :  means that it's not triggered.
+
+    • INSUFFICIENT_DATA  : means that there's not enough data for the alarm to determine a state.
+
+    • ALARM : which is that your threshold has been breached and therefore a notification will be sent.
+
+
+• Period:
+
+    • Length of time in seconds to evaluate the metric
+
+    • High resolution custom metrics: 10 sec, 30 sec or multiples of 60 sec
+
+
+
+
+
+---------------------------------------- CloudWatch Alarm Targets 
+
+
+-- alarms have three main targets.
+
+
+1 • Stop,Terminate, Reboot, or Recover an EC2 Instance
+
+2 • Trigger Auto Scaling Action
+
+3 • Send notification to SNS (from which you can do pretty much anything)
+
+
+
+
+---------------------------------------- CloudWatch Alarms – Composite Alarms
+
+
+• CloudWatch Alarms are on a single metric
+
+-- but then if you wanted to have multiple metrics, use Composite Alarms
+
+• Composite Alarms are monitoring the states of multiple other alarms
+
+-- So the composite alarm is the action of combining all these other alarms together.
+
+• you can use AND and OR conditions to be able to be very flexible in terms of the condition you're checking for.
+
+• Helpful to reduce “alarm noise” by creating complex composite alarms
+
+   - it's very helpful to reduce alarm noise because you can create complex composite alarms and saying, 
+   
+   - for example, if the CPU is high and the network is high, then don't alert me because I only wanna know when the CPU is high and the network is low, this kind of things.
+
+
+
+
+---------------------------------------- EC2 Instance Recovery
+
+
+• Status Check:
+
+     • Instance status = check the EC2 VM
+
+     • System status = check the underlying hardware
+
+
+• Recovery: Same Private, Public, Elastic IP, metadata, placement group
+
+
+
+
+
+
+---------------------------------------- CloudWatch Alarm: good to know
+
+
+• Alarms can be created based on CloudWatch Logs Metrics Filters
+
+• To test alarms and notifications, set the alarm state to Alarm using CLI
+
+    aws cloudwatch set-alarm-state --alarm-name "myalarm" --state-value ALARM --state-reason "testing purposes"
+
+
+
+
+
+---------------------------------------- CloudWatch Alarms Hands On
+
+
+-- create once ec2 instance , it will take 5 minutes to get some metrics 
+
+-- go to cw and go to all alaram --> select metric -->choose ec2 --> paste instance is --> choose CPUUtilization -->  CPUUtilization > 90 --> Additional configuration Datapoints to alarm = 3 of 3 --> choose ec2 action as u want --> create alaram
+
+-- So now this alarm obviously does have insufficient data, so we need to wait 15 minutes for it 
+
+-- we could go into the EC2 instance and launch a way to get the CPU very high for 15 minutes, but this would be a very, very long, 
+
+-- or we can use the API call name, Set alarm state, to really see what would happen if this alarm went into the breach phase.
+
+-- open cloushell , go to goole and search for cloudwatch alarm state , enter this below cmd as ur names 
+
+   -  aws cloudwatch set-alarm-state --alarm-name <value> --state-value <value> --state-reason <value>
+
+   eg : aws cloudwatch set-alarm-state --alarm-name terminateec2 --state-value ALARM --state-reason "Testing"
+
+
+-- paste this in cli , it will turn to in alarm state , then as per rule it will going to terminate the ec2 instance 
+
+
+
+
+
+
+---------------------------------------- CloudWatch Synthetics Canary
+
+
+• Configurable script that monitor your APIs, URLs, Websites, ...
+
+• Reproduce what your customers do programmatically to find issues before customers are impacted
+
+• Checks the availability and latency of your endpoints and can store load time data and screenshots of the UI
+
+• Integration with CloudWatch Alarms
+
+• Scripts written in Node.js or Python
+
+• Programmatic access to a headless Google Chrome browser
+
+• Can run once or on a regular schedule
+
+
+
+---------------------------------------- CloudWatch Synthetics Canary Blueprints
+
+
+• Heartbeat Monitor – load URL, store screenshot and an HTTP archive file
+
+• API Canary – test basic read and write functions of REST APIs
+
+• Broken Link Checker – check all links inside the URL that you are testing
+
+• Visual Monitoring – compare a screenshot taken during a canary run with a baseline screenshot
+
+• Canary Recorder – used with CloudWatch Synthetics Recorder (record your actions on a website and automatically generates a script for that)
+
+• GUI Workflow Builder – verifies that actions can be taken on your webpage (e.g., test a webpage with a login form)
+
+
+
+
+
+---------------------------------------- CloudWatch Synthetics Canary Hands On
+
+
+-- cloudwatch ---> application signals or Application logs ----> Synthetics Canaries 
+
+-- create canary with any application link (amazon,google.....) --> use hearbeat canary --> remaing all are default --> create canary and wait for 2-3 minutes 
+
+-- this will gives the info about the application , it is working fine or not 
+
+
+
+
+
+
+
+----------------------------------------------------- Amazon EventBridge (formerly CloudWatch Events)
+
+
+-- formerly known as CloudWatch Events
+
+• Schedule: Cron jobs (scheduled scripts)
+
+    - Schedule Every hour ----------> Lambda (Trigger script on Lambda function)
+
+
+-- but not just a schedule like every hour, it can also react to an event pattern. 
+
+• Event Pattern: Event rules to react to a service doing something
+
+    - So there are event rules that can react to a service doing something. For example, you can react to the event of IAM root user sign in in the console. 
+    
+    - So when that happens, maybe you want to send a message into an SNS topic and receive an email notification, so that if anyone is using the root account, then you will receive an email,
+
+    - which may be a good security feature for your accounts.
+
+
+          IAM Root User Sign in Event (EVENT)-------------> SNS Topic with Email Notification
+
+
+
+• you have different destinations like Trigger Lambda functions, send SQS/SNS messages...
+
+
+• Event buses can be accessed by other AWS accounts using Resource-based Policies
+
+• You can archive events (all/filter) sent to an event bus (indefinitely or set period)
+
+• Ability to replay archived events ,which is super handy for debugging, super handy for troubleshooting, and for fixing production as well.
+
+
+
+
+
+----------------------------------------------------- Amazon EventBridge – Schema Registry
+
+
+-- EventBridge receives a lot of events from different places and so therefore, you need to understand what the events are going to look like and remember, these events are in this adjacent format we just saw.
+
+• EventBridge can analyze the events in your bus and infer the schema
+
+• The Schema Registry allows you to generate code for your application, that will know in advance how data is structured in the event bus
+
+• Schema can be versioned
+
+
+
+----------------------------------------------------- Amazon EventBridge – Resource-based Policy
+
+
+• Manage permissions for a specific Event Bus
+
+• Example: allow/deny events from another AWS account or AWS region
+
+• Use case: aggregate all events from your AWS Organization in a single AWS account or AWS region
+
+
+
+
+-------------------------------------------------------------------- AWS X-Ray
+
+
+-- when you do debugging production ,  the good old way:
+
+     • Test locally
+     • Add log statements everywhere 
+     • Re-deploy in production , and from the logs try to figure out what is breaking, what is happening.
+
+-- It's really painful. It's not best practices.
+
+• Log formats differ across applications using CloudWatch and analytics is hard.
+
+• Debugging: monolith “easy”, distributed services “hard”
+
+• No common views of your entire architecture!
+
+
+-- here comes x-ray 
+
+-- So, X-ray is going to give you a visual analysis of your application.
+
+-- We'll see that basically as a client doing a request to our application we will see how many of these requests fail or don't fail. And then, from the application we'll see what it does.
+
+-- So, it will call other IPs, it will call SNS it will call a DynamoDB Table. And so, as you can see, we'll be able to trace exactly, visually what happens when we talk to our EC2 instance.
+
+
+
+
+
+
+-------------------------------------------------------------------- AWS X-Ray advantages
+
+
+• Troubleshooting performance (bottlenecks)
+
+• You can Understand dependencies in a microservice architecture, because you can visually see what is happening and how all your microservices interact with one another.
+
+• Pinpoint service issues
+
+• Review request behavior
+
+• Find errors and exceptions 
+
+•  We can answer questions Are we meeting time SLA? , in terms of latency or time to process a request?
+
+• Where I am throttled? we can understand which service really slows down, throttles us.
+
+• Identify users that are impacted by our errors 
+
+
+
+
+-------------------------------------------------------------------- X-Ray compatibility
+
+
+-- So, X-ray has a lot of compatibility.
+
+• AWS Lambda
+• Elastic Beanstalk
+• ECS
+• ELB
+• API Gateway
+• EC2 Instances or any application server (even on premise)
+
+
+-- So, they really made X-Ray try to be as wide as possible and as applicable as to any application they can.
+
+
+
+
+-------------------------------------------------------------------- X-Ray, how does it work? (AWS X-Ray Leverages Tracing)
+
+
+-- it leverages something called tracing.
+
+• Tracing is an end to end way to following a “request”
+
+• So, when I make a request to, for example, my application server,  each component that will deal with a request that could be my database, that could be my gateway, my load balancer, my application server. Each component dealing with the request adds its own “trace” 
+
+• Tracing is made of segments (+ sub segments)
+
+• Annotations can be added to traces to provide extra-information
+
+• So, when all these things are together, Ability to trace:
+
+      • Every request
+      • Sample request (as a % for example or a rate per minute)
+
+
+• X-Ray Security:
+
+       • IAM for authorization
+       • KMS for encryption at rest
+
+
+-- So, once you get all these traces, basically, X-Ray provides its magic and provide this nice little graph
+
+
+
+
+-------------------------------------------------------------------- AWS X-Ray How to enable it?
+
+
+-- Well, you have two ways 
+
+
+1 Your code (Java, Python, Go, Node.js, .NET) must import the AWS X-Ray SDK
+
+    • Very little code modification needed
+
+    • The application SDK will then capture:
+
+          • Calls to AWS services
+          • HTTP / HTTPS requests
+          • Database Calls (MySQL, PostgreSQL, DynamoDB)
+          • Queue calls (SQS)
+
+
+2) Install the X-Ray daemon or enable X-Ray AWS Integration
+
+• X-Ray daemon works as a low level UDP packet interceptor (Linux / Windows / Mac...)
+
+       - So, if we run on a machine, on-premise server or EC2 instance, we need to install the daemon.
+
+       - And the daemon is basically a little program that works as a low level UDP packet interceptor.
+
+       - It can be running on Linux, Windows, and Mac. , so, you have to install it on your machine.
+
+
+• AWS Lambda / other AWS services that already have integration with X-Ray then they will run the daemon for you and you don't have to worry about it.
+
+• Each application must have the IAM rights to write data to X-Ray
+
+ 
+
+Question : So, a very common question is, my X-Ray application works on my computer when I test locally, but doesn't work on my EC2 machine, why?
+
+ -- the answer is probably because on your machine you're running the X-Ray daemon, but when you deploy to your EC2 instance, it's not running the X-Ray daemon, and therefore, X-Ray doesn't see your calls.
+
+
+
+  EC2 Instance (Applicaxon Code + AWS X-Ray SDK ---------> X-Ray Daemon Running on machine) ------------------(Send batch every 1 second to AWS X-Ray)-----------> X-Ray
+
+
+
+
+-------------------------------------------------------------------- The X-Ray magic
+
+
+• X-Ray service collects data from all the different services
+
+• Service map is computed from all the segments and traces
+
+• X-Ray is graphical, so even non technical people can help troubleshoot
+
+
+
+-------------------------------------------------------------------- AWS X-Ray Troubleshooting
+
+
+• If X-Ray is not working on EC2
+
+       • Ensure the EC2 IAM Role has the proper permissions
+
+       • Ensure the EC2 instance is running the X-Ray Daemon
+
+
+• To enable on AWS Lambda:
+
+     • Ensure it has an IAM execution role with proper policy (AWSX-RayWriteOnlyAccess)
+
+     • Ensure that X-Ray is imported in the code
+
+     • Enable Lambda X-Ray Active Tracing

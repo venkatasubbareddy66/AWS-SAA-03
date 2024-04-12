@@ -5421,7 +5421,7 @@ EXP : By default, Amazon EC2 Auto Scaling doesn't use the results of ELB health 
 
 -- CloudWatch is all about Alarms,Events and Logs
 
---it is regional only 
+-- it is regional only 
 
 -- CW is used to monitor performance of all as resource 
 
@@ -5545,6 +5545,7 @@ eg: for stopped and started
 
 -- IMP : Alarm actions (stop,terminated,reboot) enable and disable at any time 
 
+
 ---------------Events/eventBridge
 
 -- in EB , we can create Rules 
@@ -5552,6 +5553,8 @@ eg: for stopped and started
 -- u can receive notificatio if someone stop ec2 
 
 -- create rule in event bridge as per ur requrimnts
+
+
 
 --------------- automation lambda  
 
@@ -5627,6 +5630,7 @@ def lambda_handler(event, context):
 
 -- if u test ur code , if it will get executed successfully , the ec2 instacnes will get into actions(stop,terminated) automtically 
 
+
 ----- Lambda Limits 
 
 - memory allocation = 128MB-10GB
@@ -5639,6 +5643,8 @@ def lambda_handler(event, context):
 
 - Concurrency execution = 1000(can be increased) , one lambda fun cab be executed 1k times 
 
+
+
 -------- deployement 
 
 - lambda function deployement size (compressed .zip) = 50MB
@@ -5648,6 +5654,8 @@ def lambda_handler(event, context):
 - Memory allocation is very imp in lambda functions 
 
 - lambda will be only billed onexeccution times 
+
+
 
 
 ===========================Cloudwatch Theory=============================
@@ -5671,6 +5679,7 @@ Eg : it generates C.W events when EC2 stops , start or anything
 
 -----------some  terminologies to understand for the Cloudwatch 
 
+
 1  NameSpaces : Containers for monitoring data , it is a way to keep things seperate 
 
 -- NameSpace has got a name , it can be anythng as long as it stays within the rule set 
@@ -5678,6 +5687,7 @@ Eg : it generates C.W events when EC2 stops , start or anything
 -- All aws data goes to aws namesoace ---> AWS/Service
 
 -- Namespace contains related metric 
+
 
 2  Metric : it is a collection of related Data Points , in the time ordered structures 
 
@@ -5694,7 +5704,7 @@ Eg: cpu usage network IN/OUT
 2 value 
 
 
-Note : CPU utilization metic could contain data from many servers ,so how do we seperate data for this? so use " Dimesions"
+Note : CPU utilization metric could contain data from many servers ,so how do we seperate data for this? so use " Dimesions"
 
 
 4  Dimensions : these are Name Value Pairs that seperate data point for different thngs or perspective withn the same metric 
@@ -5724,7 +5734,7 @@ B) ALARM --> Something bad has happened
 
 --- u ave to install CW Agent 
 
--- by deafult CW agent do not have permission to ush logs to cloudwatch logs 
+-- by deafult CW agent do not have permission to push logs to cloudwatch logs 
 
 -- so we should create ROLE here , and give CWFULL access policy and this role is attach to the ec2 
 
@@ -5805,6 +5815,8 @@ B) ALARM --> Something bad has happened
 
 - select heartbeat canary for simple eg
 
+
+
 =========================Lightsail================
 
 - everything is availabe here 
@@ -5831,7 +5843,7 @@ Expore topic : till now we only see Host level metrics , now find how to get met
 
 - use this link for the documentation 
 
-or u can do in nother process
+or u can do in another process
 
 - create ec2 instance 
 
@@ -5843,7 +5855,7 @@ or u can do in nother process
 
 ANs: i have to store particular value(json document which is used to fetch the memory utilixation from aws ec2 and send it to AWS cloudwatch ) in ssm
 
--  create a parameter in the system manager with the name (u can givve any name) 
+-  create a parameter in the system manager(system manager --> application --> parameter) with the name (u can give any name) 
 
 eg :  /alarm/AWS-CWAgentLinConfig 
 
@@ -6103,7 +6115,6 @@ aws configservice delete-configuration-recorder --configuration-recorder-name de
 
 
 
--------------------------------------- For an Elastic Load Balancer
 
 
 
@@ -15704,7 +15715,7 @@ Step 2 : Glue
 
 -- open glue in console
 
--- glue --> left panel data Catalog --> crawlers --> add crawlers --> give name of ur crawler --> not yet --> add a data source --> choose s3 --> copy uri of ur bucket and paste in S3 path --> click on create new role , give name of ur role and select nxt --> click on create new database --> give name of ur database , nxt --> frequency = on-demand --> create crawler
+-- glue --> from left panel data Catalog --> crawlers --> add crawlers --> give name of ur crawler --> not yet --> add a data source --> choose s3 --> copy uri of ur bucket and paste in S3 path --> click on create new role , give name of ur role and select nxt --> click on create new database --> give name of ur database , nxt --> frequency = on-demand --> create crawler
 
 -- now try to run the crawler , 
 
