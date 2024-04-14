@@ -6118,7 +6118,7 @@ SQS:                                                          SNS:              
 
 
 
-================================================== AWS Monitoring, Troubleshooting & Audit (CloudWatch, X-Ray and CloudTrail)========================================
+================================================== AWS Monitoring, Troubleshooting & Audit (CloudWatch, X-Ray and CloudTrail) ========================================
 
 
 -- we have our application it's in the cloud. It's running. And your manager calls you at 2:00 a.m. and say it's not running anymore.
@@ -6270,6 +6270,11 @@ SQS:                                                          SNS:              
 
 
 
+
+IMP : In CloudWatch Logs, Log Retention Policy defined at ........................... level.
+
+
+ANS : Log Groups 
 
 
 ---------------------------------------- some  terminologies to understand for the Cloudwatch 
@@ -6458,7 +6463,7 @@ REF : https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/cloudwatch_
      • Instance.id
      • Environment.name
 
-• Metric resolution (StorageResolution API parameter – two possible value):
+IMP • Metric resolution (StorageResolution API parameter – two possible value):
 
       • Standard: 1 minute (60 seconds)
       • High Resolution: 1/5/10/30 second(s) – Higher cost
@@ -6994,6 +6999,94 @@ sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-c
 ----------------------------------------------------- Amazon EventBridge (formerly CloudWatch Events)
 
 
+
+-- Amazon EventBridge is a serverless service that uses events to connect application components together, making it easier for developers to build scalable event-driven applications.
+
+-- Event Bridge is an Event Bus that helps in integrating different AWS Services , and custom applications and SAAS Applications 
+
+-- Earlier we have Cloud watch events , the only negative point is that , it did not support SAAS applications and custom applications outside from the AWS 
+
+-- EventBridge was build for the same purpose , u can create effortless event-driven architectures
+
+Eg 1 : u want to receive SNS notification every time production EC2 instance are terminated , this will be done by EventBridge
+
+Eg 2 : automated deployment using code pipelines at 11PM everyday
+
+Eg 3 : if a premier user deactivates himself from ur product , u want to :
+
+- Send and email for feedback 
+- Schedule Customer Representative call
+- Send customised offers for that use 
+
+
+-- these all things will done by the event Bridge and u can schedule the events also 
+
+-- It is fully managed service 
+
+-- pay what u use model 
+
+
+Different Parts in EventBridge:
+
+
+Working flow -----
+
+
+Event Producer --> Event --> Amazon EventBridge event Bus --> Rule ---> AWS Lambda , AWS Kinesis Data Firehose, Amazon Simple Notification Service
+
+
+--  Event producer : AWS Service / Custom applications / Third Party SaaS providers,
+
+--  From the producers the event will generated , this will transform to the bus and it move to rules , in rules there are multiple rules and this rules will send to multiple targets 
+
+-- A single rule may have multiple targets and max target is 5 ,all targets will process in the event in parallel
+
+
+Important terms in EventBridge :
+
+1 Event  : An Event indicated a change in an environment 
+
+2 Rule   : A rule matches incoming events and routes them to targets for processing  
+
+3 Target : target application of ur rule. A target process events 
+
+Targets can include ec2 , lambda functions , kinesis streams , Ecs tasks,  , the target receive events in JSON format 
+
+4 Event Bus : An event bus receives events. When u create a rule , u associate it with a specific event bus and rules is matched only to events received by that event bus 
+
+- rule can not be create standAlone , it should have it's parent as EventBus
+
+Components of EventBridge :
+
+1 EventBridge Rule : A rule matches incoming events and sends them to targets for processing.
+
+2 EventBridge Pipes : A pipe connects an event source to a target with optional filtering and enrichment.
+
+3 EventBridge Schedule : A schedule invokes a target one-time or at regular intervals defined by a cron or rate expression.
+
+4 EventBridge Schema registry : Schema registries collect and organize schemas.
+
+
+EventBus : Usecases
+
+if a premier user deactivates himself from ur product , u want to :
+
+- Send and email for feedback 
+- Schedule Customer Representative call
+- Send customised offers for that use 
+
+
+In the above example , the working flow will be like 
+
+
+User deletes his subscription --> custom event is trigged --> rights custom event would be pass into the EventBus --> rule matching --> then it reaches to the targets , once the rule is matched  here then it sends to targets --> 1 the targets are Feedback service 2 Schedule call service 3 offers service 
+
+
+
+
+
+stepehe note
+
 -- formerly known as CloudWatch Events
 
 • Schedule: Cron jobs (scheduled scripts)
@@ -7050,6 +7143,114 @@ sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-c
 • Example: allow/deny events from another AWS account or AWS region
 
 • Use case: aggregate all events from your AWS Organization in a single AWS account or AWS region
+
+
+
+
+
+
+
+======================================= practicals for event bridge 
+
+
+Example 1 
+
+1  Schedule AWS Lambda Functions Using EventBridge
+
+
+-- lambda scheduling use cases 
+
+- Automated backups at EOD of ur applications 
+
+- backend cleaning (including logs and temp files )
+
+- consolidated reports after business hours , so lambda can trigger  Athena queries and can run any database queries and send to business stack holders through SNS 
+
+
+- to schedule events u have two options 
+
+1 to schedule  at fixed rate -- for every 1 minute 
+
+2 Cron job (10 * * * * )
+
+-- open console 
+
+-- open lambda --> python 3.9 --> create function 
+
+-- write python code to invoke lambda function
+
+import json
+from datetime import datetime
+
+def lambda_handler(event, context):
+    # TODO implement
+    currentTime = datetime.now()
+    print("Time at which Lambda invoked" + str(currentTime))
+
+
+-- give empty JSON to test {}
+
+-- now go to Amazon eventBridge in console 
+
+-- c.o create rule --> schedule --> continue to create rule --> schedule that run at regular intervals--> select 1 minute --> select lambda function --> create rule 
+
+-- u can check in CloudWatch logs , for invoking is there or not 
+
+--  the logs are generated 
+
+
+-- if u want to monitor ur invocations --> Metrics --> all Metrics --> query --> choose AWS/events --> Myrule name 
+
+- metric name = COUNT(invocation)
+
+- filter by = Rulename = rule name that u have created in lambda function to test the function 
+
+- choose number in right corner to see the no. of invocations 
+
+
+-------------------------------------------
+
+Example 2 : EventBridge with SNS 
+
+
+-- AS we know that EventBridge will use for 2 process 
+
+1 event-event process : when the event has occurred according to our rule then it will trigger to the targets 
+
+2 schedule process : do schedule 
+
+-- in the above example we have seen Schedule event
+
+-- now event to event 
+
+- for example the ec2 is stopped then it will send alert to the subscribers on SNS Topic 
+
+-- open SNS in console --> create one topic --> standard --> create topic --> open topic -->create subscription --> add protocol email or phone number 
+
+-- when ever the instance is getting stooped then I would like send an alert to all the subscribers 
+
+-- this is called event-event process 
+
+-- create one ec2 instance 
+
+-- create rule in event bridge --> name --> rule with an event pattern --> in event pattern = select ec2 --> select event type as u want --> in Target1 choose AWS Service = SNS topic select SNS topic --> create rule 
+
+-- do stop the instance 
+
+-- u will get notification once the instance is get stopped 
+
+
+--------------- now for schedule event 
+
+-- create another rule , that is based on the time to stop the instance 
+
+-- select schedule pattern option --> A schedule that runs at a regular rate, such as every 10 minutes. --> target = terminateinstanceAPI call --> u can also add another target to get notification 
+ 
+
+-- the instance will get terminated after the time that u have specified 
+
+
+-- this is simple basic example for schedule pattern 
 
 
 
@@ -7177,6 +7378,8 @@ sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-c
 
 • X-Ray daemon works as a low level UDP packet interceptor (Linux / Windows / Mac...)
 
+       - The AWS X-Ray daemon is a software application that listens for traffic on UDP port 2000, gathers raw segment data, and relays it to the AWS X-Ray API.
+
        - So, if we run on a machine, on-premise server or EC2 instance, we need to install the daemon.
 
        - And the daemon is basically a little program that works as a low level UDP packet interceptor.
@@ -7229,3 +7432,1835 @@ Question : So, a very common question is, my X-Ray application works on my compu
      • Ensure that X-Ray is imported in the code
 
      • Enable Lambda X-Ray Active Tracing
+
+
+
+
+-------------------------------------------------------------------- AWS X-Ray Hands On
+
+
+-- demp app will get errors , so create ur own demo app and we will deploy this on cloudformation
+
+-- so here U r using cloud formation , so make sure that to use us-east-1 region for better o/p
+
+
+-- create one yaml file for this demo
+
+
+
+Eg :
+
+
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  AWS CloudFormation template to create a new VPC
+  or use an existing VPC for ECS deployment
+  in Create Cluster Wizard. Requires exactly 1
+  Instance Types for a Spot Request.
+Parameters:
+  Email:
+    Type: String
+    Default: UPDATE_ME  # <- change to a valid "abc@def.xyz" email (without quotes)
+  FrontendImageUri:
+    Type: String
+    Default: public.ecr.aws/xray/scorekeep-frontend:latest
+  BackendImageUri:
+    Type: String
+    Default: public.ecr.aws/xray/scorekeep-api:latest
+  EcsClusterName:
+    Type: String
+    Description: >
+      Specifies the ECS Cluster Name with which the resources would be
+      associated
+    Default: scorekeep-cluster
+  EcsAmiId:
+    Description: AMI ID
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id
+  EcsInstanceTypeT2:
+    Type: CommaDelimitedList
+    Description: >
+      Specifies the EC2 instance type for your container instances.
+      Defaults to t2.micro.
+    Default: t2.micro
+    ConstraintDescription: must be a valid EC2 instance type.
+  EcsInstanceTypeT3:
+    Type: CommaDelimitedList
+    Description: >
+      Specifies the EC2 instance type for your container instances.
+      Defaults to t3.micro.
+    Default: t3.micro
+    ConstraintDescription: must be a valid EC2 instance type.
+  KeyName:
+    Type: String
+    Description: >
+      Optional - Specifies the name of an existing Amazon EC2 key pair
+      to enable SSH access to the EC2 instances in your cluster.
+    Default: ''
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+
+  SubnetId1:
+    Type: AWS::EC2::Subnet::Id
+  SubnetId2:
+    Type: AWS::EC2::Subnet::Id
+
+  SecurityGroupId:
+    Type: String
+    Description: >
+      Optional - Specifies the Security Group Id of an existing Security
+      Group. Leave blank to have a new Security Group created
+    Default: ''
+  AsgMaxSize:
+    Type: Number
+    Description: >
+      Specifies the number of instances to launch and register to the cluster.
+      Defaults to 1.
+    Default: '1'
+  IamRoleInstanceProfile:
+    Type: String
+    Description: >
+      Specifies the Name or the Amazon Resource Name (ARN) of the instance
+      profile associated with the IAM role for the instance
+    Default: ScorekeepInstanceProfile
+  SecurityIngressFromPort:
+    Type: Number
+    Description: >
+      Optional - Specifies the Start of Security Group port to open on
+      ECS instances - defaults to port 0
+    Default: '80'
+  SecurityIngressToPort:
+    Type: Number
+    Description: >
+      Optional - Specifies the End of Security Group port to open on ECS
+      instances - defaults to port 65535
+    Default: '80'
+  SecurityIngressCidrIp:
+    Type: String
+    Description: >
+      Optional - Specifies the CIDR/IP range for Security Ports - defaults
+      to 0.0.0.0/0
+    Default: 0.0.0.0/0
+  EcsEndpoint:
+    Type: String
+    Description: >
+      Optional - Specifies the ECS Endpoint for the ECS Agent to connect to
+    Default: ''
+  RootEbsVolumeSize:
+    Type: Number
+    Description: >
+      Optional - Specifies the Size in GBs of the root EBS volume
+    Default: 30
+  EbsVolumeSize:
+    Type: Number
+    Description: >
+      Optional - Specifies the Size in GBs of the data storage EBS volume used by the Docker in the AL1 ECS-optimized AMI
+    Default: 22
+  EbsVolumeType:
+    Type: String
+    Description: Optional - Specifies the Type of (Amazon EBS) volume
+    Default: 'gp2'
+    AllowedValues:
+      - ''
+      - standard
+      - io1
+      - gp2
+      - sc1
+      - st1
+    ConstraintDescription: Must be a valid EC2 volume type.
+  RootDeviceName:
+    Type: String
+    Description: Optional - Specifies the device mapping for the root EBS volume.
+    Default: /dev/xvda
+  DeviceName:
+    Type: String
+    Description: Optional - Specifies the device mapping for the EBS volume used for data storage. Only applicable to AL1.
+    Default: /dev/xvdcz
+  UseSpot:
+    Type: String
+    Default: 'false'
+  IamSpotFleetRoleArn:
+    Type: String
+    Default: ''
+  SpotPrice:
+    Type: String
+    Default: ''
+  SpotAllocationStrategy:
+    Type: String
+    Default: 'diversified'
+    AllowedValues:
+      - 'lowestPrice'
+      - 'diversified'
+  UserData:
+    Type: String
+    Default: |
+      #!/bin/bash
+      echo ECS_CLUSTER=scorekeep-cluster >> /etc/ecs/ecs.config;echo ECS_BACKEND_HOST= >> /etc/ecs/ecs.config;
+  IsWindows:
+    Type: String
+    Default: 'false'
+  ConfigureRootVolume:
+    Type: String
+    Description: Optional - Specifies if there should be customization of the root volume
+    Default: 'true'
+  ConfigureDataVolume:
+    Type: String
+    Description: Optional - Specifies if there should be customization of the data volume
+    Default: 'false'
+  AutoAssignPublicIp:
+    Type: String
+    Default: 'INHERIT'
+Conditions:
+  UseT2MicroInstance:
+    !Or
+    - !Or
+      - !Equals [!Sub '${AWS::Region}', 'us-east-1']
+      - !Equals [!Sub '${AWS::Region}', 'us-east-2']
+      - !Equals [!Sub '${AWS::Region}', 'us-west-1']
+      - !Equals [!Sub '${AWS::Region}', 'us-west-2']
+      - !Equals [!Sub '${AWS::Region}', 'ap-south-1']
+      - !Equals [!Sub '${AWS::Region}', 'ap-northeast-3']
+      - !Equals [!Sub '${AWS::Region}', 'ap-northeast-2']
+      - !Equals [!Sub '${AWS::Region}', 'ap-southeast-1']
+      - !Equals [!Sub '${AWS::Region}', 'ap-southeast-2']
+      - !Equals [!Sub '${AWS::Region}', 'ap-northeast-1']
+    - !Or
+      - !Equals [!Sub '${AWS::Region}', 'ca-central-1']
+      - !Equals [!Sub '${AWS::Region}', 'eu-central-1']
+      - !Equals [!Sub '${AWS::Region}', 'eu-west-1']
+      - !Equals [!Sub '${AWS::Region}', 'eu-west-2']
+      - !Equals [!Sub '${AWS::Region}', 'eu-west-3']
+      - !Equals [!Sub '${AWS::Region}', 'sa-east-1']
+      - !Equals [!Sub '${AWS::Region}', 'cn-northwest-1']
+  CreateEC2LCWithKeyPair:
+    !Not [!Equals [!Ref KeyName, '']]
+  SetEndpointToECSAgent:
+    !Not [!Equals [!Ref EcsEndpoint, '']]
+  CreateNewSecurityGroup:
+    !Equals [!Ref SecurityGroupId, '']
+  CreateWithSpot: !Equals [!Ref UseSpot, 'true']
+  CreateWithASG: !Not [!Condition CreateWithSpot]
+  CreateWithSpotPrice: !Not [!Equals [!Ref SpotPrice, '']]
+  IsConfiguringRootVolume: !Equals [!Ref ConfigureRootVolume, 'true']
+  IsConfiguringDataVolume: !Equals [!Ref ConfigureDataVolume, 'true']
+  IsInheritPublicIp: !Equals [!Ref AutoAssignPublicIp, 'INHERIT']
+Resources:
+  ScorekeepTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties: 
+      ContainerDefinitions: 
+      - Cpu: '256'
+        Image: !Ref FrontendImageUri
+        MemoryReservation: '256'
+        Name: scorekeep-frontend
+        PortMappings: 
+          - ContainerPort: '80'
+      - Cpu: '512'
+        Environment: 
+          - Name: AWS_REGION
+            Value: !Sub ${AWS::Region}
+          - Name: NOTIFICATION_TOPIC
+            Value: !Sub arn:aws:sns:${AWS::Region}:${AWS::AccountId}:scorekeep-notifications
+          - Name: NOTIFICATION_EMAIL
+            Value: !Ref Email
+        Image: !Ref BackendImageUri
+        MemoryReservation: '512'
+        Name: scorekeep-api
+        PortMappings: 
+          - ContainerPort: '5000'
+      - Cpu: '256'
+        Essential: true
+        Image: amazon/aws-xray-daemon
+        MemoryReservation: '128'
+        Name: xray-daemon
+        PortMappings: 
+          - ContainerPort: '2000'
+            HostPort: '2000'
+            Protocol: udp
+      Cpu: '1024'
+      ExecutionRoleArn: !Ref ECSExecutionRole
+      Family: scorekeep
+      Memory: '900'
+      NetworkMode: host
+      RequiresCompatibilities: 
+        - EC2
+      TaskRoleArn: scorekeepRole
+  UserTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: "scorekeep-user"
+      KeySchema:
+        HashKeyElement: {AttributeName: id, AttributeType: S}
+      ProvisionedThroughput: {ReadCapacityUnits: 2, WriteCapacityUnits: 2}
+  SessionTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: "scorekeep-session"
+      KeySchema:
+        HashKeyElement: {AttributeName: id, AttributeType: S}
+      ProvisionedThroughput: {ReadCapacityUnits: 2, WriteCapacityUnits: 2}
+  GameTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: "scorekeep-game"
+      AttributeDefinitions:
+        - AttributeName: "id"
+          AttributeType: "S"
+        - AttributeName: "session"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "id"
+          KeyType: "HASH"
+      GlobalSecondaryIndexes:
+        - IndexName: "session-index"
+          KeySchema:
+            - AttributeName: "session"
+              KeyType: "HASH"
+          ProvisionedThroughput: {ReadCapacityUnits: 2, WriteCapacityUnits: 2}
+          Projection: { ProjectionType: ALL }
+      ProvisionedThroughput: {ReadCapacityUnits: 2, WriteCapacityUnits: 2}
+  MoveTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: "scorekeep-move"
+      AttributeDefinitions:
+        - AttributeName: "id"
+          AttributeType: "S"
+        - AttributeName: "game"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "id"
+          KeyType: "HASH"
+      GlobalSecondaryIndexes:
+        - IndexName: "game-index"
+          KeySchema:
+            - AttributeName: "game"
+              KeyType: "HASH"
+          ProvisionedThroughput: {ReadCapacityUnits: 2, WriteCapacityUnits: 2}
+          Projection: { ProjectionType: ALL }
+      ProvisionedThroughput: {ReadCapacityUnits: 2, WriteCapacityUnits: 2}
+  StateTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: "scorekeep-state"
+      AttributeDefinitions:
+        - AttributeName: "id"
+          AttributeType: "S"
+        - AttributeName: "game"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "id"
+          KeyType: "HASH"
+      GlobalSecondaryIndexes:
+        - IndexName: "game-index"
+          KeySchema:
+            - AttributeName: "game"
+              KeyType: "HASH"
+          ProvisionedThroughput: {ReadCapacityUnits: 2, WriteCapacityUnits: 2}
+          Projection: { ProjectionType: ALL }
+      ProvisionedThroughput: {ReadCapacityUnits: 2, WriteCapacityUnits: 2}
+  NotificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: "scorekeep-notifications"
+  ECSExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Effect: "Allow"
+            Principal: 
+              Service: 
+                - "ecs-tasks.amazonaws.com"
+            Action: 
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+      RoleName: "scorekeepExecutionRole"
+  ECSTaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Effect: "Allow"
+            Principal: 
+              Service: 
+                - "ecs-tasks.amazonaws.com"
+            Action: 
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
+        - "arn:aws:iam::aws:policy/AmazonSNSFullAccess"
+        - "arn:aws:iam::aws:policy/AWSXrayFullAccess"
+      RoleName: "scorekeepRole"
+  ScorekeepECSRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ScorekeepECSRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Action: "sts:AssumeRole"
+          Principal:
+            Service: ["ec2.amazonaws.com"]
+          Effect: "Allow"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
+  ScorekeepInstanceProfile:
+    DependsOn: ScorekeepECSRole
+    Type: AWS::IAM::InstanceProfile
+    Properties: 
+      InstanceProfileName: !Ref IamRoleInstanceProfile
+      Roles: 
+        - ScorekeepECSRole
+  ScorekeepECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties: 
+      ClusterName: !Ref EcsClusterName
+  EcsSecurityGroup:
+    Condition: CreateNewSecurityGroup
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: ECS Allowed Ports
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+       - IpProtocol: 'tcp'
+         FromPort: '80'
+         ToPort: '80'
+         CidrIp: 0.0.0.0/0
+  EcsInstanceLc:
+    DependsOn:
+    - ScorekeepECSCluster
+    - ScorekeepInstanceProfile
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Condition: CreateWithASG
+    Properties:
+      ImageId: !Ref EcsAmiId
+      InstanceType: !Select [ 0, !If [ UseT2MicroInstance, !Ref EcsInstanceTypeT2, !Ref EcsInstanceTypeT3 ] ]
+      AssociatePublicIpAddress: !If [ IsInheritPublicIp, !Ref "AWS::NoValue", !Ref AutoAssignPublicIp ]
+      IamInstanceProfile: !Ref IamRoleInstanceProfile
+      KeyName: !If [ CreateEC2LCWithKeyPair, !Ref KeyName, !Ref "AWS::NoValue" ]
+      SecurityGroups: [ !If [ CreateNewSecurityGroup, !Ref EcsSecurityGroup, !Ref SecurityGroupId ] ]
+      BlockDeviceMappings:
+        - !If
+          - IsConfiguringRootVolume
+          - DeviceName: !Ref RootDeviceName
+            Ebs:
+              VolumeSize: !Ref RootEbsVolumeSize
+              VolumeType: !Ref EbsVolumeType
+          - !Ref AWS::NoValue
+        - !If
+          - IsConfiguringDataVolume
+          - DeviceName: !Ref DeviceName
+            Ebs:
+              VolumeSize: !Ref EbsVolumeSize
+              VolumeType: !Ref EbsVolumeType
+          - !Ref AWS::NoValue
+      UserData:
+        Fn::Base64: !Ref UserData
+  EcsInstanceAsg:
+    DependsOn:
+    - ScorekeepTargetGroup
+    - EcsInstanceLc
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Condition: CreateWithASG
+    Properties:
+      VPCZoneIdentifier:
+        - !Ref SubnetId1
+        - !Ref SubnetId2
+      LaunchConfigurationName: !Ref EcsInstanceLc
+      MinSize: '0'
+      MaxSize: !Ref AsgMaxSize
+      DesiredCapacity: !Ref AsgMaxSize
+      Tags:
+        -
+          Key: Name
+          Value: !Sub "ECS Instance - ${AWS::StackName}"
+          PropagateAtLaunch: true
+        -
+          Key: Description
+          Value: "This instance is the part of the Auto Scaling group which was created through ECS Console"
+          PropagateAtLaunch: true
+      TargetGroupARNs:
+      - !Ref ScorekeepTargetGroup
+  ScorekeepService:
+    DependsOn:
+    - ScorekeepTaskDefinition
+    - UserTable
+    - SessionTable
+    - GameTable
+    - MoveTable
+    - StateTable
+    - NotificationTopic
+    - ECSExecutionRole
+    - ECSTaskRole
+    - ScorekeepECSCluster
+    - EcsInstanceAsg
+    Type: AWS::ECS::Service
+    Properties:
+      Cluster: scorekeep-cluster
+      DeploymentConfiguration:   
+        MaximumPercent: 100
+        MinimumHealthyPercent: 0
+      DesiredCount: 1
+      LaunchType: EC2
+      SchedulingStrategy: REPLICA
+      ServiceName: scorekeep-service
+      TaskDefinition: !Ref ScorekeepTaskDefinition
+  ScorekeepTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: ScorekeepTargetGroup
+      TargetType: instance
+      Port: 80
+      Protocol: HTTP
+      VpcId: !Ref VpcId
+  ScorekeepLoadBalancer:
+    DependsOn: EcsSecurityGroup
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: scorekeep-lb
+      Scheme: internet-facing
+      SecurityGroups: 
+        - !Ref EcsSecurityGroup
+      Subnets: 
+        - !Ref SubnetId1
+        - !Ref SubnetId2
+      Tags:
+        - Key: Name
+          Value: !Join [_, [!Ref 'AWS::StackName']]
+      Type: application
+  ScorekeepLoadBalancerListener:
+    DependsOn:
+    - ScorekeepLoadBalancer
+    - ScorekeepTargetGroup
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties: 
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref ScorekeepTargetGroup
+      LoadBalancerArn: !Ref ScorekeepLoadBalancer
+      Port: 80
+      Protocol: HTTP
+Outputs:
+  LoadBalancerUrl:
+    Description: The URL of the ALB
+    Value: !GetAtt ScorekeepLoadBalancer.DNSName
+
+
+
+
+
+-- if you have a look at it, this CloudFormation template actually deploys an ECS cluster.
+
+-- then we're going to have a front-end Image a backend API all using X-Ray so that we see data in the X-Ray folder and then it's going to be running on the T2 or T3 micro.
+
+             -  Default: public.ecr.aws/xray/scorekeep-frontend:latest
+
+             -  Default: public.ecr.aws/xray/scorekeep-api:latest
+
+
+
+-- open CF , upload this template 
+
+-- now all are default in 2nd step except u have to add 2 subnets and VPC , And the reason we do so is that this is we indicate to the templates where we want to deploy our resources. 
+
+-- all are default , acknowledge then submit 
+
+-- this is going to create a CloudFormation template for us.
+
+-- check the resources that template created for u 
+
+-- add notificatin subscription , if u want 
+
+-- So how do we use this web application. go to Outputs , open link in the new tab 
+
+-- c.o create --> give sample name --> rules (tic tac toe)--> create 
+
+-- c.o View traces for this session , it will show you all the traces in X-ray session
+
+-- play the game , What's going to happen is that as we play the games this is going to send traces into X-Ray.
+
+-- now go to X-ray , So this is my service map, and this shows the dependencies of all my components in AWS and how they relate towards the API calls that have been made.
+
+-- if any error presents , it will highlight in clours 
+
+-- u can debug and find the error and do trouble shoot 
+
+-- delete the stack
+
+
+
+
+
+-------------------------------------------------------------------- X-Ray Instrumentation in your code
+
+
+-- some advanced concepts for X-Ray , and the first thing I want to show you is how to instrument your code.
+
+
+• Instrumentation means the measure of product’s performance, diagnose errors, and to write trace information. So it is a field in Software Engineering to do all these things.
+
+• To instrument your application code, you use the X-Ray SDK
+
+ 
+- Example app.js - Express
+
+
+var app = express();
+
+var AWSXRay = require('aws-xray-sdk');
+app.use(AWSXRay.express.openSegment('MyApp'));
+
+app.get('/', function (req, res) {
+  res.render('index');
+});
+
+app.use(AWSXRay.express.closeSegment());
+
+
+
+REF : https://docs.aws.amazon.com/xray/latest/devguide/xray-sdk-nodejs.html
+
+
+-- So here is an example of how we can instrument our node js code with the X-Ray SDK.
+
+-- so once we add some code, for example here, requiring the X-Ray SDK and using it in our express app, then our code will be instrumented.
+
+-- That means that we will get trace information from our code into the X-Ray service.
+
+• Many SDK require only configuration changes
+
+• You can modify your application code to customize and annotation the data that the SDK sends to X- Ray, using interceptors, filters, handlers, middleware...
+
+
+
+
+
+-------------------------------------------------------------------- X-Ray Concepts
+
+
+• Segments: each application / service will send them
+
+• Subsegments: if you need more details in your segment
+
+• Trace: segments collected together to form an end-to-end trace
+
+• Sampling: decrease the amount of requests sent to X-Ray, reduce cost
+
+• Annotations: Key Value pairs used to index traces and use with filters
+
+   - So annotations is are extremely important in X-ray. If you want to be able to search your traces with new indexes.
+
+
+• Metadata: Key Value pairs, not indexed, not used for searching
+
+
+• The X-Ray daemon / agent has a config to send traces cross account:
+  
+    • make sure the IAM permissions are correct – the agent will assume the role
+
+    • This allows to have a central account for all your application tracing
+
+
+
+
+
+
+-------------------------------------------------------------------- X-Ray Sampling Rules
+
+
+• with the sampling rules, we are able to control the amount of data that you send to the X-Ray service and record. the more data you send you X-Ray, the more you're going to pay.
+
+• You can modify sampling rules without changing your code
+
+• By default there is a Sampling Rules, which says that the X-Ray SDK records the first request each second (Blue Part), an five percent(Green Part) of any additional requests.
+
+• One request per second is the reser voir, which ensures that at least one trace is recorded each second as long the service is serving requests.
+
+• Five percent is the rate at which additional requests beyond the reservoir size are sampled.
+
+
+
+-------------------------------------------------------------------- X-Ray Custom Sampling Rules
+
+
+• You can create your own rules with the reservoir and rate
+
+
+• Example 1 – Higher minimum rate for POSTs
+
+
+• Rule name: POST minimum
+
+• Priority: 100
+
+• Reservoir: 10
+
+• Rate: 10 (.1 if configured using a JSON document)
+
+• Service name: *
+
+• Service type: *
+
+• Host: *
+
+• HTTP method: POST
+
+• URL path: *
+
+• Resource ARN: *
+
+
+--  in this example ,  Reservoir: 10 , iThat means that 10 requests per second will be sent into X-Ray and then 10% of the other ones will be sent.
+
+-- So here we have a higher minimum rate and we send more requests into X-Ray.
+
+
+
+
+Example – Debugging rule to trace all requests for a problematic route
+
+         -- A high-priority rule applied temporarily for debugging.
+
+• Rule name: DEBUG – history updates
+
+• Priority: 1
+
+• Reservoir: 1
+
+• Rate: 1
+
+• Service name: Scorekeep
+
+• Service type: *
+
+• Host: *
+
+• HTTP method: PUT
+
+• URL path: /history/*
+
+• Resource ARN: *
+
+
+-- Whereas here we want you to have debugging. And so we say we want to have all requests. So one a reservoir= 1  and one of rate = 1.
+
+-- That means that all requests will be sent into X-Ray. So we don't want to lose any traces. And this is very helpful when we want you to debug to find what's going on for every single trace.
+
+-- Obviously, in production, this will be very, very expensive because now we are sending a lot of data into X-Ray, 
+
+-- but it's very helpful temporarily to change these custom sampling rules to see what's going on.
+
+-- the cool thing about it is that if you change your sampling rules in the X-Ray console, you don't have to restart your applications. You don't have to do anything with your X-Ray in SDK.
+
+-- Automatically the daemon, the extra daemon knows how to get sampling rules and correctly send the right amount of data into the X-Ray service.
+
+
+
+
+
+-------------------------------------------------------------------- X-Ray Write APIs (used by the X-Ray daemon)
+
+
+
+{
+  "Version" : "2012-10-17",
+  "Statement" : [
+    {
+      "Effect" : "Allow",
+      "Action" : [
+        "xray:PutTraceSegments",
+        "xray:PutTelemetryRecords",
+        "xray:GetSamplingRules",
+        "xray:GetSamplingTargets",
+        "xray:GetSamplingStatisticSummaries"
+      ],
+      "Resource" : [
+        "*"
+      ]
+    }
+  ]
+}
+
+
+REF : arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+
+
+
+-- So this is a managed policy called the X-Ray Write Only Access and you can see it has five line items
+
+
+1  PutTraceSegments: Uploads segment documents to AWS X-Ray
+
+     - as the name indicates, it uploads a segment documents into AWS X-Ray that's necessary to have if you want to write into X-Ray.
+
+
+2  • PutTelemetryRecords: Used by the AWS X-Ray daemon to upload some information about how many segments were received, rejected and backend connection errors. So this helps with the metrics.
+
+     - SegmentsReceivedCount, 
+     
+     - SegmentsRejectedCounts, 
+     
+     - BackendConnectionErrors...
+
+
+3  • GetSamplingRules: Retrieve all sampling rules (to know what/when to send)
+
+     - So usually when we write stuff, we have a lot of puts because this was how the APIs are named in AWS whenever you're write it says, "put."
+
+     - So do you know why?
+
+     - we saw that whenever we were changing the sampling rules in the X-Ray console, all the X-Ray daemons were automatically updated to know when to send data into X-Ray.
+
+     - So for your X-Ray daemon to be able to know how the sampling rules are changing, then the GetSamplingRule authorization and permission is necessary.
+
+
+• GetSamplingRules same applies for  GetSamplingTargets & GetSamplingStatisticSummaries: advanced , 
+
+• The X-Ray daemon needs to have an IAM policy authorizing the correct API calls to function correctly
+
+
+
+
+
+-------------------------------------------------------------------- X-Ray Read APIs
+
+
+{
+  "Version" : "2012-10-17",
+  "Statement" : [
+    {
+      "Sid" : "AWSXrayReadOnlyAccess",
+      "Effect" : "Allow",
+      "Action" : [
+        "xray:GetSamplingRules",
+        "xray:GetSamplingTargets",
+        "xray:GetSamplingStatisticSummaries",
+        "xray:BatchGetTraces",
+        "xray:BatchGetTraceSummaryById",
+        "xray:GetDistinctTraceGraphs",
+        "xray:GetServiceGraph",
+        "xray:GetTraceGraph",
+        "xray:GetTraceSummaries",
+        "xray:GetGroups",
+        "xray:GetGroup",
+        "xray:ListTagsForResource",
+        "xray:ListResourcePolicies",
+        "xray:GetTimeSeriesServiceStatistics",
+        "xray:GetInsightSummaries",
+        "xray:GetInsight",
+        "xray:GetInsightEvents",
+        "xray:GetInsightImpactGraph"
+      ],
+      "Resource" : [
+        "*"
+      ]
+    }
+  ]
+}
+
+
+
+-- this is more complicated, but this is a managed policy for reading.
+
+-- as you can see, all these things as says get, get, get, get, get, and we have one called batch get trace which also says gets.
+
+
+
+• GetServiceGraph:is to get the main graph that we saw in the console.
+
+• BatchGetTraces: Retrieves a list of traces specified by ID. Each trace is a collection of segment documents that originates from a single request.
+
+• GetTraceSummaries: Retrieves IDs and annotations for traces available for a specified time frame using an optional filter. To get the full traces, pass the trace IDs to BatchGetTraces.
+
+• GetTraceGraph: Retrieves a service graph for one or more specific trace IDs.
+
+
+
+
+
+-------------------------------------------------------------------- X-Ray with Elastic Beanstalk
+
+
+• AWS Elastic Beanstalk platforms include the X-Ray daemon so we don't need to include it
+
+• You can run the daemon by setting an option in the Elastic Beanstalk console or with a configuration file (in .ebextensions/xray-daemon.config)
+
+• Make sure to give your instance profile the correct IAM permissions so that the X-Ray daemon can function correctly
+
+• Then make sure your application code is instrumented with the X-Ray SDK to send these traces
+
+• Note:The X-Ray daemon is not provided for Multicontainer Docker
+
+
+
+----------------- in the console , u have to add some options to enable X-Ray 
+
+
+1 in the monitoring stage enable , X-Ray 
+
+2 make sure that the EC2 instances have an IAM role that allow them to connect into X-Ray. --> IAM --> roles --> beanstalk-instancerole --> AWSElasticBeanstalkWebTier  it has x-ray permissions 
+
+
+
+
+
+-------------------------------------------------------------------- ECS + X-Ray integration options
+
+
+-- theory part around how to integrate ECS with X-Ray
+
+
+
+-------------- 1 ECS Cluster : X-Ray Container as a Daemon
+
+
+-- you have an ECS Cluster and one way to run the X-Ray Daemon is to use the container as a Daemon itself.
+
+
+
+what does that mean?
+
+
+-- That means we have our two EC2 instance. For example, in our ECS cluster, and remember we manage those EC2 instances and so we're going to run a Daemon task, a Daemon container of the X-Ray Daemon.
+
+-- That means that the X-Ray Daemon Container will be running on every single EC2 instances. If you have 10 EC2 instances in your ECS cluster, then you will have 10 containers, one on each EC2 instance, running as a Daemon Container.
+
+-- so that means that the X-Ray agent is now running on all these EC2 instances. 
+
+-- And so you can launch your App Containers on the EC2 instances, and after matting them correctly from the networking standpoint to hit the X-Ray Daemon with a UDP port. Then you can run all your applications.
+
+-- So, in this case, you will just have one X-Ray Daemon Container per EC2 instance.
+
+
+
+-------------- 2 ECS Cluster : X-Ray Container as a “Side Car”
+
+
+-- That means you still have your EC2 instances, but now you're going to run one X-Ray Daemon Container alongside each application container, and they will connect from a networking stand point.
+
+-- So this is why it's called a Side Car, it's because the X-Ray Daemon now runs side-to-side as our application container, and it's a Side car.
+
+-- if we look at this now, we have one Side Car per App Container. So, if you have 20 App Containers under one EC2 instance then we'll have 20 X-Ray Side Car.
+
+
+
+
+-------------- 3 Fargate Cluster : X-Ray Container as a “Side Car”
+
+
+-- Now, Fargate Clusters, we don't have control over the EC2 instances, it's just an ECS Cluster that we don't have any control over the underlying instances.
+
+-- So, we can not use the X-Ray Daemon Container, we also have to use the X-Ray Container as a Side Car pattern.
+
+-- So, if you want to launch a Fargate task, it would be the App Container and the X-Ray Side Car, here and there.
+
+
+
+
+
+
+---------------------------------------------------------------- AWS Distro for OpenTelemetry
+
+
+-- So OpenTelemetry is a project and AWS has created a distribution of that project that is AWS supported and they call it Secure and Production Ready.
+
+
+--------- So what is OpenTelemetry?
+
+ANS : OpenTelemetry is a way to get a single set of APIs, library, agents and collector services to collect distributed traces and metrics for your applications.
+
+-- The idea is that it's very similar to X-Ray, but it's open-source.
+
+
+
+-- It can also help you collect metadata from your AWS resources and services.
+
+-- so you have agents and these agents can be auto-instrumented to collect traces without you even changing your code which looks very similar to X-Ray.
+
+-- All these traces and these metrics can be sent to multiple AWS services as well as partner solutions.
+
+     • X-Ray,CloudWatch,Prometheus...
+
+
+• Instrument your apps running on AWS (e.g., EC2, ECS, EKS, Fargate, Lambda) as well as on-premises
+
+• Migrate from X-Ray to AWS Distro for Temeletry if you want to standardize with open-source APIs from Telemetry or send traces to multiple destinations simultaneously
+
+
+
+
+
+AWS Distro for OpenTelemetry ----------------(Collect Traces ----> Collect Metrics -------> AWS Resources and Contextual Data) ----------------> AWS X-Ray / Amazon CloudWatch / Amazon Managed Service for Prometheus / Partner Monitoring Solunons
+
+
+
+
+
+
+---------------------------------------------------------------- AWS CloudTrail
+
+
+• Provides governance, compliance and audit for your AWS Account
+
+• CloudTrail is enabled by default!
+
+• Get an history of events / API calls made within your AWS Account by:
+
+• Console
+• SDK
+• CLI
+• AWS Services
+
+• Can put logs from CloudTrail into CloudWatch Logs or S3
+
+• A trail can be applied to All Regions (default) or a single Region.
+
+• If a resource is deleted in AWS, investigate CloudTrail first!
+
+-- By default, CloudTrail trails created via the AWS Management Console will have global service events enabled. It is recommended that you only have one trail allocated to global service events per account in order to reduce duplicate events.
+
+
+EPV : AWS CloudTrail cannot stream data to Amazon Kinesis. Amazon S3 buckets and Amazon CloudWatch logs are the only destinations possible.
+
+
+
+
+
+
+---------------------------------------------------------------- CloudTrail Events
+
+
+
+1 • Management Events:
+
+     • Operations that are performed on resources in your AWS account
+
+     • Examples:
+
+          • Configuring security (IAM AttachRolePolicy)
+
+          • Configuring rules for routing data (Amazon EC2 CreateSubnet)
+
+          • Setting up logging (AWS CloudTrail CreateTrail)
+
+          • By default, trails are configured to log management events.
+
+          • Can separate Read Events (that don’t modify resources) from Write Events (that may modify resources)
+
+
+
+2 • Data Events:
+
+      • By default, data events are not logged (because high volume operations)
+
+      - So what are Data Events?
+
+      • Amazon S3 object-level activity (ex: GetObject, DeleteObject, PutObject):as you can see, these can be happening a lot on an S3 bucket. so this is why they're not logged by default and u have the option can separate Read and Write Events
+
+      - So a Read Event will be a GetObject whereas a Right Event would be a DeleteObject or a PutObject.
+
+      - Another kind of event you can have in a CloudTrail are AWS Lambda function execution activities.
+
+      • AWS Lambda function execution activity (the Invoke API)
+
+          - So whenever someone uses the Invoke API so you can get insights about how many times your Lambda functions are being evoked.
+
+          - this could be really high volumes, if your Lambda functions are executed a lot.
+
+
+
+
+3  CloudTrail Insights (u have to pay)
+
+
+-- So when we have so many Management Events across all types of services and so many APIs happening very quickly in your accounts, 
+
+-- it can be quite difficult to understand what looks odd, what looks unusual and what doesn't.
+
+-- so this is where CloudTrail Insights comes in.
+
+
+-- So with CloudTrail Insights and you have to enable it and you have to pay for it, it will analyze your events and try to detect unusual activity in your accounts.
+
+• Enable CloudTrail Insights to detect unusual activity in your account:
+
+    EG : 
+    
+    • inaccurate resource provisioning
+
+    • hitting service limits
+
+    • Bursts of AWS IAM actions
+
+    • Gaps in periodic maintenance activity
+
+
+• CloudTrail Insights analyzes normal management events to create a baseline
+
+• And then continuously analyzes write events to detect unusual patterns
+
+    • Anomalies appear in the CloudTrail console
+    • Event is sent to Amazon S3
+    • An EventBridge event is generated (for automation needs)
+
+
+
+
+
+
+---------------------------------------------------------------- CloudTrail Events Retention
+
+
+• Events are stored for 90 days in CloudTrail and then afterwards they're deleted,
+
+• To keep events beyond this period, log them to S3 and use Athena
+
+
+
+---------------------------------------------------------------- LAB 
+
+-- open cloud trail --> event history u can able to see all the events which u have done in the aws account through the root user or normal user 
+
+-- for lab , lets create a new cloud trail 
+
+-- create new s3 bucket , all the API events that will send to s3 and stored in this bucket 
+
+-- Log file SSE-KMS encryption  and Log file validation = uncheck no need for this demo 
+
+-- management events --> create trail that's it 
+
+-- wait for 5 min atleast to see the current time and date iin the trail 
+
+-- after 5 min go n check in the s3 bucket --> it will create log files 
+
+-- in the mean while create one simple ec2 instance for example purpose\
+
+-- check in the history it will shows u the instance running in the trail
+
+-- this is how u will get all the API calls that U have made in ur AWS Account 
+
+
+
+
+
+
+------------------------------------------------------- Amazon EventBridge – Intercept API Calls
+
+
+-- A very important cloud trail integration you need to know about is the one with Amazon EventBridge to intercept any API calls.
+
+-- So let's say you wanted to receive an SNS notification, anytime a user would delete a table in DynamoDB by using the DeleteTable API Call.
+
+-- So what happens that whenever we do an API call in AWS, as you know, the API call itself is going to be logged in CloudTrail. That's for any API call.
+
+-- But also  these all these API calls will end up as events as well in Amazon EventBridge.
+
+-- so we can look for that very specific delete table API call, and create a rule out of it. And this rule will have a destination the destination being Amazon SNS and therefore, we can create alerts.
+
+
+
+ User -----------(DeleteTable API Call)------> DynamoDB -----------(Log API call)-----> CloudTrail (any API call) -----------(event)------> Amazon EventBridge -------(alert) ------------> SNS
+
+
+
+
+
+-------------- few more examples on how you can integrate Amazon Eventbridge and CloudTrail.
+
+
+1 
+
+   -- For example, say, you wanted to be notified whenever a user was assuming a role in your accounts.
+
+   -- So the AssumeRole is an API in the IAM service and therefore, is going to be logged by CloudTrail.
+
+   -- And then using EventBridge integration, we can trigger a message into an SNS topic.
+
+
+   User ------ (AssumeRole) ---------> IAM Role --------(API Call logs) ----------> CloudTrail --------(event)---------> EventBridge -------> SNS
+
+
+
+
+
+2 
+
+    -- Similarly, we can also intercept API calls that, for example, change the Security Group inbound rules. So the Security Group call is called AuthorizeSecurityGroupIngress, and it's an EC2 API call.
+
+    -- So these are going to be logged again by CloudTrail and then they will appear in EventBridge and then we can trigger a notification in SNS.
+
+
+
+    User -------------(AuthorizeSecurityGroupIngress)--------> EC2(Security Group) ------------- (API Call logs) -------------> CloudTrail ------------(event)------> EventBridge ---------> SNS
+
+
+
+
+
+
+------------------------------------------------------- CloudTrail vs CloudWatch vs X-Ray
+
+
+• CloudTrail:
+
+   • Audit API calls made by users / services / AWS console
+   • Useful to detect unauthorized calls or root cause of changes
+
+
+• CloudWatch:
+
+   • CloudWatch Metrics over time for monitoring
+   • CloudWatch Logs for storing application log
+   • CloudWatch Alarms to send notifications in case of unexpected metrics
+   - CloudWatch is really just for overall metrics,
+
+
+• X-Ray:
+
+   • Automated Trace Analysis & Central Service Map Visualization
+   • Latency, Errors and Fault analysis
+   • Request tracking across distributed systems
+   - X-Ray is a lot more granular, trace-oriented type of service
+
+
+
+
+
+
+
+======================================================================== AWS Lambda ============================================================================
+
+
+It’s a serverless world
+
+
+What’s serverless?
+
+
+• Serverless is a new paradigm in which the developers don’t have to manage servers anymore...
+
+• They just deploy code
+
+• They just deploy... functions !
+
+• Initially... Serverless == FaaS (Function as a Service)
+
+• Serverless was pioneered by AWS Lambda but now also includes anything that’s managed: “databases, messaging, storage, etc.”
+
+• Serverless does not mean there are no servers... it means you just don’t manage / provision / see them
+
+
+
+
+
+------------------------------------------------------ Serverless in AWS
+
+
+• AWS Lambda
+• DynamoDB
+• AWS Cognito
+• AWS API Gateway 
+• Amazon S3
+• AWS SNS & SQS
+• AWS Kinesis Data Firehose 
+• Aurora Serverless
+• Step Functions
+• Fargate
+
+
+
+------------------------------------------------------ Why AWS Lambda
+
+
+Amazon EC2 :
+
+  • Virtual Servers in the Cloud
+  • Limited by RAM and CPU
+  • Continuously running
+  • Scaling means intervention to add / remove servers
+
+
+Amazon Lambda : 
+
+   • Virtual functions – no servers to manage!
+   • Limited by time - short executions
+   • Run on-demand
+   • Scaling is automated!
+
+
+
+
+------------------------------------------------------ Benefits of AWS Lambda
+
+
+• Easy Pricing:
+
+    • Pay per request and compute time 
+
+    • Free tier of 1,000,000 AWS Lambda requests and 400,000 GBs of compute time
+
+
+• Integrated with the whole AWS suite of services
+
+• Integrated with many programming languages
+
+• Easy monitoring through AWS CloudWatch
+
+• Easy to get more resources per functions (up to 10GB of RAM!)
+
+• Increasing RAM will also improve CPU and network!
+
+
+
+
+
+------------------------------------------------------ AWS Lambda language support
+
+
+• Node.js (JavaScript)
+• Python
+• Java (Java 8 compatible)
+• C# (.NET Core)
+• Golang
+• C# / Powershell
+• Ruby
+• Custom Runtime API (community supported, example Rust)
+
+
+• Lambda Container Image : this Lambda container image is quite special.
+
+     • The container image must implement the Lambda Runtime API , so it's not any container image that can run on Lambda. There needs to be some prerequisites about how that container image is built.
+
+     • ECS / Fargate is preferred for running arbitrary Docker images
+
+
+-- So the exam, if they ask you to run a container on Lambda, unless that container does implement the Lambda runtime API, you will run  that container on ECS or Fargate.
+
+
+
+
+
+------------------------------------------------------ AWS Lambda Integrations Main ones
+
+
+1 API Gateway : So API Gateway is to create a REST API, and they will invoke our Lambda functions.
+
+
+2 Kinesis : Kinesis will be using Lambda to do some data transformations on the fly.
+
+
+3 DynamoDB :  DynamoDB will be used to create some triggers, so whenever something happens in our database a Lambda function will be triggered.
+
+
+4 S3 : A Lambda function would be triggered anytime, for example, a file is created in S3.
+
+
+5 CloudFront :  CloudFront, this will be Lambda@edge,
+
+
+6 CloudWatch Events : CloudWatch Events or EventBridge. This is whenever things happen in our infrastructure on AWS, and we want to be able to react to things.
+
+             - For example, say we have a cut pipeline, state changes and we want to do some automations based on it, we can use a Lambda function.
+
+
+7 CloudWatch Logs : CloudWatch Logs, to stream these logs, wherever you want.
+
+
+8 SNS : SNS to react to notifications and your SNS topics.
+
+
+9 SQS : SQS to process messages from your SQS queues.
+
+
+10 Cognito : Cognito to react to whenever, for example, a user login to your database.
+
+
+
+
+-- So, these are just the main ones. There are tons of Lambda integrations.
+
+
+
+
+
+------------------------------------------------------ Example: Serverless Thumbnail creation
+
+
+-- So let's say we have an S3 bucket, and we want to create thumbnails on the fly.
+
+-- So there will be an event which is that the new image will be uploaded in Amazon S3.
+
+-- This will trigger, through an S3 event notification, a Lambda function.
+
+-- that Lambda function will have code to generate a thumbnail. That thumbnail maybe pushed and uploaded into another S3 bucket or the same S3 bucket, which would be a smaller version of that image.
+
+-- And also, our Lambda function may want to insert some data into DynamoDB, around some metadata for the image, for example the image, name, size, creation date, etc..
+
+
+
+
+New image in S3 -------------(trigger)----------> AWS Lambda Function Creates a Thumbnail -------------(Push)-------> New thumbnail in S3 / Metadata in DynamoDB
+
+
+
+
+------------------------------------------------------ Example: Serverless CRON Job
+
+
+-- So CRON is a way on your EC2 instances, for example, to generate jobs every five minutes, or every Monday at 10:00 AM, etc
+
+-- But you need to run CRON on a virtual server. So an EC2 two instance and so on.
+
+-- so while your instance is not running, or at least your CRONs are not doing anything, then your instance time is wasted.
+
+-- so, as such, you can create a CloudWatch Event rule or an EventBridge rule that will be triggered every 1 hour. And every 1 hour it will be integrated with a Lambda function that will perform your task.
+
+-- So this is a way to create a serverless CRON,
+
+-- in this example, CloudWatch Events is serverless and Lambda functions are serverless too.
+
+
+
+
+------------------------------------------------------ AWS Lambda Pricing: example
+
+
+• You can find overall pricing information here:
+
+     https://aws.amazon.com/lambda/pricing/
+
+
+• Pay per calls:
+
+     • First 1,000,000 requests are free
+
+     • $0.20 per 1 million requests thereafter ($0.0000002 per request)
+
+
+• Pay per duration: (in increment of 1 ms)
+
+     • 400,000 GB-seconds of compute time per month for FREE
+
+     • == 400,000 seconds if function is 1GB RAM
+
+     • == 3,200,000 seconds if function is 128 MB RAM
+
+     • After that $1.00 for 600,000 GB-seconds
+
+
+• It is usually very cheap to run AWS Lambda so it’s very popular
+
+
+
+
+
+------------------------------------------------------ Lambda Hands On
+
+
+-- open lambda in console ---> check how it will work on the intro page 
+
+-- c.o scale seamlessly , to observe how this will work and how it will get scale automatically
+
+-- Lambda responds to events : Once you create Lambda functions, you can configure them to respond to events from a variety of sources. Try sending a mobile notification, streaming data to Lambda, or placing a photo in an S3 bucket.
+
+
+-- Scale seamlessly : Lambda scales up and down automatically to handle your workloads, and you don't pay anything when your code isn't running.
+
+       - * Your first 1 million requests or 400,000 GB-seconds of compute per month are free. Costs in this demo are based on a 128 MB function with a 1 second invocation duration.
+
+
+
+-- choose blue print --> hello world python --> this will give lambda function code --> create function
+
+
+-- create test event and do test and observe the result 
+
+
+
+------------------------------------------------------ Lambda – Synchronous Invocations
+
+
+• Synchronous: CLI, SDK, API Gateway, Application Load Balancer
+
+   -  So you're doing a synchronous invocation when you're using the CLI, and the SDK, the API Gateway, or even an Application Load Balancer.
+
+
+-- What does that mean by synchronous?
+
+
+• Results is returned right away : that means that you're waiting for the results, and then the result will be returned to you.
+
+• Any Errors that come backs to you, must be handled on the client side. (retries, exponential backoff, etc...)
+
+-- That means that if my lambda function fails, and I just invoked it from the console, I want to click on the retry button to retry it.
+
+-- So that means any time there is an error on lambda, the client has to figure out what to do. Do you want to retry it, do you want to do an exponential backoff, etc etc.
+
+-- So synchronous means a direct invocation that you wait the result of.
+
+
+
+Example 1 :
+
+
+-- So the CLI and the SDK would just invoke our lambda function, the lambda function would do something, and give us our response.
+
+
+             ------------------------------------(invoke)---------------------------------->
+  SDK/CLI                                                                                        Lambda     (Do something)
+             <------------------------------------(Response)---------------------------------
+
+
+
+Example 2 :
+
+
+--  when we'll use the API Gateway ,the API Gateway will proxy its request to the lambda function, so it will invoke the lambda function for you; 
+
+-- the lambda function will give the response to your API Gateway, which will give you the response.
+
+-- so in this schema, we're just waiting for the response that makes it a synchronous type of invocation.
+
+
+           -------------------------(invoke) ----------->               ------------(proxy)----------------> 
+   Client                                                   API Gateway                                        AWS LAmbda  (Do something)
+   
+           <------------------(Response)------------------              <------------------------------------
+
+
+
+
+
+------------------------------------------------------ Lambda - Synchronous Invocations - Services
+
+
+-- Well, first of all, any time it's user-invoked then it's going to be synchronous.
+
+
+• User Invoked:
+
+      • Elastic Load Balancing (Application Load Balancer)
+
+      • Amazon API Gateway
+
+      • Amazon CloudFront (Lambda@Edge)
+
+      • Amazon S3 Batch
+
+
+• Service Invoked:
+
+     • Amazon Cognito
+
+     • AWS Step Functions
+
+
+• Other Services:
+
+     • Amazon Lex
+
+     • Amazon Alexa
+
+     • Amazon Kinesis Data Firehose
+
+
+
+
+
+------------------------------------------------------ Lambda - Synchronous Invocations Hands On
+
+
+-- actually when we had our code over function, and we just did test, then this was a synchronous invocation because we are waiting for the results of the invocation, and we get it here in this window.
+
+-- If it took maybe two minutes for this invocation to complete, we would have waited two minutes to get the execution results.
+
+-- The other thing we can test the synchronous invocation with is using the CLI.
+
+-- open cloudshell in console 
+
+-- So let's use this CLI to list our functions.
+
+      aws lambda list-functions
+
+
+-- if u r using nrml CLI , then add --region "ur region name"
+
+-- So next we want to do a synchronous invocation from the CLI of our lambda function,
+
+-- for this this just go into our code and under a synchronous.sh we have the different commands. So I'm on Linux Mac because this is CloudShell and this is using the CLI V2 versions.
+
+
+
+
+aws lambda list-functions --region eu-west-1
+
+
+# LINUX / MAC
+aws lambda invoke --function-name demo-lambda --cli-binary-format raw-in-base64-out --payload '{"key1": "value1", "key2": "value2", "key3": "value3" }' --region eu-west-1 response.json
+
+# WINDOWS POWERSHELL
+aws lambda invoke --function-name demo-lambda --cli-binary-format raw-in-base64-out --payload '{\"key1\": \"value1\", \"key2\": \"value2\", \"key3\": \"value3\" }' --region eu-west-1 response.json
+
+# WINDOWS CMD
+aws lambda invoke --function-name demo-lambda --cli-binary-format raw-in-base64-out --payload "{""key1"":""value1"",""key2"":""value2"",""key3"":""value3""}" --region eu-west-1 response.json
+
+
+
+
+
+-- based on ur OS , u can use the commands 
+
+-- here i am using on linux , so 1st once i choose 
+
+       aws lambda invoke --function-name mydemo --cli-binary-format raw-in-base64-out --payload '{"key1": "value1", "key2": "value2", "key3": "value3" }'  response.json
+
+
+
+-- now do cat response.json
+
+-- I mean, my synchronize invocation has worked.
+
+
+
+
+
+------------------------------------------------------ Lambda Integration with ALB
+
+
+-- So, for now, lambda functions, they can be either invoked with CLI or the SDK, But sometimes if you want to expose them to the internet, you want to allow people to use them through an HTTP or an HTTPS endpoint.
+
+-- so as such, you have two ways for doing this. 
+   
+       - The first way is to use an Application Balancer, or 
+       
+       - an API Gateway,
+
+
+• for it to work, The Lambda function must be registered in a target group 
+
+
+
+      Client <-----------(HTTP/HTTPS)---------> Application Load Balancer (ALB) <-------------(INVOKE SYNC)--------------> Lambda (Target Group)
+
+
+
+-- So your clients will be invoking and sending requests in the form of HTTP or HTTPS to your ALB, which will be invoking synchronously your lambda function in a target group,
+
+-- because synchronously, because we're waiting for the lambda function to get back to the application balancer, which will in turn, return a response to the client.
+
+
+
+Question : "How does the load balancer convert an HTTP request into a lambda invocation?"
+
+
+ANS : 
+
+
+1 ALB to Lambda: HTTP to JSON
+
+    - the HTTP gets transformed into a JSON document.
+
+
+-- Example Application Load Balancer request event
+
+
+{
+    "requestContext": {
+        "elb": {
+            "targetGroupArn": "arn:aws:elasticloadbalancing:us-east-1:123456789012:targetgroup/lambda-279XGJDqGZ5rsrHC2Fjr/49e9d65c45c6791a"
+        }
+    },
+    "httpMethod": "GET",
+    "path": "/lambda",
+    "queryStringParameters": {
+        "query": "1234ABCD"
+    },
+    "headers": {
+        "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
+        "accept-encoding": "gzip",
+        "accept-language": "en-US,en;q=0.9",
+        "connection": "keep-alive",
+        "host": "lambda-alb-123578498.us-east-1.elb.amazonaws.com",
+        "upgrade-insecure-requests": "1",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36",
+        "x-amzn-trace-id": "Root=1-5c536348-3d683b8b04734faae651f476",
+        "x-forwarded-for": "72.12.164.125",
+        "x-forwarded-port": "80",
+        "x-forwarded-proto": "http",
+        "x-imforwards": "20"
+    },
+    "body": "",
+    "isBase64Encoded": false
+}
+
+
+
+
+-- elb = there is the ELB information, so which ELB invokes and what is the target group.
+
+-- Then we get some information around the HTTP method, so it was a GET and the path was /lambda.
+
+-- We get the query string parameters as key/value pairs, so each query string will be appearing in the JSON document.
+
+-- We'll get the headers as key/value pairs,
+
+-- we'll get the body for POST, PUT, and the value is base 64 encoded, so do you need to decode it or not.
+
+-- for this information, there is a translation of the entire HTTP request to JSON.
+
+
+
+
+2  Lambda to ALB conversions: JSON to HTTP
+
+-- So, similarly, our lambda function should return something, a JSON document and the ALB will convert this back into HTTP.
+
+
+Example response document format
+
+
+{
+    "statusCode": 200,
+    "statusDescription": "200 OK",
+    "isBase64Encoded": False,
+    "headers": {
+        "Content-Type": "text/html"
+    },
+    "body": "<h1>Hello from Lambda!</h1>"
+}
+
+
+
+-- So if we look at the response from the lambda function, it's very simple.
+
+-- It needs to include a status code and a description,
+
+-- as well as the response headers as key/value pairs,
+
+-- finally the body of the response and the flag, whether or not it is base 64 encoded.
+
+
+
+
+
+------------------------------------------------------ ALB Multi-Header Values
+
+
+• So, if we have our client talking to our ALB, ALB can support multi header values (ALB setting) which is to have multi-header values.
+
+-- What does that mean?
+
+-- That means that if we pass in multiple headers with the same value or query strings with the same value,
+
+
+• When you enable multi-value headers, HTTP headers and query string parameters that are sent with multiple values are shown as arrays within the AWS Lambda event and response objects.
+
+
+
+EG :
+
+1 HTTP
+
+     http://example.com/path?name=foo&name=bar
+
+
+2 JSON
+
+     ”queryStringParameters”: {“name”: [“foo”,”bar”] }
+
+
+
+-- So, in this example, name=foo&name=bar have the same name, but different values. 
+
+-- Then we can enable the setting and both the headers and the query string parameters will be converted as an array into the lambda function.
+
+-- So that means that when my ALB invokes my lambda function for the queryStringParameters JSON,
+
+-- what I will see is name, and instead of one value, I will see an array of values. So, foo and bar.
+
+-- "How do we support multi-header values?"
+
+       ANS :It's just a setting on the ALB and this is what it does.
+
+
+
+
+
+
+------------------------------------------------------ lambda and ALB Hands On
+
+
+-- open console lambda --> choose scratch --> give name --> select python 3.9 or above --> create function .
+
+IMP -- now i have to create one load balancer for my lambda application , create TG , make sure SG have HTTP inbound rule and target have Lambda function as target and enable Health checks for TG 
+
+-- so now if we look at our lambda code , it is just simple code that just returns the status 200
+
+-- Now let's add a little bit of logging.
+
+import json
+
+def lambda_handler(event, context):
+    print(event)
+    # TODO implement
+    return {
+        'statusCode': 200,
+        'body': json.dumps('Hello from Lambda!')
+    }
+
+
+-- once u add print (event) , here we can see that the event that was passed is being printed to the console.
+
+-- this will be helpful, when we want to see the event pass to another function from the load balancer.
+
+-- now go to LB --> copy DNS and paste in browser --> it will downlaod one file in that file u have o/P
+
+-- 'body': json.dumps('Hello from Lambda!') , 'coz of this we r getting o/p as in document form 
+
+--  what we would like to have this response not to be downloaded, but instead to be displayed in my web browser.
+
+-- so u have make changes in the code , the code will look like this 
+
+
+import json
+
+def lambda_handler(event, context):
+    print(event)
+    # TODO implement
+    return {
+        "statusCode": 200,
+        "statusDescription": "200 OK",
+        "isBase64Encoded": False,
+        "headers": {
+            "Content-Type": "text/html"
+        },
+        "body": "<h1>Hello from Lambda!</h1>"
+    }
+
+
+
+-- the content type to be text html, and therefore this is deployed in our web browser,
+
+-- So this is how a Lambda function is properly sent in data into our ALB, and then our ALB showing the data directly from the web browser itself.
+
+-- if u want to allow multi head values , u can enable , go to TG --> Attributes --> Multi value headers
+
+-- but if you enable multi-value header, you need to change your response a little bit. ---- Remember
+
+-- delete LB 
+
+
+
+
+
+
+------------------------------------------------------ Lambda – Asynchronous Invocations
+
+

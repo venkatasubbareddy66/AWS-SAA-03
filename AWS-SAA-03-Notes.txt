@@ -4928,9 +4928,11 @@ echo "<h1>Hello World from $(hostname -f)</h1>" >
 2  Slow start duration  : when scale out happen , LB has to sent trafffic to new server 
 
 
-3 Load balancing algorithm : round robin method it uses (1,2,3,1,2,3)
+3    u will find in target group attributes section 
 
-- u also have Least outstanding request : this means u have server 1 and server 2 based n the request like if serve 1 getting 5 request and server2 is 20 requests , the nxt request is going to server 1 coz it is getting low requests , it is based on the least getting requests 
+    1 Load balancing algorithm : round robin method it uses (1,2,3,1,2,3)
+
+    2 Least outstanding request : this means u have server 1 and server 2 based n the request like if serve 1 getting 5 request and server2 is 20 requests , the nxt request is going to server 1 coz it is getting low requests , it is based on the least getting requests 
 
 
 4 Stickiness : when ever u want to stick with to the specific server 
@@ -6070,6 +6072,8 @@ Pricing: no free tier, $0.003 per configuration item recorded per region, $0.001
 -- u can also check resources in left side , u can check time line of the resource when n how the changes happen 
 
 -- it is best for auditing 
+
+
 
 ---------------------------------- IMP : once u delete rules in console , it won’t delete and u will get charge , so to delete this 
 
@@ -14207,6 +14211,8 @@ Announcing New Features :
 
 -- we create functions in the lambda , this function is called lambda functions 
 
+
+
 ---------------------------------Benefits of AWS Lambda
 
 -- Easy Pricing:
@@ -14249,7 +14255,8 @@ Announcing New Features :
 
 API Gateway 
 Kinesis 
-DynamoDB S3
+DynamoDB 
+S3
 CloudFront
 CloudWatch Events 
 CloudWatch Logs 
