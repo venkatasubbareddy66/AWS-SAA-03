@@ -9264,3 +9264,241 @@ def lambda_handler(event, context):
 ------------------------------------------------------ Lambda – Asynchronous Invocations
 
 
+
+
+
+-- we've seen synchronous invocations,
+
+-- let's go into asynchronous invocation. So they're for service that will invoke another functions behind the scenes,
+
+• for example,  S3, SNS, CloudWatch Events...
+
+-- for example , we have an S3 bucket and an S3 event notification for new files.
+
+-- This will go into the Lambda Service, and because it's asynchronous something will happen. The events are going to be placed in an internal Event Queue.
+
+-- So we have an Event Queue here and your Lambda function is going to be reading off that Event Queue.
+
+-- The Lambda function then will try to process these events, but if somehow things go wrong, the Lambda function will automatically attempt to retry.
+
+-- So that means that it will be three tries in total.
+
+-- The first one will happen right away, then the second one will happen a minute after, and the third one will happen two minutes after the second one.
+
+-- So the idea is that our Lambda function is going to retry three times in total.
+
+-- And then, once the retries happen, that means that our Lambda function is possibly going to process those same events multiple times and so this could be a problem.
+
+-- And so if you lambda function is not "idempotent" this could be big problem, so meaning your Lambda function should be idempotent.
+
+            - Idempotentcy means that, in case of retries,the result is the same.
+
+
+-- So then, if you have a retry happening, what will happen is that you will see duplicate log entries in CloudWatch Logs because your Lambda function will try over and over and over again.
+
+-- So we can define a DLQ, or dead-letter queue, for after the retries are done.
+
+-- So that means that in case there's a failed processing and we never were able to succeed because of the retries,
+
+-- then the Lambda function can send some events to SQS or SNS for further processing later on.
+
+-- this is the whole idea behind asynchronous invocations.
+
+
+"Why we will use asynchronous versus synchronous?"
+
+ANS : 
+
+- Well, first of all, some services must use asynchronous, so you have no choice,
+
+- and the second one is, for example, say you need to speed up processing and you don't need to wait for the results, then you can start 1000 files being processed at the same time,
+
+- you just wait at the end for all to be processed in parallel, you don't wait for each individual results, and so that speeds up your processing time.
+
+
+• Asynchronous invocations allow you to speed up the processing if you don’t need to wait for the result (ex: you need 1000 files processed)
+
+
+
+
+                            
+                                                    | - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+                                                    |  Lambda Service                                                         |
+                                                    |                                                                         |
+                                                    |
+                                                    |                                            - - - - - - - -              |
+                                                    |                                            |              |
+                                                    |                                            |   retries    |             |
+                                                    |                                            |              |               
+                                                    |                                            |              |             |
+S3 bucket ----------------(New file event)---------------> Event Queue ----------(Read)-------> Function -------              |
+
+                                                    |                                             |
+                                                    |                                             |
+                                                    |                                             |  DLQ for failed processing
+                                                    |                                             |
+                                                    |                                         SQS or SNS 
+                                                    |
+                                                    |
+                                                    | - - - - - - - - - - - - - - - - - - - - - - - - -- - - - - - - - - - - - - 
+
+
+
+
+
+Summary :
+
+
+• The events are placed in an Event Queue
+
+• Lambda attempts to retry on errors
+
+     • 3 tries total
+     • 1 minute wait after 1st , then 2 minutes wait
+
+• Make sure the processing is idempotent (in case of retries)
+
+• If the function is retried, you will see duplicate logs entries in CloudWatch Logs
+
+• Can define a DLQ (dead-letter queue) – SNS or SQS – for failed processing (need correct IAM permissions)
+
+
+
+
+
+
+
+
+------------------------------------------------------ Lambda - Asynchronous Invocations - Services
+
+
+• Amazon Simple Storage Service (S3) , when we have S3 Event Notifications invoking Lambda functions.
+
+• Amazon Simple Notification Service (SNS), so when we receive notifications and we trigger a Lambda function.
+
+• Amazon CloudWatch Events / EventBridge, which will basically have our Lambda functions react to events happening in our AWS infrastructure.
+
+• AWS CodeCommit (CodeCommit Trigger : new branch, new tag, new push)
+
+• AWS CodePipeline (invoke a Lambda function during the pipeline, Lambda must callback)
+
+
+----- other -----
+
+
+• Amazon CloudWatch Logs (log processing)
+
+• Amazon Simple Email Service
+
+• AWS CloudFormation
+
+• AWS Config
+
+• AWS IoT
+
+• AWS IoT Events
+
+
+
+
+
+------------------------------------------------------ Lambda – Asynchronous Invocations Hands On
+
+
+--  so i have my lambda function 
+
+-- But if we invoke this asynchronously, we cannot do it from the console, we have to do it from the CLI.
+
+-- open cloudshell , based on ur OS , u can use the below cmnds 
+
+
+
+# LINUX / MAC
+aws lambda invoke --function-name demo-lambda --cli-binary-format raw-in-base64-out --payload '{"key1": "value1", "key2": "value2", "key3": "value3" }' --invocation-type Event --region eu-west-1 response.json
+
+# WINDOWS POWERSHELL
+aws lambda invoke --function-name demo-lambda --cli-binary-format raw-in-base64-out --payload '{\"key1\": \"value1\", \"key2\": \"value2\", \"key3\": \"value3\" }' --invocation-type Event --region eu-west-1 response.json
+
+# WINDOWS CMD
+aws lambda invoke --function-name demo-lambda --cli-binary-format raw-in-base64-out --payload "{""key1"":""value1"",""key2"":""value2"",""key3"":""value3""}" --invocation-type Event --region eu-west-1 response.json
+
+
+
+-- I am using linux 
+
+-- so the whole purpose of an asynchronous invocation is that we do not have the results back to us.
+
+
+EG : aws lambda invoke --function-name my-demo --cli-binary-format raw-in-base64-out --payload '{"key1": "value1", "key2": "value2", "key3": "value3" }' --invocation-type Event  response.json
+
+
+-- it will gives u 202 response ,So that means that the lambda function has been successfully invoked but we don't know the results.
+
+-- go to cloud watch --> fucntion log group --> open recent logs --> we can see the function was invoked and the requests was successful.
+
+-- But we don't know this, if it was successful or not, because this was an asynchronous invocation.
+
+-- now go to code and purposefully do make changes in code , for getting errror like this 
+
+
+ #return event['key1']  # Echo back the first key value
+ raise Exception('Something went wrong')
+
+
+
+-- now do enter same commands again , but u will get same response and go n check in CW , u will get error in logs regardless of whether or not the function succeeded or failed because we don't want to know the results, due to the nature of asynchronous.
+
+-- So what we can do instead is maybe set up a dead letter queue.
+
+-- now go to sqs in console --> create one std queue 
+
+-- now come to lambda --> refresh the page --> configuration --> open IAM role for lambda --> attch AmazonSQSFullAccess permissions 
+
+-- lambda --> configuration --> asynchronous configuration --> edit --> add SQS 
+
+-- test function , it will fail we know that 
+
+-- So, if we try to go now into our CloudShell, and invoke this function again, we'll know that the invocation itself will fail because the lambda function function was coded to fail.
+
+-- But now what's going to happen is that the DLQ is going to kick into effect, so we're gonna have 2 retry attempts, and after the retry attempts have failed then the message should go into Amazon SQS.
+
+-- now go to sqs and check for message we have one message 
+
+
+
+
+
+------------------------------------------------------ CloudWatch Events / EventBridge
+
+
+-- how we can integrate CloudWatch Events or EventBridge with Lambda.
+
+-- 2 ways 
+
+
+1 CRON or Rate EventBridge Rule ------------------(Trigger Every 1 hour)------------> AWS Lambda Funchon Perform a task
+
+
+2 CodePipeline EventBridge Rule ------------------(Trigger on State Changes) ------------> AWS Lambda Function Perform a task
+
+
+
+
+
+------------------------------------------------------  CloudWatch Events / EventBridge (Hands ON)
+
+-- create one function with python 3.9
+
+-- make sure this function is being invoked by EventBridge.
+
+-- Eventbridge --> rule --> create new rule --> Rule type = Schedule --> c.o continue to create rule ---> A schedule that runs at a regular rate, such as every 10 minutes. (1 min)--> choose target as aws lambda fun---> create rule
+
+-- do refresh page of lambda u will see invocation of Eventbridge
+
+-- wait for 1 min --> now check in cloudwatch invocation happens
+
+-- now add print(event) in code and deploy the changes and wait for 1 Min
+
+-- now do check in CW recent logs, u will see the event info
+
+-- do disable our rule 
