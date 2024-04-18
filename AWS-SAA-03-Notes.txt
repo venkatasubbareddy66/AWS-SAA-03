@@ -10059,6 +10059,8 @@ ans : 20 RCU
 • Invoke AWS Lambda on changes to your DynamoDB table
 
 --------------------------- LAB 
+
+
 DynamoDb Streams : it is an ordered flow of information amout changes  items in a DynamoDb table. When u enable stream on a table , DynamoDb captures information about every modification to data items n the table 
 
 -- Capture item-level changes in your table, and push the changes to a DynamoDB stream. You then can access the change information through the DynamoDB Streams API.

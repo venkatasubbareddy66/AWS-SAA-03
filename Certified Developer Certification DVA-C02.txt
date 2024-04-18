@@ -9502,3 +9502,3261 @@ EG : aws lambda invoke --function-name my-demo --cli-binary-format raw-in-base64
 -- now do check in CW recent logs, u will see the event info
 
 -- do disable our rule 
+
+
+
+
+------------------------------------------------------ lambda and S3 Events Notifications
+
+
+• S3:ObjectCreated, S3:ObjectRemoved, S3:ObjectRestore, S3:Replication...
+
+    - So just a reminder on S3 event notifications, it is a way for you to get notified whenever an object is created, removed, restored, when there is a replication happening.
+
+• Object name filtering possible (*.jpg)
+
+    - You can filter by prefix and by suffix. And the use case is, the classic one is to generate thumbnail images of every image uploaded into Amazon S3.
+    
+    • Use case: generate thumbnails of images uploaded to S3
+
+
+-- So you have your events into Amazon S3, and S3 can send it to three things,
+
+
+1 Amazon S3 -------(Events)-------> SNS ---------> SQS
+
+ 
+EXP : your events into Amazon S3, send to SNS and from an SNS topic, we can do a fan out pattern to send to multiple SQ-Q,  we can sent it into an SQ-Q
+
+
+2 Amazon S3 -------(Events)-------> SQS ---------> Lambda Function
+
+
+EXP : we can sent it into an SQ-Q , and have a Lambda function directly read off that SQ-SQ,
+
+
+3 Amazon S3 -------(Events)-------(async)----------> Lambda Function ----------- (DLQ) ---------> SQS
+
+
+EXP : we could have an Amazon S3 event notification, directly invoke our Lambda function and this is an asynchronous invocation.
+
+- this Lambda function could do whatever it wants with that data, and then in case things go wrong, we can set up a dead-letter queue, for example an SQS, as we've seen from before.
+
+
+
+• S3 event notifications typically deliver events in seconds but can sometimes take a minute or longer
+
+• If two writes are made to a single non- versioned object at the same time, it is possible that only a single event notification will be sent
+
+• If you want to ensure that an event notification is sent for every successful write, you can enable versioning on your bucket.
+
+
+
+
+------------------------------------------------------ Simple S3 Event Pattern – Metadata Sync
+
+
+  S3 bucket -------------(New file event)------------> lambda (Update metadata table) -----------> DynamoDB Table / Table in RDS
+
+
+EXP : So, here is a simple pattern. An S3 bucket will have a new file event into Lambda. And Lambda function will process that file maybe insert that data into DynamoDB Table or even a table in RDS database.
+
+
+
+
+
+------------------------------------------------------ lambda and S3 Events Notifications Hands On
+
+
+-- create one lambda function and one s3 bucket , make sure both are in same region
+
+-- s3 buket --> properties --> event notificatin --> create event notification for all object creation
+
+-- So this event notification is enabled to send data into lambda function.
+
+print(event) in code 
+
+
+import json
+
+def lambda_handler(event, context):
+    print(event)
+    # TODO implement
+    return {
+        'statusCode': 200,
+        'body': json.dumps('Hello from Lambda!')
+    }
+
+
+
+-- now do upload a file in the s3 bucket
+
+-- now what's going to happen is that this should trigger an event into my Lambda function and to see whether or not this has worked,
+
+-- lambda --> cloudwatch --> u will see that records have created with all the event info 
+
+
+
+
+
+
+
+------------------------------------------------------ Lambda – Event Source Mapping
+
+
+-- So we have seen asynchronous processing, we have seen synchronous processing, and now we are going to see Event Source Mapping. So this is the last category of how Lambda can process events in AWS.
+
+--  it applies to 
+
+
+   • Kinesis Data Streams
+   • SQS & SQS FIFO queue
+   • DynamoDB Streams
+
+
+• Common denominator: records need to be polled from the source
+
+    - So Lambda needs to ask the service to get some records and then the records will be returned.
+
+    - So that means that Lambda needs to poll from these services.
+
+
+• Your Lambda function is invoked synchronously
+
+
+
+            Poll
+         ---------------->
+Kinesis                         Inside the lambda function (Event Source Mapping(internal)) ----------------(INVOKE WITH EVENT BATCH)-----------------> Lambda Function
+         <----------------
+            Return
+
+
+
+-- We have Kinesis and the Lambda service, and if we configure Lambda to read from Kinesis, 
+
+-- then they will be internally an Event Source Mapping that will be created. And that is responsible for polling Kinesis, and returning and getting the results back from Kinesis.
+
+-- So Kinesis will return a batch to us.
+
+-- then once this Event Source Mapping has some data for Lambda to process, it's going to invoke our Lambda function synchronously, with an event batch.
+
+
+
+
+
+
+
+------------------------------------------------------ So there are two categories of Event Source Mapper. (Streams and Queues)
+
+
+
+------------------------------------------ 1 Streams & Lambda (Kinesis & DynamoDB)
+
+
+• So in case of streams, they will be an Event Source Mapping. They will create an iterator for each shard,
+
+    - so each Kinesis shard or DynamoDB Stream shard. And the items will be processed in order at the shard level.
+
+
+• so we can configure where to start to read from. You can read it with just the new items, or from the beginning of the shard or from a specific timestamp.
+
+
+• Whenever an item is processed from a shard, whether it be from Kinesis or DynamoDB,Processed items aren't removed from the stream (other consumers can read them)
+
+
+-- So the use case for this is either low traffic or high traffic.
+
+
+• Low traffic: use batch window to accumulate records before processing , So to make sure that you invoke another function efficiently.
+
+-- then if you have a very high throughput stream and you want to speed up processing,
+
+• You can process multiple batches in parallel at shard level 
+
+    • up to 10 batches per shard
+    • in-order processing is still guaranteed for each partition key,
+
+
+
+
+------------------------------------------ Streams & Lambda – Error Handling
+
+
+• By default, if your function returns an error, the entire batch is reprocessed until the function succeeds, or the items in the batch expire.
+
+    - this is very imp ,Having an error in a batch can block your processing. 
+
+
+• To ensure in-order processing, processing for the affected shard is paused until the error is resolved
+
+-- so you can manage that in several ways.
+
+• You can configure the event source mapping to:
+
+     • discard old events
+
+     • restrict the number of retries
+
+     • split the batch on error (to work around Lambda timeout issues)
+
+
+• Discarded events can go to a Destination
+
+
+
+
+
+------------------------------------------ 2 Lambda – Event Source Mapping SQS & SQS FIFO
+
+
+
+
+
+            Poll
+         ---------------->
+SQS                        Inside the lambda function (Event Source Mapping(internal)) ----------------(INVOKE WITH EVENT BATCH)-----------------> Lambda Function
+         <----------------
+            Return
+
+
+-- The SQS queue will be polled by a Lambda Event Source Mapping.And then whenever a batch is returned, your Lambda function will be invoked synchronously with the event batch.
+
+-- So in the case of SQS, the Event Source Mapping will poll SQS using Long Polling. So it's going to be efficient.
+
+• Specify batch size (1-10 messages)
+
+• Recommended: Set the queue visibility timeout to 6x the timeout of your Lambda function
+
+• To use a DLQ
+
+      • set-up on the SQS queue, not Lambda (DLQ for Lambda is only for async invocations)
+
+      • Or use a Lambda destination for failures
+
+
+---- but not on Lambda. Why?
+
+ANS : Because the DLQ for Lambda only works for asynchronous invocations. And this is a synchronous invocations.
+
+
+
+• Lambda also supports in-order processing for FIFO (first-in, first-out) queues, And the number of Lambda functions that will be scaling to process your queue will be equal to the number of active message groups.
+
+• For standard queues, items aren't necessarily processed in order.
+
+• for a standard queue, Lambda will scale as fast as possible to read all the messages in your standard queue.
+
+• When an error occurs, batches are returned to the queue as individual items and might be processed in a different grouping than the original batch.
+
+• Occasionally, the event source mapping might receive the same item from the queue twice, even if no function error occurred.
+
+• Lambda deletes items from the queue after they're processed successfully.
+
+• You can configure the source queue to send items to a dead-letter queue if they can't be processed.
+
+
+
+
+
+------------------------------------------ Lambda Event Mapper Scaling
+
+
+• Kinesis Data Streams & DynamoDB Streams:
+
+     • One Lambda invocation per stream shard
+
+     • If you use parallelization, up to 10 batches processed per shard simultaneously
+
+
+• SQS Standard:
+
+     • Lambda adds 60 more instances per minute to scale up
+
+     • Up to 1000 batches of messages processed simultaneously
+
+
+• SQS FIFO:
+
+     • Messages with the same GroupID will be processed in order
+
+     • The Lambda function scales to the number of active message groups
+
+
+
+
+
+
+
+------------------------------------------------------ Lambda event source mapping Hands On
+
+
+-- create one function with python 3.8 ,  make sure that lambda role has "AWSLambdaSQSQueueExecutionRole" permisssions 
+
+-- create one SQS std queue ,
+
+-- now go to lambda --> add triggers --> sqs --> create trigger
+
+-- go to code --> make some changes
+
+import json
+
+def lambda_handler(event, context):
+    # TODO implement
+    print(event)
+    return "success"
+
+
+-- now let's test our Lambda function by simply going into SQS and sending a message.
+
+-- send some message from SQS
+
+--  so, because my Lambda function is continuously pulling from SQS, then it should process this message.
+
+-- open loga in cloudwatch , u will able to see the message in the cloudwatch records
+
+-- now go to queue --> see u have 0 messages 'coz the messages has been processed by our lambda function.
+
+-- now disable the sqs trigger in the lambda 
+
+-- now add 2nd type trigger called kinesis to lambda , do try by using aws documentation 
+
+
+
+
+
+
+------------------------------------------------------ Lambda – Event and Context Objects
+
+
+
+EventBridge -------------(invoke)----------------> Lambda Funcxon
+
+
+EVENT Object :
+
+
+• JSON-formatted document contains data for the function to process
+
+• Contains information from the invoking service (e.g., EventBridge, custom, ...)
+
+• Lambda runtime converts the event to an object (e.g., dict type in Python)
+
+• Example: input arguments, invoking service arguments, ...
+
+
+-- So let's take an example where your Lambda function is invoked, for example, by a EventBridge rule.
+
+-- So what's going to happen is that EventBridge is going to create an event and that event is going to be passed to your Lambda function
+
+-- your Lambda function will receive that event, and it's called the event object.
+
+-- the event object includes a lot of detail around, well, the event itself. Where it was emitted from and the service itself will include a lot of data related to that event in the event.
+
+
+Context Objects :
+
+• Provides methods and properties that provide information about the invocation, function, and runtime environment
+
+• Passed to your function by Lambda at runtime
+
+• Example: aws_request_id, function_name, memory_limit_in_mb, ...
+
+
+-- this is more some metadata around your function, such as the request ID from AWS, your function name, the log group associated with your Lambda function, the memory limit, and so on.
+
+-- So this event object and this context object are very different but very complementary.
+
+
+
+
+
+------------------------------------------------------ Access Event & Context Objects using Python
+
+
+import time
+
+def lambda_handler(event, context):   
+    print("Lambda function ARN:", context.invoked_function_arn)
+    print("CloudWatch log stream name:", context.log_stream_name)
+    print("CloudWatch log group name:",  context.log_group_name)
+    print("Lambda Request ID:", context.aws_request_id)
+    print("Lambda function memory limits in MB:", context.memory_limit_in_mb)
+    # We have added a 1 second delay so you can see the time remaining in get_remaining_time_in_millis.
+    time.sleep(1) 
+    print("Lambda time remaining in MS:", context.get_remaining_time_in_millis())
+
+
+
+
+-- so the handler has an event and has a context, the event will have information, for example, such as the source of the event or the region of the event and so on that we can print to the console 
+
+-- the context will have information, such as the request ID, the function ARN, the function name, the memory limits in megabytes, and then, for example, some information about CloudWatch Logs, such as the stream name or the group name.
+
+
+
+
+
+
+------------------------------------------------------ Lambda – Destinations
+
+
+-- So, the problem is that, when we've been doing asynchronous invocations or event mappers,
+
+-- it was really hard for us to see if it had failed or succeeded.
+
+-- So the idea with destinations is to send the result of an asynchronous invocation or the failure of an event mapper into somewhere.
+
+
+• So here is a very cool new feature from Nov 2019: Can configure to send result to a destination
+
+• Asynchronous invocations - can define destinations for successful and failed event:
+
+    • Amazon SQS 
+    • Amazon SNS
+    • AWS Lambda
+    • Amazon EventBridge bus
+
+• Note: AWS recommends you use destinations instead of DLQ now (but both can be used at the same time)
+
+
+• Event Source mapping: This is only used for when you have an event batch that gets discarded because we can't process it.
+
+So we can, instead, send that event batch into Amazon SQS or Amazon SNS,
+
+IMP • Note: that if you have an Event Source mapping reading from SQS, you can set either a failed destination or you can set up a DLQ directly on your SQS Queue.
+
+
+
+
+
+
+------------------------------------------------------ Lambda – Destinations
+
+
+-- for this demo , choose s3 event notificatin invoke funtion , 
+
+-- now go to sqs create two queues 1 for success and 2nd is for failure 
+
+-- go to lambda function --> add destination --> asynchronous invocation --> onfailure --> sqs --> fail sqs --> save
+
+-- go to lambda function --> add destination --> asynchronous invocation --> onsuccess --> sqs --> success sqs --> save
+
+-- So now we need to test the fact that these two destinations are working properly.
+
+-- now upload any file in the s3 bucket , go to sqs refresh the page , u will find one message , u will find the body of the file 
+
+-- So we get both the event source, as well as the event response and some extra information into the body of my SQS queue message,
+
+-- now try for failure , go to code and raise exception
+
+import json
+
+def lambda_handler(event, context):
+    print(event)
+    # TODO implement
+    raise Exception("this is failure sqs")
+
+
+-- now upload some files in bucket , my lambda function is going to be invoked asynchronously and is going to raise an exception.
+
+-- I should not see any messages right away. in SQS , do you know why?
+
+ANS : because S3 invoking my lambda function is an asynchronous type of invocation. 
+
+
+    - Then if we go into the configuration remember, and go to the asynchronous invocation, well we have two retry attempts that are going to be running.
+
+    - And then once the retry attempts are run, then the destination will be invoked as a failure.
+
+    - so wait for sometime (3-4 min)
+
+
+-- now do refresh in SQS , u will find one message for failure and poll that message 
+
+-- So we could debug what happened in here, in our lambda function to make sure that it doesn't happen next time.
+
+
+
+
+
+------------------------------------------------------ Lambda Execution Role (IAM Role)
+
+
+• Grants the Lambda function permissions to AWS services / resources
+
+• Sample managed policies for Lambda:
+  
+      • AWSLambdaBasicExecutionRole – Upload logs to CloudWatch.
+
+      • AWSLambdaKinesisExecutionRole – Read from Kinesis
+
+      • AWSLambdaDynamoDBExecutionRole – Read from DynamoDB Streams
+
+      • AWSLambdaSQSQueueExecutionRole – Read from SQS
+
+      • AWSLambdaVPCAccessExecutionRole – Deploy Lambda function in VPC
+
+      • AWSXRayDaemonWriteAccess – Upload trace data to X-Ray.
+
+
+
+• When you use an event source mapping to invoke your function, Lambda uses the execution role to read event data.
+
+• Best practice: create one Lambda Execution Role per function
+
+
+
+------------------------------------------------------ Lambda Resource Based Policies
+
+
+• Use resource-based policies to give other accounts and AWS services permission to use your Lambda resources
+
+• Similar to S3 bucket policies for S3 bucket
+
+• An IAM principal can access Lambda:
+
+      • if the IAM policy attached to the principal authorizes it (e.g. user access and we have full permissions, so we can access our Lambda function, this is what we've been doing so far,)
+
+      • OR if the resource-based policy authorizes (e.g. service access) , this is more helpful when you have a service to service access.
+
+
+
+• When an AWS service like Amazon S3 calls your Lambda function, the resource-based policy gives it access.
+
+
+
+
+
+------------------------------------------------------  Lambda Resource Based Policies Hands On
+
+
+--  go to IAM --> search for lambda permissions --:> explore those permissions it have 
+
+
+
+
+------------------------------------------------------ Lambda Environment Variables
+
+
+• Environment variable = key / value pair in “String” form
+
+• Adjust the function behavior without updating code
+
+• The environment variables are available to your code
+
+• Lambda Service adds its own system environment variables as well
+
+• Helpful to store secrets (encrypted by KMS)
+
+• Secrets can be encrypted by the Lambda service key, or your own CMK
+
+
+
+
+------------------------------------------------------ Lambda Environment Variables Hands ON 
+
+
+
+-- create one lambda function with python 3.8
+
+--  so we're going to pass environment variables in unencrypted form to learn their function.
+
+-- modify the lambda code first 
+
+import json
+import os 
+
+def lambda_handler(event, context):
+    # TODO implement
+    return os.getenv("ENVIRONMENT_NAME")
+
+
+-- deploy changes
+
+-- os package  = this is going to allow us to get access to environment variables.
+
+-- So we're going to create this environment variable called "ENVIRONMENT_NAME" and we're going to give it a value and the value of which will be retrieved by the lambda function and return.
+
+-- lambda function --> configuration --> environment variables --> edit --> ENVIRONMENT_NAME = give value ---> save 
+
+-- So for now this environment variable is unencrypted.
+
+-- now do test ur code , change ur variable name and test again 
+
+-- so the code did not change, so here we see the impact that environment variables can have on to the return values and the behavior of our code, 
+
+
+
+
+------------------------------------------------------ Lambda Logging & Monitoring
+
+
+-- how Lambda does logging, monitoring, and tracing.
+
+
+• CloudWatch Logs: 
+
+      • AWS Lambda execution logs are stored in AWS CloudWatch Logs
+
+      • Make sure your AWS Lambda function has an execution role with an IAM policy that authorizes writes to CloudWatch Logs , this is included in the Lambda basic execution role as we've seen before.
+
+
+• CloudWatch Metrics: 
+   
+      • AWS Lambda metrics are displayed in AWS CloudWatch Metrics UI or the Lambda UI.
+
+      • they will represent information about your Invocations, Durations, Concurrent Executions
+
+      • Error count, Success Rates, Throttles
+
+      • Async Delivery Failures
+
+      • Iterator Age (Kinesis & DynamoDB Streams)
+
+
+
+------------------------------------------------------ Lambda Tracing with X-Ray
+
+
+• Enable in Lambda configuration (Active Tracing)
+
+• It will Runs the X-Ray daemon for you
+
+• Use AWS X-Ray SDK in Code
+
+• Ensure Lambda Function has a correct IAM Execution Role
+
+      • The managed policy is called AWSXRayDaemonWriteAccess
+
+
+IMP • Environment variables to communicate with X-Ray
+
+        • _X_AMZN_TRACE_ID: contains the tracing header 
+
+        • AWS_XRAY_CONTEXT_MISSING: by default, LOG_ERROR
+
+ IMP    • AWS_XRAY_DAEMON_ADDRESS: the X-Ray Daemon IP_ADDRESS:PORT
+
+     
+
+
+
+------------------------------------------------------ Lambda Tracing with X-Ray Hands On
+
+
+-- lambda function ---> configuration --> monitor --> enable active tracing 
+
+-- take s3 event notifications examples ---> write code for success --> upload object --> wait for 5 minutes --> go n check in x-ray console 
+
+
+
+
+------------------------------------------------------ Lambda@Edge and CloudFront Functions 
+
+
+-- Customization At The Edge : Well we know we deploy our functions and our applications in a specific region, but sometimes using, for example, CloudFront, we have the Edge locations are distributing our content.
+
+• Many modern applications execute some form of the logic at the edge, before reaching the application itself. So these are called Edge Functions,
+
+
+• Edge Function:
+
+      • A code that you write and attach to CloudFront distributions
+
+      • Runs close to your users to minimize latency
+
+
+• CloudFront provides two types: CloudFront Functions & Lambda@Edge
+
+• You don’t have to manage any servers, deployed globally
+
+• Use case: customize the CDN content
+
+• Pay only for what you use
+
+• Fully serverless
+
+
+
+------------------------- CloudFront Functions & Lambda@Edge Use Cases
+
+
+• Website Security and Privacy
+• Dynamic Web Application at the Edge
+• Search Engine Optimization (SEO)
+• Intelligently Route Across Origins and Data Centers 
+• Bot Mitigation at the Edge
+• Real-time Image Transformation
+• A/B Testing
+• User Authentication and Authorization
+• User Prioritization
+• User Tracking and Analytics
+
+
+
+------------------------- CloudFront Functions
+
+
+
+
+              Viewer Request                               Origin Request
+          ------------------------>                    -------------------------> 
+  Client                                  CloudFront                                      Origin 
+          <------------------------                    <------------------------
+              Viewer Response                               Origin Response 
+
+
+
+
+-- So the client will do a request into CloudFront, and this is called a viewer request, because the client views it.
+
+-- Then CloudFront will do an origin request into your origin server, the server will reply to CloudFront,
+
+-- so we have an origin response, and finally CloudFront sends that response to the client, so we have a viewer response.
+
+
+
+
+• CloudFront Functions are Lightweight functions written in JavaScript and they modified the viewer request and response.
+
+• They're used  For high-scale, latency-sensitive CDN customizations
+
+• which gives you Sub-ms startup times, millions of requests/second
+
+• Used to change Viewer requests and responses:
+
+       • Viewer Request: after CloudFront receives a request from a viewer we can modify this 
+
+       • Viewer Response: before CloudFront forwards the response to the viewer
+
+
+• Native feature of CloudFront (manage code entirely within CloudFront)
+
+IMP - Remember, CloudFront Functions high performance, high scale only for the viewer request and response.
+
+
+
+
+
+
+------------------------- Lambda@Edge
+
+
+-- Now Lambda@Edge is a bit more, so you can modify all of them.
+
+• Lambda functions written in NodeJS or Python
+
+• Scales to 1000s of requests/second
+
+• Used to change CloudFront requests and responses:
+ 
+     • Viewer Request – after CloudFront receives a request from a viewer
+
+     • Origin Request – before CloudFront forwards the request to the origin
+
+     • Origin Response – after CloudFront receives the response from the origin
+
+     • Viewer Response – before CloudFront forwards the response to the viewer
+
+
+• Author your functions in one AWS Region (us-east-1), then CloudFront replicates to its locations
+
+
+
+
+
+              Viewer Request                               Origin Request
+          ------------------------>                    -------------------------> 
+  Client                                  CloudFront                                      Origin 
+          <------------------------                    <------------------------
+              Viewer Response                               Origin Response 
+
+
+
+
+------------------------- CloudFront Functions vs. Lambda@Edge
+
+
+
+                                        CloudFront Functions                                               Lambda@Edge         
+
+
+Runtime Support                          JavaScript                                                         Node.js, Python
+
+# of Requests                            Millions of requests per second                                    Thousands of requests per second
+
+CloudFront Triggers                      - Viewer Request/Response                                          - Viewer Request/Response  and - Origin Request/Response
+
+Max. Execution Time                      <1ms                                                                5 – 10 seconds
+
+Max. Memory                              2MB                                                                 128MB upto 10GB
+
+Total Package Size                       10 KB                                                                 1MB–50MB
+
+Network Access, File System Access         No                                                                   YES
+
+Access to the Request Body               NO                                                                      YES
+
+Pricing                                  Free tier available, 1/6th price of @Edge                             No free tier, charged per request & duration
+
+
+
+
+
+------------------------- CloudFront Functions vs. Lambda@Edge - Use Cases
+
+
+CloudFront Functions
+
+
+• Cache key normalization
+
+      • Transform request attributes (headers, cookies, query strings, URL) to create an optimal Cache Key
+
+
+• Header manipulation
+
+      • Insert/modify/delete HTTP headers in the request or response
+
+
+• URL rewrites or redirects
+
+
+• Request authentication & authorization
+
+      • Create and validate user-generated tokens (e.g., JWT) to allow/deny requests      
+
+
+
+
+
+Lambda@Edge 
+
+
+• Longer execution time (several ms)
+
+• Adjustable CPU or memory
+
+• Your code depends on a 3rd libraries (e.g., AWS SDK to access other AWS services)
+
+• Network access to use external services for processing
+
+• File system access or access to the body of HTTP requests
+
+
+
+
+
+------------------------------------------------------ Lambda in VPC 
+
+
+
+Lambda by default
+
+
+   • By default, your Lambda function is launched outside your own VPC (in an AWS-owned VPC)
+
+   • Therefore it cannot access resources in your VPC (RDS, ElastiCache, internal ELB...)
+
+
+
+Lambda in VPC
+
+   • You must define the VPC ID, the Subnets and the Security Groups
+
+   • Lambda will create an ENI (Elastic Network Interface) in your subnets
+
+   • your Lambda function needs a  AWSLambdaVPCAccessExecutionRole
+
+
+
+
+                                     |- - - - - - - - - - - - - - - - 
+                                     | Private Subnet 
+                                     |
+                                     |
+                                     |
+                                     |
+                                     |
+                                     |
+                                     |
+  Lambda Function ------------------ |--------> Elastic Network Interface (ENI) (Lambda SG) ----------------> Amazon RDS In VPC (RDS Security group)
+                                     |
+                                     |
+                                     |- - - - - - - - - - - - - - - - 
+
+
+
+-- we have our RDS security group around our Amazon RDS database in our VPC.
+
+-- this Lambda function, we want to give it VPC access. Therefore once we've set it up correctly
+
+-- it will create an ENI, an elastic network interface, alongside the Lambda security group
+
+-- to access your RDS database, Your Lambda is going to go through your ENI. You know, it's invisible, we don't see it, but this is how it happens behind the scenes.
+
+-- So it will go through the ENI into your Amazon RDS database.
+
+-- so for this to work, we need to make sure that the RDS security group does allow network access from the Lambda security group, just like for EC2 instances and load balancer
+
+
+
+
+
+
+------------------------------------------------------ Lambda in VPC – Internet Access
+
+
+-- What if we deploy a Lambda function in a VPC, can we access the public internet?
+
+
+• By default , A Lambda function in your VPC does not have internet access
+
+• Deploying a Lambda function in a public subnet does not give it internet access or a public IP
+
+
+------------- So what can we do then?
+
+
+• Deploying a Lambda function in a private subnet gives it internet access if you have a NAT Gateway / Instance
+
+    - The NAT gateway or instance will be talking to the internet gateway of our VPC and the internet gateway will give us access to the external API.
+
+
+------------ Next, what if you want you to access DynamoDB?
+
+
+-- we can access DynamoDB either through the public route and through your internet gateway.
+
+-- So this would work once a NAT is put in place.
+
+• You can use VPC endpoints to privately access AWS services without a NAT
+
+
+IMP : So if you deploy a Lambda function in a private subnet, note that your CloudWatch Logs work even if you have no end points or NAT gateway. CloudWatch Logs is something that functions no matter what.
+
+
+
+
+
+ ------------------------------------------------------ Lambda in VPC Hands On
+
+
+-- create one lambda function with py 3.8
+
+-- create one sg for lambda without any inbound rules 
+
+--  go to configuration --> permissions --> add AWSLambdaENIManagementAccess to the IAM role 
+
+-- So back into our Lambda function. Now let's go into the configuration and make sure that we can deploy this within our VPC
+
+-- because right now the Lambda function is within the AWS cloud and it has internet access but it doesn't have VPC access.
+
+-- if right now we publish our Lambda function in three subnets, And these are public subnets because they have access to the internet, as we know, The Lambda function can still not have access to the internet.
+
+-- It needs instead to be published, deployed into a private subnets and have a NAT gateway or NAT instance in a public subnets to route traffic to.
+
+-- our Lambda function is now deployed within our VPC. wait for 5 min to update
+
+-- test ur code , now go to ENI we can see here three network interfaces have been created and the this respond to the network interfaces of my Lambda function within my VPC.
+                
+-- So these network interfaces each in one different AZ. So each in one different subnets is what allows my Lambda function to communicate with our VPC.
+
+
+
+
+
+
+
+
+------------------------------------------------------ Lambda Function Improvement
+
+
+
+Lambda Function Configuration
+
+
+• RAM:
+
+     • From 128MB to 10GB in 1MB increments
+
+     • The more RAM you add, the more vCPU credits you get
+
+     • At 1,792 MB of RAM, a function has the equivalent of one full vCPU
+
+     • After 1,792 MB, you get more than one CPU, and need to use multi-threading in your code to benefit from it (up to 6 vCPU)
+
+
+• If your application is CPU-bound (computation heavy), increase RAM
+
+    - So if your application is CPU bound, that means that it has a lot of computations, and you want to improve the performance of your application, 
+    
+    - that means to decrease the amount of time your function will run for, then you need to increase your application,your lambda function RAM.
+
+
+• Timeout: default 3 seconds, maximum is 900 seconds (15 minutes)
+
+    - by default has a timeout of three seconds. That means that if your lambda function runs for more than three seconds, it will error out with a timeout,
+
+    - Anything above 15 minutes is not a good use case for lambda and is something maybe that's going to be better for Fargate, ECS, or EC2.
+
+
+
+
+
+------------------------------------------------------ Lambda Execution Context 
+
+
+• The execution context is a temporary runtime environment that initializes any external dependencies of your lambda code
+
+• Great for database connections, HTTP clients, SDK clients...
+
+• The execution context is maintained for some time in anticipation of another Lambda function invocation
+
+• The next function invocation can “re-use” the context to execution time and save time in initializing connections objects
+
+• The execution context includes the /tmp directory
+
+     - which is a space where you can write files and they will be available across executions.
+
+
+
+------------------------------------------------------ Initialize outside the handler
+
+
+BAD : The DB connection is established At every function invocation
+
+
+import json
+import time
+
+def lambda_handler(event, context):
+    connect_to_db()
+  
+    # TODO implement
+    return {
+        'statusCode': 200,
+        'body': json.dumps('Hello from Lambda!')
+    }
+def connect_to_db():
+      time.sleep(3)
+
+
+
+
+GOOD! : The DB connection is established Once And re-used across invocations
+
+import json
+import time
+
+def connect_to_db():
+      time.sleep(3)
+
+
+connect_to_db()
+
+def lambda_handler(event, context):
+   
+  
+    # TODO implement
+    return {
+        'statusCode': 200,
+        'body': json.dumps('Hello from Lambda!')
+    }
+
+
+
+
+
+
+------------------------------------------------------ Lambda Functions /tmp space
+
+
+-- what if you need to write some temporary files and reuse them?
+
+ANS : You can use the /tmp space.
+
+• If your Lambda function needs to download a big file to work...
+
+• If your Lambda function needs disk space to perform operations...
+
+• You can use the /tmp directory
+
+• Max size is 10GB
+
+• The directory content remains when the execution context is frozen, providing transient cache that can be used for multiple invocations (helpful to checkpoint your work)
+
+• For permanent persistence of object (non temporary), use S3
+
+• To encrypt content on /tmp, you must generate KMS Data Keys
+
+
+
+
+------------------------------------------------------ Lambda Function Improvement Hands On
+
+
+
+step 1 :
+
+
+-- lambda function --> configuraation --> general configuration --> keep timeout sec = 3 
+
+-- now modify code for this demo 
+
+
+import json
+import time
+
+def lambda_handler(event, context):
+    time.sleep(2)
+    # TODO implement
+    return {
+        'statusCode': 200,
+        'body': json.dumps('Hello from Lambda!')
+    }
+
+
+-- here we make sleep = 2 sec , it will work 'coz we have given timeout sec = 3 , and see the executed time 
+
+-- But what happens if we make the Lambda function sleep five seconds?
+
+-- make sleep(5), do test 
+
+-- the Lambda function will fail. Why? Because it will timeout. So we got an error message here saying, Hey the tasks timed out after three seconds
+
+-- now change timeout = 6 secs in configuration 
+
+-- now u will get response without any error
+
+
+
+Step 2 :
+
+
+------ Last thing to optimize your Lambda function performance is around where you set the initialization of your function.
+
+-- So if you're connecting to a DB, modify code
+
+import json
+import time
+
+def lambda_handler(event, context):
+    connect_to_db()
+  
+    # TODO implement
+    return {
+        'statusCode': 200,
+        'body': json.dumps('Hello from Lambda!')
+    }
+def connect_to_db():
+      time.sleep(3)
+
+
+-- where we connect to the database within the Lambda handler,
+
+-- that means that every time we invoke our function this function connects to DB is going to be run it's going to take three seconds 
+
+-- because it takes a long time to connect your database and then is going to return the results you have.
+
+-- test again , it will take 3 sec again because we are connecting to database every single time, 
+
+
+
+Step 3 :
+
+
+-- instead of doing the connection to the database within the Lambda handler, you do it outside of it.
+
+
+import json
+import time
+
+def connect_to_db():
+      time.sleep(3)
+
+
+connect_to_db()
+
+def lambda_handler(event, context):
+   
+  
+    # TODO implement
+    return {
+        'statusCode': 200,
+        'body': json.dumps('Hello from Lambda!')
+    }
+
+
+
+-- deploy and run the code , at first INIT time it will take 3 sec , then do test again 
+
+-- it will take less time , now my function is much quicker because we've done the database initialization again outside of the function handler.
+
+-- Imagine that instead of here, instead of sleeping, you actually connect to the database and you get a database object out of it that you can use within your Lambda handler
+
+
+
+
+
+
+------------------------------------------------------ Lambda Layers
+
+
+-- They're a newer feature of Lambda, they allow us to do two things.
+
+
+• Custom Runtimes
+
+      • Ex: C++ https://github.com/awslabs/aws-lambda-cpp
+
+      • Ex: Rust https://github.com/awslabs/aws-lambda-rust-runtime
+
+
+
+• Externalize Dependencies to re-use them:
+
+     
+
+
+
+
+------------------------------------------------------ Lambda Layers Hands On
+
+
+-- create function with py 3.8
+
+-- So we're going to use a layer provided by AWS because it is very complicated for us to create a layer
+
+        https://aws.amazon.com/blogs/aws/new-for-aws-lambda-use-any-programming-language-and-share-common-components/
+
+
+--  go to layer in lambda function --> c.o layers --> add layer --> pythonSpicylayer ----> select latest version
+
+-- copy code in website and paste in function 
+
+-- So we can see the first two lines is import numpy as np, and imports a site by spatial and this function right here.
+
+-- So this means that these things are being imported. 
+
+-- And when you have imports on stuff that Lambda function do not know usually you have to pack it with dependencies just the way we did it for node.JS and NPM.
+
+-- But it turns out that thanks to the layer the dependencies are actually available to our Lambda function, but we didn't have to pack them as dependencies from moving in our code, which is quite cool.
+
+-- run code 
+
+--  important part to remember is that the code itself of the function was using a library here.
+
+-- And that library came from the Lambda layer we had added from before.
+
+
+
+
+
+------------------------------------------------------ Lambda – File Systems Mounting
+
+
+• Lambda functions can access EFS file systems if they are running in a VPC
+
+• Configure Lambda to mount EFS file systems to local directory during initialization
+
+• Must leverage EFS Access Points
+
+• Limitations: watch out for the EFS connection limits (one function instance = one connection) and connection burst limits
+
+
+
+-- see Lambda – Storage Options in documentation
+
+
+
+
+------------------------------------------------------ Lambda Concurrency
+
+
+
+-------------------- Lambda Concurrency and Throttling
+
+
+-- In Lambda, concurrency is the number of in-flight requests that your function is currently handling. There are two types of concurrency controls available:
+
+
+1 Reserved concurrency – This represents the maximum number of concurrent instances allocated to your function. When a function has reserved concurrency, no other function can use that concurrency. Configuring reserved concurrency for a function incurs no additional charges.
+
+
+2 Provisioned concurrency – This is the number of pre-initialized execution environments allocated to your function. These execution environments are ready to respond immediately to incoming function requests. Configuring provisioned concurrency incurs additional charges to your AWS account.
+
+
+
+
+
+
+-- So the more we invoke our Lambda functions, the more we will have concurrent executions of our Lambda functions. We know this because Lambda can scale very, very easily and fast.
+
+• Concurrency limit: up to 1000 concurrent executions
+
+• Can set a “reserved concurrency” at the function level (=limit)
+
+       EG : this Lambda function can only have "up to 50 concurrent executions.
+
+
+• Each invocation over the concurrency limit will trigger a “Throttle”
+
+• Throttle behavior:
+
+       • If synchronous invocation => return ThrottleError - 429
+
+       • If asynchronous invocation => retry automatically and then go to DLQ
+
+
+• If you need a higher limit, open a support ticket
+
+
+
+
+-------------------- Lambda Concurrency Issue
+
+
+• If you don’t reserve (=limit) concurrency, the following can happen:
+
+IMP : the concurrency limit applies to all the functions in your accounts, and so you have to be careful because if one function goes over the limit, it's possible that your other functions get throttled.
+
+
+
+
+-------------------- Concurrency and Asynchronous Invocations
+
+
+-- let's take the example of S3 event notifications. So we are uploading files into our S3 buckets,
+
+-- and this creates a new file event that will invoke our Lambda functions,
+
+-- say we are putting many, many files at the same time. So we get many, many different Lambda concurrent executions happening.
+
+• If the function doesn't have enough concurrency available to process all events, additional requests are throttled.
+
+• For throttling errors (429) and system errors (500-series), Lambda returns the event to the queue and attempts to run the function again for up to 6 hours. So there's a lot of retries that happens due to the throttling and so on.
+
+       - 'coz it is asynchronous mode
+
+
+• The retry interval increases exponentially from 1 second after the first attempt to a maximum of 5 minutes.
+
+
+
+
+
+-------------------- Cold Starts & Provisioned Concurrency
+
+
+• Cold Start:
+
+      • New instance => code is loaded and code outside the handler run (init)
+
+      • If the init is large (code, dependencies, SDK...) this process can take some time.
+
+      • First request served by new instances has higher latency than the rest , user is unhappy
+
+      - that may impact your users. So if your user is maybe waiting three seconds to get a request response, that may be very, very slow for them and 
+
+      - they may experience a cold start and may be unhappy with your product.
+
+
+• Provisioned Concurrency:
+
+      • Concurrency is allocated before the function is invoked (in advance)
+
+      • So the cold start never happens and all invocations have low latency
+
+      • Application Auto Scaling can manage concurrency (schedule or target utilization),to make sure that you have enough reserved Lambda functions to be ready to be used and minimize this cold start problem.
+
+
+
+• Note:
+ 
+     • Note:cold starts inVPC have been dramatically reduced in Oct & Nov 2019
+
+     - https://aws.amazon.com/blogs/compute/announcing-improved-vpc-networking-for-aws-lambda-functions/
+
+
+
+
+
+-------------------- Reserved and Provisioned Concurrency
+
+
+https://docs.aws.amazon.com/lambda/latest/dg/configuration-concurrency.html
+
+
+
+
+
+
+------------------------------------------------------ Lambda external Dependencies
+
+
+------------ Lambda Function Dependencies
+
+
+-- we have been doing some pretty simple Lambda functions. Just some code, no external dependencies.
+
+-- In the real world, you definitely need to add more dependencies with the packages and so on.
+
+• If your Lambda function depends on external libraries: for example AWS X-Ray SDK, Database Clients, etc...
+
+• You need to install the packages alongside your code and zip it together
+
+      • For Node.js, use npm & “node_modules” directory
+
+      • For Python, use pip --target options
+
+      • For Java, include the relevant .jar files
+
+
+• Upload the zip straight to Lambda if less than 50MB, else to S3 first
+
+• Native libraries work: they need to be compiled on Amazon Linux
+
+• AWS SDK comes by default with every Lambda function
+
+
+
+
+
+------------------------------------------------------ Lambda external Dependencies Hands On
+
+
+-- we're going to create a Lambda function with dependencies.
+
+
+-- create 2 files 
+
+
+1 index.js
+
+
+// Require the X-Ray SDK (need to install it first)
+const AWSXRay = require('aws-xray-sdk-core')
+
+// Require the AWS SDK (comes with every Lambda function)
+const AWS = AWSXRay.captureAWS(require('aws-sdk'))
+
+// We'll use the S3 service, so we need a proper IAM role
+const s3 = new AWS.S3()
+
+exports.handler = async function(event) {
+  return s3.listBuckets().promise()
+}
+
+
+
+2 steps.sh
+
+
+#!/bin/bash
+
+# You need to have nodejs / npm installed beforehand
+npm install aws-xray-sdk
+
+# Set proper permissions for project files
+chmod a+r * 
+
+# You need to have the zip command available
+zip -r function.zip .
+
+# create the Lambda function using the CLI
+aws lambda create-function --zip-file fileb://function.zip --function-name lambda-xray-with-dependencies --runtime nodejs14.x --handler index.handler --role arn:aws:iam::001736599714:role/DemoLambdaWithDependencies
+
+
+
+
+
+-- open cloushell
+
+-- you need to create a Lambda folder.
+
+       - mkdir lambda 
+       - cd lambda
+       - ll
+
+
+-- the first thing is that you need to add this index.js file.
+
+       - sudo yum install -y nano
+       - nano index.js    (paste index.js content into this file )
+       - ctrl + x  , then y , then enter
+       - cat index.js
+
+
+
+-- let's go into the steps to install some dependencies, and make sure the function will be packaged correctly to be uploaded into the Lambda service.
+
+-- if we look at this index.js 
+
+       - we can see that it requires the xray-sdk-core, and this is something that we need to bundle with our Lambda function.
+
+       - Then we are opening the AWS SDK to talk to Amazon S3, and we return a ListBuckets operation into Amazon S3.
+
+
+-- So what we need to do is to make sure that our Lambda function does have access to the xray-sdk for AWS.
+
+       - npm install aws-xray-sdk        (which is going to install locally, all the necessary files and folders to have access to this SDK.)
+
+       - ll  u will have the files 
+
+
+-- Now in here, we need to edit the permissions of these files.
+
+      - chmod a+r * 
+
+
+-- Next, we need to zip all the, all the files in here into a zip file called functions.zip.
+
+       - zip -r function.zip .
+
+       - ll
+
+
+-- now u have zip file , finally, we need to upload this .zip file into the Lambda console.
+
+-- create lambda function through the CLI 
+
+--  to do so , first u gave to create one role here IAM --> create new role for the lambda --> add AWSLambdaBasicExecutionRole permission ---> create role
+
+-- now copy the role of ARN and paste in the cmnd 
+
+  
+
+      aws lambda create-function --zip-file fileb://function.zip --function-name lambda-xray-with-dependencies --runtime nodejs20.x --handler index.handler --role arn:aws:iam::298132369629:role/lambdawithdependencyrole
+
+
+-- the function got created , go n check in console 
+
+-- now do test , u will get errror , 'coz the lambda try to access s3 
+
+-- add s3readonlypermissions in iam role
+
+-- this version is not supporting , anyhow we can do this with external dependencies
+
+
+
+
+
+------------------------------------------------------ Lambda and CloudFormation 
+
+
+-- So we can use CloudFormation to upload Lambda function. And so the way we do it, we have two ways.
+
+
+1 Lambda and CloudFormation – inline
+
+     - so we would define our Lambda code inline of our CloudFormation templates.
+
+     • Inline functions are very simple
+
+     • Use the Code.ZipFile proper ty
+
+     • You cannot include function dependencies with inline functions
+
+
+2 Lambda and CloudFormation – through S3
+
+     
+     • You must store the Lambda zip in S3
+
+     • You must refer the S3 zip location in the CloudFormation code
+
+           • S3Bucket
+           • S3Key: full path to zip
+           • S3ObjectVersion: if versioned bucket
+
+
+     • If you update the code in S3, but don’t update S3Bucket, S3Key or S3ObjectVersion, CloudFormation won’t update your function
+
+          - this is why versioning is recommended because if you're enabled versioning and you overwrite the file and you specify a new S3 object version 
+          
+          - then CloudFormation will pick up the change and update your Lambda function.
+
+
+
+
+------------------------------------------------------ Lambda and CloudFormation – through S3 Multiple accounts
+
+
+-- say you will have an account which contains an S3 bucket with your Lambda code.
+
+-- Now you want to deploy this Lambda code into Account 2 and Account 3.
+
+-- How do this ?
+
+-- first of all, we need to launch CloudFormation in Account 2. And the S3 bucket is going to be referencing is the S3 bucket in Account 1.
+
+-- Now you need to ask yourself, how do we make sure that Account 2 has access to the Lambda code in Account 1?
+
+ANS : - Well, we can use a bucket policy and a bucket policy on the S3 bucket in Account 1 should allow CloudFormation to access the code.
+
+      - But also we can define an execution role on your CloudFormation service for the template itself which will allow to get and list to the S3 bucket in Account 1.
+
+      - the two things combined is going to allow CloudFormation to retrieve the code from the S3 bucket and therefore create your Lambda function.
+
+      - do same things for account 3 , 4.... also
+
+
+
+------------------------------------------------------ Lambda and CloudFormation  Hands On
+
+
+-- we're going to create a CloudFormation template upload it that will create a Lambda function for us.
+
+
+lambda.yaml
+
+
+
+
+Parameters:
+  S3BucketParam:
+    Type: String
+  S3KeyParam:
+    Type: String
+  S3ObjectVersionParam:
+    Type: String
+
+Resources:
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+      Policies:
+      - PolicyName: root
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:*
+            Resource: arn:aws:logs:*:*:*
+          - Effect: Allow
+            Action:
+            - xray:PutTraceSegments
+            - xray:PutTelemetryRecords
+            - xray:GetSamplingRules
+            - xray:GetSamplingTargets
+            - xray:GetSamplingStatisticSummaries
+            Resource: "*"
+          - Effect: Allow
+            Action: 
+            - s3:Get*
+            - s3:List*
+            Resource: "*"
+
+  LambdaWithXRay: 
+    Type: "AWS::Lambda::Function"
+    Properties: 
+      Handler: "index.handler"
+      Role: 
+        Fn::GetAtt: 
+          - "LambdaExecutionRole"
+          - "Arn"
+      Code: 
+        S3Bucket: 
+          Ref: S3BucketParam
+        S3Key: 
+          Ref: S3KeyParam
+        S3ObjectVersion:
+          Ref: S3ObjectVersionParam
+      Runtime: "nodejs20.x"
+      Timeout: 10
+      # Enable XRay
+      TracingConfig:
+        Mode: "Active"
+
+
+
+-- here , we see that there are three parameters available to us. The S3 Bucket parameter, The S3 Key parameter and the S3 object version parameter.
+
+-- these will be helpful to tell CloudFormation where to get the function zip from in Amazon S3.
+
+-- Next we create resources.
+
+-- the first resource we create is a Lambda execution role. So it's an IAM role. 
+
+-- There is a policy document which allows Lambda functions to assume this IAM role  (AssumeRolePolicyDocument) 
+
+-- as well as the policy itself. the policy contains multiple statements.
+
+       - The first one is actions on CloudWatch logs
+
+       - The second one is action on x-ray to be able to send traces to x-ray
+
+       - the last one and finally some allow operations on S3, Get * , List * to be able to read it from Amazon S3.
+
+-- Next to function itself, Lambda with x-ray.
+
+-- So it's a function in which we have to specify the handlers so Index.handler
+
+-- the role which is the Lambda execution role Arn that we get and retrieve thanks to this interesting function get attributes that will be get gotten from this Lambda role right here
+
+-- So as we can see, the entire configuration of our Lambda function can be done through CloudFormation which is really awesome.
+
+
+
+
+-- create one bucket in s3 , enable versioning (IMP), 
+
+-- open cloud shell , cd lambda --> pwd --> copy path of it --> actions --> download file  and add /function.zip at last
+
+        /home/cloudshell-user/lambda/function.zip
+
+
+-- So now we can reuse this function.zip , upload this file in s3 bucket 
+
+-- So now we are able to reference this function, zip directly from our CloudFormation templates.
+
+-- now go to CF --> upload lambda.yaml file 
+
+-- now add Parameters
+
+       - S3BucketParam        = bucket Name 
+
+       - S3KeyParam           = function.zip
+
+       - S3ObjectVersionParam = BVhDrj7iqDmMhHmGC.TbSfmgQZZSNAzq (c.o on object --> versions)
+
+
+
+-- create stack 
+
+-- As soon as we opened this function we get an information message. This function belongs to an application because there was an integration between CloudFormation and Lambda that was detected by the Lambda console.
+
+-- So it knows that it is managed by a CloudFormation template.
+
+-- module is not supporting here  is not supporitng here but overall idea is that to understnad the concept 
+
+-- u can also see x-ray tracing is enabled 
+
+
+
+
+------------------------------------------------------ Lambda Container Images
+
+
+-- Lambda was supporting container images and this is a new feature. And this allows to deploy Lambda Function as a container of images up to 10 gigabytes from ECR
+
+
+• Deploy Lambda function as container images of up to 10GB from ECR
+
+• Pack complex dependencies, large dependencies in a container
+
+           - So Docker is very famous to allow you to help to put your application code, the dependencies, and the data sets it needs all together on top of a base image.
+
+           - And that base image must implement the Lambda Runtime API.
+
+           - So the idea is that to make it seemingly simple, Lambda runs a virtual machine, the container. And so you use the base image of that container,
+
+           - you add on your application code and your dependencies and you pack this as an image that Lambda can run
+
+           - because this base image implements the Lambda Runtime API. And this allows you to run your containers onto Lambda,
+
+           - but it's not any Docker container. The base image must implement the Lambda Runtime API. So these base images exist for multiple languages.
+
+
+
+• Base images are available for Python, Node.js, Java, .NET, Go, Ruby
+
+• Can create your own image as long as it implements the Lambda Runtime API
+
+• Test the containers locally using the Lambda Runtime Interface Emulator
+
+• Unified workflow to build apps
+
+
+
+
+            |-----------------------------------------------------
+            |       Application Code                             |
+            |------------------------------------                |
+            |      Dependencies, datasets                        |
+            |------------------------------------                |
+            |  Base Image must implement the Lambda Runtime API  |
+            |----------------------------------------------------
+                           |
+                           |  Build Publish
+                           |
+                           |
+
+                        Amazon ECR
+
+                           |
+                           |   Deploy
+                           |
+                           |
+                         Lambda
+                          
+                           
+
+
+
+• Example: build from the base images provided by AWS 
+
+
+# Use an image that implements the Lambda Runtime API
+
+    FROM amazon/aws-lambda-nodejs:12
+
+# Copy your application code and files
+
+    COPY app.js package*.json ./
+
+# Install the dependencies in the container
+
+    RUN npm install
+
+# Function to run when the Lambda function is invoked
+
+    CMD [ "app.lambdaHandler" ]
+
+
+
+
+------------------------------------------------------ Lambda Container Images – Best Practices
+
+
+• Strategies for optimizing container images:
+
+
+1 • Use AWS-provided Base Images
+
+       • Stable,Built on AmazonLinux2, 'coz these base images are already cached by Lambdaservice 
+
+       - so if you use them, then the Lambda service has to pull less information out of your containers.
+
+
+2 • Use Multi-Stage Builds
+
+    
+       • Build your code in larger preliminary images, copy only the artifacts you need in your final container image, discard the preliminary steps
+
+       - Therefore, the final image is going to be much smaller and much more simple.
+
+
+3 • Build from Stable to Frequently Changing
+
+       • Make your most frequently occurring changes as late in your Dockerfile as possible
+
+       - for example installing base packages on your image should be as early as possible.
+
+
+4 • Use a Single Repository for Functions with Large Layers
+
+       • ECR compares each layer of a container image when it is pushed to avoid uploading and storing duplicates
+
+
+
+
+• Use them to upload large Lambda Functions (up to 10 GB) 
+
+       - instead of having some code pushed to Lambda as is, you can create a very large container image and use that as the basis for your Lambda Function.
+
+
+
+
+
+
+------------------------------------------------------ AWS Lambda Versions
+
+
+• When you work on a Lambda function, we work on $LATEST
+
+     $LATEST (mutable) -  we can able to change / edit 
+
+
+
+• When we’re ready to publish a Lambda function, we create a version
+
+• Versions are immutable
+
+     $LATEST (mutable) ---------> V1 (Immutable) and V2 (immutable)
+
+
+• Versions have increasing version numbers (V1,v2,v3.......)
+
+
+• Versions get their own ARN (Amazon Resource Name)
+
+• Version = code + configuration (nothing can be changed - immutable)
+
+• Each version of the lambda function can be accessed
+
+
+
+
+------------------------- But what if he wants to give your end user a standard endpoint?
+
+
+
+So for this, we can use Lambda Aliases.
+
+
+
+------------------------------------------------------ AWS Lambda Aliases
+
+
+• Aliases are ”pointers” to Lambda function versions
+
+• We can define a “dev”, ”test”, “prod” aliases and have them point at different lambda versions
+
+• Aliases are mutable
+
+• Aliases enable Canary deployment by assigning weights to lambda functions
+
+     - Because we can assign weights to the Lambda function versions we point to.
+
+     - So for PROD for example, say we want to switch from the V1 function all the way to the V2 function.
+
+     - Instead of switching the pointer, we can say 95% of the traffic is going to go to V1. And only 5% of the traffic is going to go to V2.
+
+     - the purpose of this is that now we're testing V2 in PROD, making sure it works before we switch the full power onto V2 and 100% of the traffic there.
+
+
+
+• Aliases enable stable configuration of our event triggers / destinations
+
+• Aliases have their own ARNs
+
+IMP : • Aliases cannot reference aliases , They can only reference version 
+
+
+
+
+                                                          USER
+
+                                                      |    |      |
+                                                      |    |      |
+                                                      |    |      |
+                                                      |    |      |
+                                                      |    |      |
+                                                      |    |      |
+                                   --------------------    |       ---------------------      
+                                  |                        |                           |
+                                  |                        |                           |
+                                  |                        |                           |
+                                  |                        |                           |
+                                  |                        |                           |
+                         DEV Alias (mutable)         PROD Alias (mutable)        TEST Alias (mutable)
+
+                                  |                       |          |                  |
+                                  |                       |          |                  |
+                                  |                       |    95%   |   5%             |
+                                  |                       |          |                  |
+                                  |                       |          |-------------     |
+                                  |                       |                        |    |
+                                                                                   |    |
+                          $LATEST (mutable)          V1 (Immutable)                 V2 (Immutable)  
+
+
+
+
+
+
+ ------------------------------------------------------ AWS Lambda Versions Aliases Hands On
+
+
+ -- create lambda function with py 3.8
+
+ -- So versions are here to allow us to fix a amount of code and removables and settings in time,
+
+ -- say you are a specific version. And the idea is that we want to author our versions over time to allow our lambda function to evolve.
+
+ -- make code like this to test 
+
+
+ import json
+
+def lambda_handler(event, context):
+    # TODO implement
+    return "this is version 1"
+
+
+
+-- So say we're very happy with this code and we want to author this as the version one of our function.
+
+-- actions --> publish new version --> publish --> here u were not able to  change ur code which is immutable
+
+-- if u want to edit , u can do in main function
+
+-- now go to function code and make it as v2 
+
+-- do publish new version 2
+
+-- main function --> versions --> u will get all versions here
+
+
+
+--- now coming to Aliases 
+
+-- main function --> aliases --> create aliases --> dev ---> latest version --> create
+
+-- main function --> aliases --> create aliases --> Test ---> 2 --> create ,  it is latest published version
+
+-- main function --> aliases --> create aliases --> Prod ---> 1 --> create ,  it is most stable version of our function 
+
+
+--  we have created versions and Aliases 
+
+-- in aliases , we have see the weight for deployment
+
+-- So let's go into prod and we want to edit this alias because we want to upgrade from V1 to V2
+
+-- go to aliases --> prod --> edit --> select weighted alias as V2 version --> give some portion of traffic for testing purpose (eg : 50%)
+
+-- So now our alias "prod" has a weight between two versions.
+
+-- open prod and do test , here 50% of traffic for v1 and remaing for v2 
+
+-- then when you're happy with your production and say okay now my new function version is working just as expected,
+
+-- edit prod from v1 to v2 
+
+
+
+
+
+
+------------------------------------------------------ Lambda & CodeDeploy
+
+
+
+• CodeDeploy can help you automate traffic shift for Lambda aliases
+
+• CodeDeploy Feature is integrated within the SAM framework(Serverless Application Model)
+
+
+
+    
+
+  
+
+
+                                                          Make X vary over time until X = 100%
+                                                      | -----------------------------------------------   
+                                                      |                                                |
+                                                      |                                                |  
+                                                      |                                                |
+                                                      |                                                |
+                                                      |           PROD Alias (lambda) -----(100 – X%)------>    V1                 
+                                                      |                 |
+                                                      |                 |
+                                                      |                 | --------------V2
+                                                      |                                  
+
+                                                 Code Deploy ---------------> X%
+
+
+
+-- So we have a PROD Alias, and say we want to upgrade it from the Lambda function Version 1 to the lambda function Version 2.
+
+-- So we want to shift the traffic from 100% of V1 to V2.
+
+-- CodeDeploy will be making the X, in this example, vary over time until X equals 100.
+
+-- So that means that X will be first equal to 10%. And so we'll have 90% on V1 and 10% on V2.
+
+-- finally, all the way up to 100% on V2 and 0% on V1.
+
+------------- what strategies that CodeDeploy have?
+
+
+• Linear: grow traffic every N minutes until 100%
+
+      • Linear10PercentEvery3Minutes 
+
+      • Linear10PercentEvery10Minutes
+
+• Canary: try X percent then 100%
+
+      • Canary10Percent5Minutes
+
+      • Canary10Percent30Minutes
+
+
+• AllAtOnce: immediate 
+
+      - This is the quickest and most dangerous
+
+      - because if we haven't tested our V2 function, then things can fail.
+
+
+
+• Can create Pre & Post Traffic hooks to check the health of the Lambda function
+
+     - the idea is that if anything goes wrong, then the traffic hooks can be failing or a CloudWatch alarm can be failing,
+
+     - your CodeDeploy can know that something is going wrong. And therefore, it will do a rollback and put the traffic back all onto V1.
+
+
+
+
+
+------------------------------------------------------ Lambda & CodeDeploy – AppSpec.yml
+
+
+version 0.0
+
+Resources :
+  - myLambdaFunction:
+       Type: AWS::lambda::Function
+       Properties:
+          Name: myLambdaFunction
+          Alias: myLambdaFunctionAlias
+          CurrentVersion: 1
+          targetVersion: 2
+
+
+
+-- • Name (required) – the name of the Lambda function to deploy
+
+• Alias (required) – the name of the alias to the Lambda function
+
+• CurrentVersion (required) – the version of the Lambda function traffic currently points to
+
+• TargetVersion (required) – the version of the Lambda function traffic is shifted to
+
+
+
+
+
+------------------------------------------------------ Lambda – Function URL
+
+
+-- What if you wanted to just expose your Lambda function as an HTTP endpoint without having to go through the hassle of using API Gateway or an application balancer?
+
+
+
+• Dedicated HTTP(S) endpoint for your Lambda function
+
+• A unique URL endpoint is generated for you (never changes)
+ 
+           • https://<url-id>.lambda-url.<region>.on.aws (dual-stack IPv4 & IPv6)
+
+
+• Invoke via a web browser, curl, Postman, or any HTTP client
+
+• Access your function URL through the public Internet only
+   
+      • Doesn’t support PrivateLink (Lambda functions do support)
+
+
+• Supports Resource-based Policies & CORS configurations
+
+• Can be applied to any function alias or to $LATEST (can’t be applied to other function versions)
+
+• Create and configure using AWS Console or AWS API
+
+• Throttle your function by using Reserved Concurrency
+
+
+
+
+
+------------------------------------------ Lambda – Function URL Security
+
+
+• Resource-based Policy , this gets attached to your Lambda function and this is going to be able to say
+
+       • Authorize other accounts / specific CIDR / IAM principals
+
+
+• Cross-Origin Resource Sharing (CORS)
+
+       • If you call your Lambda function URL from a different domain
+
+
+
+                example.com
+              <------------------------>      <--------------------> S3 Bucket (Static Website Hosting)
+       users                            C.F
+              <------------------------
+                api.example.com      |
+                                     |
+                                     |
+                               Lambda Function URL      
+
+
+        - So in this example, our S3 bucket is fronted by CloudFront to which we have a custom URL as example.com. But the API is hosted as a Lambda function URL,
+
+        - Because the domains are different, you need to set the CORS setting on your Lambda function URL to make things work.
+
+
+
+-- if u have 
+
+• AuthType NONE – allow public and unauthenticated access
+
+      • Resource-based Policy is always in effect (must grant public access)
+
+
+• AuthType AWS_IAM – IAM is used to authenticate and authorize requests
+
+      • Both Principal’s Identity-based Policy & Resource-based Policy are evaluated
+
+      • Principal must have lambda:InvokeFunctionUrl permissions
+
+      • Same account – Identity-based Policy OR Resource-based Policy as ALLOW
+
+      • Cross account – Identity-based Policy AND Resource Based Policy as ALLOW
+
+
+
+
+
+
+------------------------------------------------------ Lambda – Function URL Hands On
+
+
+-- create a function with py 3.9
+
+-- publish this function 
+
+-- create alias for this version
+
+-- lambda function --> alias --> function URL --> select Identity policy (None) --> save 
+
+-- url is generated , paste in browser u will o/P
+
+-- so we were able to access our Lambda Function publicly, through a URL.
+
+
+
+
+
+
+------------------------------------------------------ Lambda and CodeGuru Profiling 
+
+
+• Gain insights into runtime performance of your Lambda functions using CodeGuru Profiler
+
+• CodeGuru creates a Profiler Group for your Lambda function
+
+• Supported for Java and Python runtimes
+
+• Activate from AWS Lambda Console
+
+• When activated, Lambda adds:
+
+       • CodeGuru Profiler layer to your function
+
+       • Environment variables to your function
+
+       • AmazonCodeGuruProfilerAgentAccess policy to your function
+
+
+
+
+
+------------------------------------------------------ AWS Lambda Limits to Know - per region
+
+
+
+• Execution:
+  
+      • Memory allocation: 128 MB – 10GB (1 MB increments)
+
+      • Maximum execution time: 900 seconds (15 minutes)
+
+      • Environment variables (4 KB)
+
+      • Disk capacity in the “function container” (in /tmp): 512 MB to 10GB
+
+      • Concurrency executions: 1000 (can be increased)
+
+
+
+• Deployment:
+
+      • Lambda function deployment size (compressed .zip): 50 MB
+
+      • Size of uncompressed deployment (code + dependencies): 250 MB
+
+      • Can use the /tmp directory to load other files at startup
+
+      • Size of environment variables: 4 KB
+
+
+
+
+
+------------------------------------------------------ AWS Lambda Best Practices
+
+
+
+• Perform heavy-duty work outside of your function handler
+
+      • Connect to databases outside of your function handler
+
+      • Initialize the AWS SDK outside of your function handler
+
+      • Pull in dependencies or datasets outside of your function handler
+
+
+
+• Use environment variables for:
+
+      • Database Connection Strings, S3 bucket, etc... don’t put these values in your code
+
+      • Passwords, sensitive values... they can be encrypted using KMS
+
+
+• Minimize your deployment package size to its runtime necessities.
+
+      • Break down the function if need be
+
+      • Remember the AWS Lambda limits
+
+      • Use Layers where necessary
+
+
+• Avoid using recursive code, never have a Lambda function call itself
+
+
+
+
+
+
+
+
+
+====================================================================== Amazon DynamoDB (NoSQL Serverless Database)=======================================================
+
+
+
+---------------------------------------------------------- Traditional Architecture
+
+
+• Traditional applications leverage RDBMS databases
+
+• These databases have the SQL query language
+
+• Strong requirements about how the data should be modeled
+
+• Ability to do query joins, aggregations, complex computations
+
+• Vertical scaling (getting a more powerful CPU / RAM / IO)
+
+• Horizontal scaling (increasing reading capability by adding EC2 / RDS Read Replicas)
+
+
+
+
+
+---------------------------------------------------------- NoSQL databases
+
+
+• NoSQL databases are non-relational databases and are distributed
+
+• NoSQL databases include MongoDB, DynamoDB, ...
+
+• NoSQL databases do not support query joins (or just limited support)
+
+• All the data that is needed for a query is present in one row
+
+• NoSQL databases don’t perform aggregations such as “SUM”, “AVG”, ...
+
+• NoSQL databases scale horizontally
+
+        - That means that if you need more write or read capacity, you can behind the scenes have more instances and it will scale really well.
+
+
+
+• There’s no “right or wrong” for NoSQL vs SQL, they just require to model the data differently and think about user queries differently
+
+
+
+
+---------------------------------------------------------- Amazon DynamoDB
+
+
+• Fully managed, highly available with replication across multiple AZs
+
+• NoSQL database - not a relational database
+
+• Scales to massive workloads, distributed database
+
+• Millions of requests per seconds, trillions of row, 100s of TB of storage
+
+• Fast and consistent in performance (low latency on retrieval)
+
+• Integrated with IAM for security, authorization and administration
+
+• Enables event driven programming with DynamoDB Streams
+
+• Low cost and auto-scaling capabilities
+
+• Standard & Infrequent Access (IA) Table Class
+
+-- our "DynamoDB supports "Document and key-value(JSON) pair" 
+
+
+
+
+---------------------------------------------------------- DynamoDB - Basics
+
+
+• DynamoDB is made of Tables
+
+• Each table has a Primary Key (must be decided at creation time)
+
+• Each table can have an infinite number of items (= rows)
+
+• Each item has attributes (can be added over time – can be null)
+
+         - But these attributes can also be nested. So it's a bit more powerful than columns,
+
+         - they can be added over time, you don't need to define them all at creation time of your table, and some of them can be null.
+
+         - so it's completely fine for an attribute to be missing in some data.
+
+
+• Maximum size of an item is 400KB
+
+• Data types supported are:
+ 
+         • Scalar Types – String, Number, Binary, Boolean, Null
+
+         • Document Types – List, Map
+
+         • Set Types – String Set, Number Set, Binary Set
+
+
+
+
+---------------------------------------------------------- DynamoDB – Primary Keys
+
+
+--------- So you have two options for primary keys.
+
+
+
+--------- • Option 1: Par tition Key (HASH)
+
+       • Partition key must be unique for each item 
+
+       • Partition key must be “diverse” so that the data is distributed
+
+       • Example:“User_ID” for a users table
+
+
+  
+
+        User_ID              First_Name        Last_Name      Age
+
+        7791a3d6             subbu             kattamedi      20
+        u63527db             jncjdnc                          33
+        7357336gv            lsidmckdmc                       23
+
+
+
+--  User_ID  = Partition Key (primary key),    
+
+--  First_Name        Last_Name      Age    = Attributes
+
+-- here , missing attributes is fine in dynamoDB
+
+
+
+--------- • Option 2: Partition Key + Sort Key (HASH + RANGE)
+
+                   • The combination must be unique for each item
+
+                   • Data is grouped by partition key , this is why it's very important to choose a good partition key.
+
+                   • Example: users-games table,“User_ID” for Partition Key and “Game_ID” for Sort Key
+
+                         - That means that users can attend multiple games.
+
+
+
+          
+
+          User_ID          Game_ID            Score         Result
+
+          7791a3d6          2233              20              win
+          98377366          3421              40             lost
+           98377366         2123              33              win
+
+
+-- “User_ID” for Partition Key and “Game_ID” for Sort Key  and    Score and Result = attributes
+
+-- here for 2 and 3 are same partiton key but different Sort key
+
+
+
+
+
+---------------------------------------------------------- DynamoDB – Partition Keys (Exercise)
+
+
+• We’re building a movie database
+
+• What is the best Partition Key to maximize data distribution?
+
+       • movie_id
+
+       • producer_name
+
+       • leader_actor_name
+
+       • movie_language
+
+
+• “movie_id” has the highest cardinality so it’s a good candidate
+
+• “movie_language” doesn’t take many values and may be skewed towards English so it’s not a great choice for the Partition Key
+
+
+
+
+
+---------------------------------------------------------- DynamoDB – Read/Write Capacity Modes
+
+
+• Control how you manage your table’s capacity (read/write throughput)
+
+
+• Provisioned Mode (default) 
+
+      • You specify the number of reads/writes per second
+
+      • You need to plan capacity beforehand
+
+      • Pay for provisioned read & write capacity units
+
+
+• On-Demand Mode
+
+      • Read/writes automatically scale up/down with your workloads
+
+      • No capacity planning needed
+
+      • Pay for what you use, more expensive ($$$)
+
+
+• You can switch between different modes once every 24 hours      
+
+       
+
+
+
+
+
+
+---------------------------------------------------------- R/W Capacity Modes – Provisioned
+
+
+• Table must have provisioned read and write capacity units
+
+• Read Capacity Units (RCU) – throughput for reads
+
+• Write Capacity Units (WCU) – throughput for writes
+
+• Option to setup auto-scaling of throughput to meet demand
+
+• Throughput can be exceeded temporarily using “Burst Capacity”
+
+• If Burst Capacity has been consumed, you’ll get a “ProvisionedThroughputExceededException”
+
+• It’s then advised to do an exponential backoff retry
+
+
+
+
+
+---------------------------------------------------------- DynamoDB – Write Capacity Units (WCU)
+
+
+• One Write Capacity Unit (WCU) represents one write per second for an item up to 1 KB in size
+
+• If the items are larger than 1 KB, more WCUs are consumed
+
+
+• Example 1: we write 10 items per second, with item size 2 KB
+
+ANS :     • We need  10 * (2 KB / 1 KB)  = 20 WCU's
+
+
+• Example 2: we write 6 items per second, with item size 4.5 KB
+
+ANS : • We need  6 * (5 KB / 1 KB)  = 30 WCU's , because the 4.5 kilobytes is always going to be rounded to the upper kilobyte by DynamoDB to get an idea of how many WCUs you've consumed.
+
+
+• Example 3: we write 120 items per minute, with item size 2 KB
+
+ANS : we need (120 / 60 ) * (2KB / 1KB)  = 4 WCU'S , We need to do a small computation which is 120 divided by 60 to get items per second,
+
+
+--  1 WCU = 2.5 million Writes 
+
+
+
+---------------------------------------------------------- Strongly Consistent Read vs. Eventually Consistent Read
+
+
+
+
+-- So if you consider DynamoDB, it's a serverless database, of course, but behind the scenes, there are servers.
+
+-- You just don't see them or manage them.
+
+-- So we have servers, and let's just consider three servers right now to make it very, very simple, but obviously a lot more,
+
+-- your data is going to be distributed and replicated across all the servers.
+
+-- Now, if you consider your application, your application is going to do writes to one of these servers,
+
+-- internally DynamoDB is going to replicate these writes across different servers, such as Server 2 and Server 3.
+
+-- Now, when your application reads from DynamoDB, there is a chance that you're going to read not from Server 1 but from Server 2.
+
+-- Now, two things can happen
+
+
+
+1 • Eventually Consistent Read (default) 
+
+        • If we read just after a write, it’s possible we’ll get some stale(old) data because of replication has not happened yet
+
+
+2 • Strongly Consistent Read
+
+       • If we read just after a write, we will get the correct data
+
+       • For this, we need to Set “ConsistentRead” parameter to True in API calls (GetItem, BatchGetItem, Query, Scan)    
+
+       • Consumes twice the RCU
+
+       - so it's going to be a more expensive query and also may have a slightly higher latency.  
+
+
+
+
+
+---------------------------------------------------------- DynamoDB – Read Capacity Units (RCU)
+
+
+
+• One Read Capacity Unit (RCU) represents one Strongly Consistent Read per second, or two Eventually Consistent Reads per second, for an item up to 4 KB in size
+
+
+      - For ECR , 1 RCU = 2 Reads per second of 4KB size
+
+      - For SCR, 1RCU = 1 read per second of 4KB Size 
+
+
+• If the items are larger than 4 KB, more RCUs are consumed
+
+      - it's going to be rounded up to the nearest upper four kilobytes.
+
+
+• Example 1: 10 Strongly Consistent Reads per second, with item size 4 KB
+
+ANS : 
+
+
+-- we kanow the basic of 
+
+   -- For ECR , 1 RCU = 2 Reads per second of 4KB size
+
+   -- For SCR, 1RCU = 1 read per second of 4KB Size 
+
+
+-- here it have mentioned SCR , so 1RCU = 1 read per second of 4KB Size 
+
+
+we need 10 * (4Kb / 4KB) = 10 RCU'S
+
+
+
+
+• Example 2: 16 Eventually Consistent Reads per second, with item size 12 KB 
+
+ANS : here it is ECR so,
+
+
+we need (16 / 2) * (12KB / 4KB)  = 8 * 3 = 24 RCU'S
+
+
+• Example 3: 10 Strongly Consistent Reads per second, with item size 6 KB
+
+ANS : 10 * (8KB / 4KB) = 20 RCU's (we must roundup 6KB to 8KB)
+
+        - here we do not have 6 we have only 4 and 8 KB so,go for near (only up) so 8KB 
+
+
+
+
+
+
+---------------------------------------------------------- DynamoDB – Partitions Internal
+
+
+
+-- how DynamoDB works in the backend with partitions.?
+
+
+• Data is stored in partitions , partitions are just copies of your data that live on specific servers.
+
+       - when your application does writes into DynamoDB, what's going to happen is that your application will send a partition key, a sort key maybe, and some attributes.
+
+
+• Partition Keys go through a hashing algorithm to know to which partition they go to
+
+      - So if we take the partition key of ID_13, it's going to go through this internal hash function of DynamoDB, t's going to say, "Hey, any time I see ID_13, this is going to go into Partition 1."
+
+      - if you have ID_45 in the second row, then ID_45 is going to go through the hash function, and the hash function will say, "Hey, this ID_45 should go to Partition 2."
+
+
+
+-- So, obviously, if you have what's called a hot partition, the data is always going to be the hot key, the data is always going to be into the same partition.
+
+
+• To compute the number of partitions:
+
+     • # 𝑜𝑓 𝑝𝑎𝑟𝑡𝑖𝑡𝑖𝑜𝑛𝑠 by capacity = (RCU's Total / 3000) + (WCU's Total / 1000)
+
+
+     • # 𝑜𝑓 𝑝𝑎𝑟𝑡𝑖𝑡𝑖𝑜𝑛𝑠 by Size     = Total Size / 10 GB
+
+
+      • # 𝑜𝑓 𝑝𝑎𝑟𝑡𝑖𝑡𝑖𝑜𝑛𝑠            = ceil(max(# 𝑜𝑓 𝑝𝑎𝑟𝑡𝑖𝑡𝑖𝑜𝑛𝑠 by capacity, # 𝑜𝑓 𝑝𝑎𝑟𝑡𝑖𝑡𝑖𝑜𝑛𝑠 by Size ))
+
+
+
+• WCUs and RCUs are spread evenly across partitions
+
+
+
+
+
+
+---------------------------------------------------------- DynamoDB – Throttling
+
+
+• If we exceed provisioned RCUs or WCUs, we get “ProvisionedThroughputExceededException”
+
+• Reasons:
+
+     • Hot Keys – one partition key is being read too many times (e.g., popular item) from a specific partition,
+
+     • Hot Partitions
+
+     • Very large items, remember RCU and WCU depends on size of items
+
+
+• Solutions:
+
+     • Exponential backoff when exception is encountered (already in SDK)
+
+     • Distribute partition keys as much as possible (how we can choose a really good partition key.)
+
+     • If RCU issue, we can use DynamoDB Accelerator (DAX)
+
+
+
+
+
+---------------------------------------------------------- R/W Capacity Modes – On-Demand
+
+
+• Read/writes automatically scale up/down with your workloads
+
+• No capacity planning needed (WCU / RCU)
+
+• Unlimited WCU & RCU, no throttle, more expensive
+
+• You’re charged for reads/writes that you use in terms of RRU and WRU
+
+• Read Request Units (RRU) – throughput for reads (same as RCU)
+
+• Write Request Units (WRU) – throughput for writes (same as WCU)
+
+• 2.5x more expensive than provisioned capacity (use with care)
+
+• Use cases: unknown workloads, unpredictable application traffic, ...
+
+
+
+
+
+
+---------------------------------------------------------- DynamoDB - Basic Operations 
+
+
+
+--------------------------- DynamoDB – Writing Data
+
+
+• PutItem
+
+     • Creates a new item or fully replace an old item (same Primary Key)
+
+     • ConsumesWCUs
+
+
+• UpdateItem
+
+     • Edits an existing item’s attributes or adds a new item if it doesn’t exist , with UpdateItem, we only edit a few attributes, not every other attribute.
+
+     • Can be used to implement Atomic Counters – a numeric attribute that’s unconditionally incremented
+
+
+
+• Conditional Writes
+
+     • Accept a write/update/delete only if conditions are met, otherwise returns an error
+
+     • Helps with concurrent access to items
+
+     • No performance impact
+
+
+
+
+--------------------------- DynamoDB – Reading Data
+
+
+• GetItem
+
+      • Read based on Primary key
+
+      • Primary Key can be HASH or HASH+RANGE
+
+      • Eventually Consistent Read (default)
+
+      • Option to use Strongly Consistent Reads (more RCU - might take longer)
+
+      • ProjectionExpression can be specified to retrieve only certain attributes
+
+
+
+
+--------------------------- DynamoDB – Reading Data (Query)
+
+
+• Query returns items based on:
+
+       • KeyConditionExpression
+           
+            • Partition Key value (must be = operator) – required
+
+            • SortKeyvalue(=,<,<=,>,>=,Between,Beginswith)–optional
+
+      
+      • FilterExpression
+
+            • Additional filtering after the Query operation (before data returned to you)
+
+            • Use only with non-key attributes (does not allow HASH or RANGE attributes)
+
+
+
+
+• Returns:
+
+       • The number of items specified in Limit
+
+       • Or upto 1MB of data
+
+• Ability to do pagination(Pagination is splitting a database output into manageable chunks or pages)  on the results
+
+• Can query table, a Local Secondary Index, or a Global Secondary Index
+
+
+
+
+
+
+--------------------------- DynamoDB – Reading Data (Scan)
+
+
+• Scan the entire table and then filter out data (inefficient)
+
+• Returns up to 1 MB of data – use pagination to keep on reading (page 1, page2 ,....)
+
+• Consumes a lot of RCU
+
+• Limit impact using Limit or reduce the size of the result and pause
+
+• For faster performance, use "Parallel Scan"
+
+     • Multiple workers scan multiple data segments at the same time
+
+     • Increases the throughput and RCU consumed
+
+     • Limit the impact of parallel scans just like you would for Scans
+
+
+• Can use ProjectionExpression & FilterExpression (no changes to RCU)
+
+
+
+
+--------------------------- DynamoDB – Deleting Data
+
+
+• DeleteItem
+
+     • Delete an individual item
+
+     • Ability to perform a conditional delete
+
+
+• DeleteTable
+
+     • Delete a whole table and all its items
+
+     • Much quicker deletion than calling DeleteItem on all items
+
+
+
+
+--------------------------- DynamoDB – Batch Operations
+
+
+• Allows you to save in latency by reducing the number of API calls
+
+• Operations are done in parallel for better efficiency
+
+• Part of a batch can fail; in which case we need to try again for the failed items
+
+
+• BatchWriteItem
+
+     • Up to 25 PutItem and/or DeleteItem in one call
+
+     • Up to 16 MB of data written,up to 400 KB of data per item
+
+     • Can’t update items (use UpdateItem)
+
+     • UnprocessedItems for failed write operations(exponential backoff or add WCU)
+
+          - you can retry the items within the UnprocessedItems. So two options to process them correctly.
+
+          - Either you use an exponential backup strategy to keep on trying with longer and longer time until it succeeds,
+
+          - if you consistently get these UnprocessedItems and scaling issues, then of course, you need to add write capacity units to allow your batch operations to complete efficiently.
+
+
+• BatchGetItem
+
+      • Return items from one or more tables
+
+      • Up to 100 items,up to 16 MB of data
+
+      • Items are retrieved in parallel to minimize latency
+
+      • UnprocessedKeys for failed read operations (exponential backoff or add RCU)
+
+
+
+
+
+--------------------------- DynamoDB – PartiQL
+
+
+-- we have specific API calls to do specific things, but sometimes all that you know, as a data engineer or whatever, as a developer, may be SQL.
+
+-- so you can use SQL on DynamoDB by using PartiQL.
+
+
+• SQL-compatible query language for DynamoDB
+
+• Allows you to select, insert, update, and delete data in DynamoDB using SQL , But this time, instead of doing the DynamoDB specific APIs you can just use SQL.
+
+• Run queries across multiple DynamoDB tables , but you cannot do joins
+
+• Run PartiQL queries from:
+
+     • AWS Management Console
+     • NoSQL Workbench for DynamoDB
+     • DynamoDB APIs
+     • AWS CLI
+     • AWS SDK
+
+
+-- the goal of it is really not to add new capabilities to DynamoDB because you have the same capabilities, but it's just to use SQL to write these API calls against DynamoDB.
+
+
+
+
+
+-------- see hands on in course for basic API'S
+
+
+
+
+
+
+
+---------------------------------------------------------- DynamoDB – Conditional Writes
+
+
+
+-- So this is for the write operations.
+
+
+• For PutItem, UpdateItem, DeleteItem, and BatchWriteItem
+
+• You can specify a Condition expression to determine which items should be modified:
+
+    • attribute_exists
+    • attribute_not_exists
+    • attribute_type
+    • contains (for string)
+    • begins_with (for string)
+    • ProductCategory IN (:cat1, :cat2) and Price between :low and :high • size (string length)
+
+
+• Note: Filter Expression filters the results of read queries, while Condition Expressions are for write operations
+
+
+
+
+
+---------------------------------------------------------- Conditional Writes – Example on Update Item
+
+
+
+-- To perform a conditional update, you use an UpdateItem operation with a condition expression. The condition expression must evaluate to true in order for the operation to succeed; otherwise, the operation fails.
+
+
+
+EG :
+
+
+aws dynamodb update-item \
+    --table-name ProductCatalog \
+    --key '{"Id": {"N": "456"}}' \
+    --update-expression "SET Price = Price - :discount" \
+    --condition-expression "Price > :limit" \
+    --expression-attribute-values file://values.json
+
+
+
+-- we say that we want to set the price to be equal to the current price minus discounts only if the price is over to a specific limit.
+
+-- That's our condition expression.
+
+-- We pass in the file://values.json , which has the discount to be a number of 150 and the limit to be a number of 500.
+
+
+{
+    ":discount": { "N": "150"},
+    ":limit": {"N": "500"}
+}
+
+
+
+-- So that means that if we have this item in our DynamoDB table with a key 456 if we apply this Update Item command is going to be transformed to be now having a price of 500.
+
+
+{
+    "Id": { "N": "456"},
+    "Price": {"N": "650"},
+    "ProductCategory": {"S": "Sporting Goods"}
+}
+
+
+             |
+             |
+             |
+             |
+
+
+{
+    "Id": { "N": "456"},
+    "Price": {"N": "500"},
+    "ProductCategory": {"S": "Sporting Goods"}
+}
+
+
+-- That's because indeed before the price was strictly over the limit of 500 because 650 is greater than 500.
+
+-- But if we apply yet again the same command now it's not going to succeed. The price will never go below 500 
+
+-- because, well, the condition expression would evaluate to being false.
+
+
+
+
+
+
+
+---------------------------------------------------------- Conditional Writes – Example on Delete Item
+
+
+
+• attribute_not_exists
+
+      • Only succeeds if the attribute doesn’t exist yet (no value)
+
+
+aws dynamodb update-item \
+    --table-name ProductCatalog \
+    --key '{"Id": {"N": "456"}}' \
+    --condition-expression "attribute_not_exists(price)"
+
+
+
+-- For example, we're saying hey, delete an item or delete many items if you have a batch right item we can do delete one item for our product catalog if the attribute price doesn't exist.
+
+
+
+• attribute_exists
+
+     • Opposite of attribute_not_exists
+
+
+aws dynamodb update-item \
+    --table-name ProductCatalog \
+    --key '{"Id": {"N": "456"}}' \
+    --condition-expression "attribute_exists(ProductReviews.onestar)"
+
+
+
+
+
+
+---------------------------------------------------------- Conditional Writes – Do Not Overwrite Elements
+
+
+• attribute_not_exists(partition_key)
+
+     • Make sure the item isn’t overwritten
+
+
+• attribute_not_exists(partition_key) and attribute_not_exists(sort_key)
+
+     • Make sure the partition / sort key combination is not overwritten
+
+
+
+
+
+
+---------------------------------------------------------- Conditional Writes – Example Complex Condition
+
+
+
+aws dynamodb delete-item \
+    --table-name ProductCatalog \
+    --key '{"Id":{"N":"456"}}' \
+    --condition-expression "(ProductCategory IN (:cat1, :cat2)) and (Price between :lo and :hi)" \
+    --expression-attribute-values file://values.json
+
+
+
+-- The arguments for --expression-attribute-values are stored in the values.json file.
+
+
+{
+    ":cat1": {"S": "Sporting Goods"},
+    ":cat2": {"S": "Gardening Supplies"},
+    ":lo": {"N": "500"},
+    ":hi": {"N": "600"}
+}
+
+
+-- we can pass in this values.json file we're specifying category 1 and category 2 as well as the low of 500 and the high of 600.
+
+-- And so when we apply Delete Item in case the item does belong to this range then we're good to go.
+
+-- But as we can see, for example, even though the products category Sporting Good is compliant with our condition, which is the first part of our condition,
+
+{
+    "Id": { "N": "456"},
+    "Price": {"N": "650"},
+    "ProductCategory": {"S": "Sporting Goods"}
+}
+
+
+-- the price is 650, which is not between 500 and 600. And so the whole condition is false and the item will not be deleted in this case.
+
+
+
+
+
+
+---------------------------------------------------------- Conditional Writes – Example of String Comparisons
+
+
+• begins_with – check if prefix matches
+
+• contains – check if string is contained in another string
+
+
+
+aws dynamodb delete-item \
+    --table-name ProductCatalog \
+    --key '{"Id": {"N": "456"}}' \
+    --condition-expression "begins_with(Pictures.FrontView, :v_sub)" \
+    --expression-attribute-values file://expression-attribute-values.json
+
+
+
+-- The arguments for --expression-attribute-values are stored in the expression-attribute-values.json file.
+
+
+{
+    ":v_sub":{"S":"http://"}
+}
+
+
+
+-- So here for example, we're saying, hey I want to make sure to delete items if it begins with http.://
+
+
+
+
+--You can check for an element in a set or look for a substring within a string by using the contains function. If the condition expression evaluates to true, the operation succeeds; otherwise, it fails.
+
+
+-- The following example uses contains to delete a product only if the Color String Set has an element with a specific value.
+
+
+
+aws dynamodb delete-item \
+    --table-name ProductCatalog \
+    --key '{"Id": {"N": "456"}}' \
+    --condition-expression "contains(Color, :v_sub)" \
+    --expression-attribute-values file://expression-attribute-values.json
+
+
+
+-- The arguments for --expression-attribute-values are stored in the expression-attribute-values.json file.
+
+
+{
+    ":v_sub":{"S":"Red"}
+}
+
+
+
+
+
+
+
+---------------------------------------------------------- DynamoDB Indexs – Local Secondary Index (LSI)
+
+
+
+
