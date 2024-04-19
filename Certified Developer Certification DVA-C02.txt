@@ -12759,4 +12759,537 @@ aws dynamodb delete-item \
 
 
 
+-- same partition_key 
+
+-- any Sort Key
+
+
+• Alternative Sort Key for your table (same Partition Key as that of base table)
+
+• The Sort Key consists of one scalar attribute (String, Number, or Binary)
+
+• Up to 5 Local Secondary Indexes per table
+
+• Must be defined at table creation time
+
+      - So you cannot create them after your tables being created. So you need to have some careful thinking into how you want your table to be designed.
+
+
+• Attribute Projections – can contain some or all the attributes of the base table (KEYS_ONLY, INCLUDE, ALL)
+
+
+-- right now we can do queries on user ID and game ID, is very simply,
+
+-- but we can not do a query on a user ID and game timestamp. For this, we need to do a scan and then do some service side and some client site filtering.
+
+-- So to do so, if you wanted to do a query based on user ID and game timestamp. We would need to create an LSI and define the LSI on the attributes game timestamp.
+
+
+
+
+          User_ID          Game_ID       Game_TS                            Score         Result
+
+          7791a3d6          2233        “2021-03-15T17:43:08”               20              win
+          98377366          3421        “2021-06-20T19:02:32”               40             lost
+           98377366         2123         “2021-02-11T04:11:31”              33              win
+
+
+
+
+-- User_ID , Game_ID   = PartitionKey  
+
+--  Game_TS   = LSI
+
+-- Game_TS , Score ,Result = attributes
+
+
+
+
+
+
+---------------------------------------------------------- DynamoDB – Global Secondary Index (GSI)
+
+
+-- ANY partition_key 
+
+-- any Sort Key
+
+
+• Alternative "Primary Key" (HASH or HASH+RANGE(Sort)) from the base table
+
+• Speed up queries on non-key attributes
+
+• The Index Key consists of scalar attributes (String, Number, or Binary)
+
+• Attribute Projections – some or all the attributes of the base table (KEYS_ONLY, INCLUDE, ALL)
+
+• Must provision RCUs & WCUs for the index
+
+• the GSI are powerful because Can be added/modified after table creation
+
+
+
+-- So let's take a very simple table in which we have user ID, game ID and game timestamp.
+
+-- With this table we're able to query based on user ID. So it gives me all the games of this user,
+
+-- but we cannot query on game ID as we can see right now, if you want to query on game ID, it would be extremely difficult when you do a scan and then filter client's site.
+
+
+1 TABLE (query by “User_ID”)
+
+           User_ID          Game_ID       Game_TS                            
+
+          7791a3d6          2233        “2021-03-15T17:43:08”               
+          98377366          3421        “2021-06-20T19:02:32”              
+           98377366         2123         “2021-02-11T04:11:31”            
+
+
+   User_ID  = Partition Key
+   
+   Game_ID  = Sort Key
+
+   Game_TS = Attributes
+
+
+
+
+
+
+-- So instead we're going to create a GSI, a global secondary index,
+
+-- Which is going to give us the ability to query by game ID.
+
+-- So now the partition key for the GSI becomes the game ID. The sort key may be for example, game timestamp. This is what you want to query on.
+
+-- And the attributes become user ID because we've done a projection of the user ID attributes.
+
+
+2 INDEX GSI (query by “Game_ID”)
+
+
+                            Game_ID       Game_TS                      User_ID  
+
+                            2233        “2021-03-15T17:43:08”           7791a3d6  
+                            3421        “2021-06-20T19:02:32”           98377366 
+                            2123         “2021-02-11T04:11:31”          98377366 
+
+
+   User_ID = Attributes
+   
+   Game_ID =  Partition Key
+
+   Game_TS = Sort Key 
+
+
+
+
+
+---------------------------------------------------------- DynamoDB – Indexes and Throttling
+
+
+• Global Secondary Index (GSI):
+
+       • If the writes are throttled on the GSI, then the main table will be throttled! (So this is a very, very important that comes up in the exam.)
+
+       • Even if the WCU on the main tables are fine , if there are throttling on the GSI, then the main table, no matter what, we'll be throttling       
+ 
+       • Choose your GSI partition key carefully!
+
+       • Assign your WCU capacity carefully!
+
+
+
+• Local Secondary Index (LSI):
+
+       • Uses the WCUs and RCUs of the main table
+
+       • No special throttling considerations
+
+
+
+
+
+---------------------------------------------------------- (LSI + GSI) Hands On
+
+
+-- create one table in dynamoDB
+
+-- partition_key = user_id with string type 
+
+-- sortkey = Game_TS
+
+-- choose customize settings 
+
+-- choose provisioned
+
+-- read capacity --> off --> 1
+
+-- write capacity --> off --> 1 
+
+-- we can create either a local index or a global index. Now local indexes can only be created at table creation time, whereas global indexes can be created afterwards.
+
+-- So as you can see, we do not have the option to specify a different Partition key, so user_id will remain the Partition key for this index, 
+
+-- but we can specify a different Sort key.
+
+-- create LSI --> Game_ID (string)
+
+-- create Table 
+
+-- let's have a look at how we can query it right now.
+
+-- open table --> explore items --> query
+
+-- So if I go into Query, as we can see, I can query either a table or an index and have two options.
+
+-- So as we can see this local index allows me to query by a different Sort key,
+
+-- now go to tables --> GSI --> create GSI , it will take more time to create, so wait to create   (https://repost.aws/knowledge-center/create-gsi-dynamodb)
+
+-- we could enter a completely different Partition key, for example, game_id, and a Sort key could be, for example, game_ts,
+
+-- go back to the query , u can able to query with game_id , game_ts
+
+
+
+
+
+
+
+
+---------------------------------------------------------- DynamoDB - PartiQL
+
+
+• Use a SQL-like syntax to manipulate DynamoDB tables
+
+• Supports some (but not all) statements:
+
+     • INSERT
+     • UPDATE 
+     • SELECT 
+     • DELETE
+
+• It supports Batch operations
+
+
+
+
+---------------------------------------------------------- DynamoDB – Optimistic Locking
+
+
+-- So DynamoDB has a feature called Optimistic Locking.
+
+
+• So the idea is that you can do Conditional Writes in DynamoDB.
+
+      - DynamoDB has a feature called “Conditional Writes”
+
+-- What does that mean?
+
+• A strategy to ensure an item hasn’t changed before you update/delete it
+
+• Each item has an attribute that acts as a version number
+
+
+-- I want to write this only if this condition is met and this is called Optimistic Locking.
+
+
+
+
+for EG : we have a DynamoDB Table ,we have an item with a user ID, a first name and a version, which is one.
+
+
+User_ID     First_Name      Version
+
+12345        subbu             1
+
+
+-- Now two clients at the same time want to update this item because they think that the first name is wrong.
+
+-- the client 1 is saying, Hey, I want to update this to name = John, only if version = 1.
+
+-- the client 2 says, I want to update name = Lisa only if version = 1.
+
+-- What's going to happen is that's one of these requests, obviously, will make it to DynamoDB first.
+
+-- so then DynamoDB will go ahead, and maybe it's the second one, will update the first name to Lisa. And will also update the version to 2,
+
+
+User_ID     First_Name      Version
+
+12345        Lisa             2
+
+
+-- Now what's going to happen out of this is that the client 1 updates will not go through
+
+-- because now that DynamoDB says, Hey, you told me I should do this update only if version = 1 but it turns out that now my version is = 2
+
+-- therefore, the client will get a error message saying, Hey, you don't have the right data.
+
+-- So this feature of Conditional Writes or Optimistic Locking
+
+
+
+
+
+---------------------------------------------------------- DynamoDB Accelerator (DAX)
+
+
+• Fully-managed, highly available, seamless in-memory cache for DynamoDB
+
+• Microseconds latency for cached reads & queries
+
+• Doesn’t require application logic modification (compatible with existing DynamoDB APIs) , And you just create a DAX cluster and you're good to go.
+
+• Solves the “Hot Key” problem (too many reads)
+
+       - So if you're reading a very specific key or a very specific item, too many times then you may get throttling on your RCU's.
+
+       - But if it's cached by DAX, then you've just solved that problem.
+
+       - So let's have an example, we DynamoDB it's made of tables and our application is trying to access these tables.
+
+       - Now in between, we're going to create a DAX cluster, which is made of cache nodes, and we have to provision them in advance.
+
+       - Now the application will directly interact with the DAX cluster, and the DAX cluster will fetch the data from the DynamoDB tables.
+
+       - So by default, that means that some data is going to be cached, and if you think cached, you need to think TTL.
+
+
+• So by default, every cache data will live for 5 minutes in your DAX cluster.
+
+• Up to 10 nodes in the cluster
+
+• Multi-AZ (3 nodes minimum recommended for production) , So one in each AZ. And DAX is fully secure,
+
+• Secure (Encryption at rest with KMS,VPC, IAM, CloudTrail, ...)
+
+-- So remember DAX is here to help you cache the most popular items or queries from DynamoDB.
+
+
+
+
+
+---------------------------------------------------------- DynamoDB Accelerator (DAX) vs. ElastiCache
+
+
+
+
+-- So with DAX, what you're going to do is that you're going to have a cache for individual objects or for your queries, or your scans.
+
+
+-- This is very, very handy, and this is what I call simple types of queries. So your objects, your queries and your scans.
+
+
+
+-- But if you're doing some kind of logic application wise, 
+
+-- you know you're like doing a scan and then you're doing the sum, and then you're filtering out some data, and so on.
+
+-- you don't want to do this every single time, because this is computationally expensive.
+
+-- What you can do, is you can store the results of whatever your application just did in Amazon ElastiCache. And retrieve the data from ElastiCache directly,
+
+-- instead of re-querying DAX and re-performing the aggregation client side. 
+
+-- So this could be a good way to actually use them both together in the architecture.
+
+
+
+
+
+
+                                              Store Aggregation Result
+                                    | -----------------------------------------> Amazon ElastiCache
+                                    |
+                                    |
+                                    |
+                                    |
+                                    |
+Application -------------------------- 
+                                    |
+                                    |
+                                    |
+                                    |    - Individual objects cache 
+                                    |    - Query & Scan cache                      
+                                    |
+                                    |
+                                    | ------------------- (DynamoDB Accelerator (DAX)) ----------> Amazon DynamoDB
+
+
+
+
+
+
+
+---------------------------------------------------------- DAX Hands On 
+
+-- DAX is not free 
+
+
+-- open dynamodb --> in the left navigation panel --> DAX --> cluster 
+
+-- node family = It could be t-types or r-types.
+
+-- So r is memory(this is for always-ready capacity,) 
+
+-- and t is for bursting (so this is recommended for use case regarding a lower throughput,),
+
+-- node type = dax.t2.small
+
+-- choose all families
+
+-- choose vpc and subnets 
+
+-- ask to create new role for you 
+
+-- Parameter group : So this is going to basically tell how long to cache the items, thanks to the time-to-live, and what's the query time-to-live as well.
+
+      - But by default, the 1.0 is giving you five minutes of TTL on both item time and query time.
+
+  
+-- create cluster , it will take 10 min to create 
+
+
+-- here there is a cluster endpoint, and this is the endpoint your application should leverage to just leverage the DAX feature. 
+
+
+
+
+
+---------------------------------------------------------- DynamoDB Streams
+
+
+• Ordered stream of item-level modifications (create/update/delete) in a table
+
+     - So whenever you will insert an item or modify it or delete it, then that modification would be visible in the stream.
+
+     - the stream will represent the list of all the modifications over time in your table.
+
+
+• Stream records can be sent to multiple places:
+
+     • Sent to Kinesis Data Streams
+
+     • Read by AWS Lambda
+
+     • Read by Kinesis Client Library applications
+
+
+• Data Retention for up to 24 hours
+
+      - so you need to make sure to either persist it somewhere like Kinesis Data Stream where you can have a longer retention or use whatever Lambda or KCL application to persist it somewhere more durable.
+
+
+• Use cases:
+
+     • react to changes in real-time (welcome email to users)
+     • Analytics
+     • Insert into derivative tables
+     • Insert into OpenSearch Service
+     • Implement cross-region replication
+
+
+
+• Ability to choose the information that will be written to the stream: 
+
+     • KEYS_ONLY – only the key attributes of the modified item
+
+     • NEW_IMAGE – the entire item, as it appears after it was modified
+
+     • OLD_IMAGE – the entire item, as it appeared before it was modified
+
+     • NEW_AND_OLD_IMAGES – both the new and the old images of the item
+
+
+• DynamoDB Streams are made of shards, just like Kinesis Data Streams
+
+• You don’t provision shards, this is automated by AWS
+
+• Records are not retroactively populated in a stream after enabling it    
+
+        - So once you enable the stream, only then will you receive these updates based on the changes that are appearing in your DynamoDB table.
+
+
+
+
+
+---------------------------------------------------------- Architecture of Dynaobd streams
+
+
+
+
+                                                                                     |-------------------------
+                                                                                     |  Processing Layer      |    messaging, notifications
+                                                                 | ----------------->|                        |    ---------------------------->  Amazon SNS
+                                                                 |                   |   KCL App              |
+                                                                 |                   |                        |      filtering, transforming, ...
+                                                                 |                   |    Lambda              |    -----------------------------> DDB Table
+                                                                 |                   |                        |
+                                                                 |                    -------------------------
+                                                                 |                          |
+              create/update/delete                               |                          |
+Application -----------------------------> Table --------> DynamoDB Streams                 |
+                   
+                                                                 |                          |
+                                                                 |
+                                                                 |
+                                                                 |
+                                                                 |                           |                   analytics
+                                                                 |                           |              ----------------------------> Amazon Redshift
+                                                                 |                           |             |
+                                                                 |                           |             |
+                                                                                             |                    archiving
+                                                         Kinesis Data Streams  ------------------------> KDF -------------------------->  Amazon S3  
+                                                                                              |           |
+                                                                                              |           |
+                                                                                              |           |      indexing
+                                                                                              | ---------------------------------------> OpenSearch Service
+
+
+
+
+
+
+
+-- so we have our application, which does create, update, and deletes operations on our table,
+
+-- any of these changes is going to appear in a DynamoDB Stream.
+
+-- So from there, Kinesis Data Streams can be a receiver of your DynamoDB stream. 
+
+-- because we're using KDS, Kinesis Data Streams, then we can have Kinesis Data Firehose as a result, 
+
+-- and then maybe send it to Amazon Redshift to perform some analytics queries on top of your data in DynamoDB,
+
+-- or sending to Amazon S3 for archival of all these changes, in case we need to,
+
+-- or sending it to OpenSearch Service,to index it and to create a search capability on top of your DynamoDB table.
+
+-- The cool thing about this architecture is that it's pretty much everything is managed by AWS.
+
+
+
+
+-- If you wanted to add your own custom logic, you could use a processing layer in which you would create either a Kinesis Client Library App, maybe running on EC2, or a Lambda function that will be reading from DynamoDB streams.
+
+-- So for example, you can have messaging or send notifications using Amazon SNS. You could do some filtering and transformation and then reinsert the data into a DynamoDB table,
+
+-- or for example, you can also use Lambda to send data into OpenSearch, if you wanted to,  
+
+
+
+
+
+
+---------------------------------------------------------- DynamoDB Streams & AWS Lambda
+
+
+• You need to define an Event Source Mapping to read from a DynamoDB Streams
+
+• You need to ensure the Lambda function has the appropriate permissions
+
+• Your Lambda function is invoked synchronously
+
 
