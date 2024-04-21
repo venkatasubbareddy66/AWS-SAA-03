@@ -13293,3 +13293,909 @@ Application -----------------------------> Table --------> DynamoDB Streams     
 • Your Lambda function is invoked synchronously
 
 
+
+
+
+
+---------------------------------------------------------- DynamoDB Streams Hands On
+
+
+
+Step 1 : create DynamoDb table
+
+-- create table and give partiton key
+
+-- once u create table , add some items into the table
+
+-- go to table --> exports and streams --> turn on DynamoDB stream --> New and old images --> Turn on streams 
+
+
+Step 2 : create lambda function 
+
+--  in the same page , choose create trigger
+
+-- create new function --> Use Blue print --> search for DynamoDB and select Process updates made to table with python --> give function name --> choose create a new role --> give DynamoDb details in trigger section --> create function
+
+-- once ur function got created , u will get some error 
+
+--  function --> configuration --> permissions --> c.o role --> attach permissions (policies) --> DynamoDBfullaccess --> do refresh the screen the error will disappear
+
+-- ince ur  function is created go back to the trigger page in DynamoDB table add this function with batch size is 100 for this eg 
+
+
+Step 3 : Test 
+
+-- go back to the DynamoDB table and update and add some items into the table 
+
+-- do some chganges as you want 
+
+-- the changes will trigger to our lambda function '
+
+-- now go to function --> monitor--> view cloudwatch logs --> now you will able to see all the changes , INSERT,UPDATE,DELETE all the modifications that are captured through the DynamoDB Stream APi and trigger through the lambda and you will able to see in the cloud watch logs what has modification occurs 
+
+
+
+
+
+
+---------------------------------------------------------- DynamoDB –TimeTo Live (TTL)
+
+
+• Automatically delete items after an expiry timestamp
+
+• Doesn’t consume any WCUs (i.e., no extra cost)
+
+• The TTL attribute must be a “Number” data type with “Unix Epoch timestamp” value
+
+• Expired items deleted within 48 hours of expiration
+
+    - Now expired items will not be expired right away, there's the guarantee that they will be expired within 48 hours of the expiration, 
+
+
+• Expired items, that haven’t been deleted, appears in reads/queries/scans (if you don’t want them, filter them out)
+
+• Expired items are deleted from both LSIs and GSIs
+
+• A delete operation for each expired item enters the DynamoDB Streams (can help recover expired items)
+
+• Use cases: reduce stored data by keeping only current items, adhere to regulatory obligations, ...
+
+    - SessionData it is a perfect use case of TTL.
+
+
+
+
+
+
+
+
+---------------------------------------------------------- DynamoDB –TimeTo Live (TTL) Hands On
+
+
+
+
+-- create one table in dynamoDB
+
+-- partition_key = user_id with string type 
+
+-- choose customize settings 
+
+-- choose provisioned
+
+-- read capacity --> off --> 1
+
+-- write capacity --> off --> 1 
+
+-- create table 
+
+-- now go to table --> explore items --> create items 
+
+-- noe add some data like 
+
+-- userid(string), name(string), Expireson(Number)
+
+-- now go to google and search for https://www.epochconverter.com/
+
+-- so, this is how we can translate a timestamp of soon into an Epoch timestamp,
+
+-- add epoch time to the items u want 
+
+-- now additional settings --> turn on TTL --> provide attribute name from table 
+
+-- after some time , it will delete the items 
+
+-- TTL turnoff will take upto 1 hr 
+
+
+ 
+
+
+
+---------------------------------------------------------- DynamoDB CLI – Good to Know
+
+
+• --projection-expression: one or more attributes to retrieve
+
+         -The idea is that we don't want to retrieve all the columns, all the attributes. We just want to retrieve a subset to maybe have less data come to us, or only the data we need.
+
+
+• --filter-expression: filter items before returned to you
+
+
+• General AWS CLI Pagination options (e.g., DynamoDB, S3, ...)
+
+        • --page-size: specify that AWS CLI retrieves the full list of items but with a larger number of API calls instead of one API call (default: 1000 items)
+
+                - So page-size is saying that we still want to retrieve the entire dataset, but this time, each sub-API call that we'll make to AWS will be smaller.
+
+                - And the idea is your API call won't time out.
+
+                - For example, if you have a table of 10,000 items and you do one API call, maybe you will retrieve 10,000 items at a time and you will time out.
+
+                - But if you specify a page-size of 100, what's going to happen is that there's going to be 100 API calls of size 100,
+
+                - that are going to be made behind the scenes, to make sure that the complete API call succeeds.
+
+                - So page-size is an optimization in that sense, in that it allows you to do more API calls, but also avoid timeouts.
+
+
+        • --max-items: max. number of items to show in the CLI (returns NextToken)
+
+                - max-items works in combination with NextToken, or starting-token,        
+
+                - which is to say that now that you've received, say, 25 items, we want to get the next 25, and so therefore, 
+                
+                - you need to use that NextToken to retrieve the next 25 items.
+
+
+
+
+----------------------------------------------------------  DynamoDB CLI Hands On
+
+
+
+
+# Demo Projection Expression
+aws dynamodb scan --table-name UserPosts --projection-expression "user_id, content"
+
+# Demo Filter Expression
+aws dynamodb scan --table-name UserPosts --filter-expression "user_id = :u" --expression-attribute-values '{ ":u": {"S":"john123"}}'
+
+# Page Size demo: will do 1 API call if you have 3 Items
+aws dynamodb scan --table-name UserPosts 
+
+# Will do 3 API calls if you have 3 Items
+aws dynamodb scan --table-name UserPosts --page-size 1
+
+# Max Item demo:
+aws dynamodb scan --table-name UserPosts --max-items 1
+
+# Fetch the next item
+aws dynamodb scan --table-name UserPosts --max-items 1 --starting-token eyJFeGNsdXNpdmVTdGFydEtleSI6IG51bGwsICJib3RvX3RydW5jYXRlX2Ftb3VudCI6IDF9
+
+# Fetch the next item
+aws dynamodb scan --table-name UserPosts --max-items 1 --starting-token eyJFeGNsdXNpdmVTdGFydEtleSI6IG51bGwsICJib3RvX3RydW5jYXRlX2Ftb3VudCI6IDJ9
+
+
+
+
+-- with the above cmnds we are working on CLI demo
+
+-- take previous table as exmaple , add saome data into it 
+
+-- open cloushell --> explore with the cmnds 
+
+
+
+1 Demo Projection Expression
+
+     - in the given table , we have three attributes (userid, roll , name )
+
+     - we are going to retrive some attributes 
+
+     - aws dynamodb scan --table-name demoTTL --projection-expression "userid, roll"
+
+     - by this u will get only required attributes 
+
+
+2 Demo Filter Expression
+
+     - So we want to scan this table. But this time, we're going to filter all the results using a filter-expression,
+
+     - aws dynamodb scan --table-name demoTTL --filter-expression "userid = :u" --expression-attribute-values '{ ":u": {"S":"123"}}'
+
+     - userid = u , And then u has to be a string that has the value 123.
+
+     -  u will get the values which as userid (string type) 
+
+
+
+3 Page Size demo
+
+     - aws dynamodb scan --table-name demoTTL
+
+     - So if you are doing this API call to scan this entire table, then it's going to be one API call in the background,
+
+     - this API call is small enough, of course, but we retrieve three items.
+
+     - if you wanted to be efficient, say there was like 10,000 items, you could specify a page-size 1.
+
+
+
+4 Will do 3 API calls if you have 3 Items
+
+     - aws dynamodb scan --table-name demoTTL --page-size 1
+
+     - it gives all table data 
+
+     - But what happened in the background is that there were three API calls made to DynamoDB. So this is the page-size optimization to avoid timeouts.
+
+
+
+
+5 Max Item demo:
+
+      - aws dynamodb scan --table-name demoTTL --max-items 1
+
+      - if you wanted to retrieve one item at a time, you would use the max-items and then a number,
+
+      - so max-items 1 should return only one item. As you can see, we have this item being returned to us.
+
+      - the count is 3. But we have now a NextToken available to us.
+
+      - So this NextToken, we have to use using this command.
+
+      - So we're going to use the same max-items 1, but now we have the starting-token that we have to enter. 
+      
+      - And the value of the starting-token is what is in your CLI.
+
+
+
+6  Fetch the next item
+
+      - aws dynamodb scan --table-name UserPosts --max-items 1 --starting-token eyJFeGNsdXNpdmVTdGFydEtleSI6IG51bGwsICJib3RvX3RydW5jYXRlX2Ftb3VudCI6IDF9
+      
+
+
+
+
+
+---------------------------------------------------------- DynamoDB Transactions
+
+
+
+• Coordinated, all-or-nothing operations (add/update/delete) to multiple items across one or more tables
+
+       - So for example, we want to update, delete or add items, not for just for one table, but across multiple items. 
+       
+       - And either all the transactions, all the writes work, or none of them work. This is why it's called a transaction.
+
+
+• Provides Atomicity, Consistency, Isolation, and Durability (ACID)
+
+• Read Modes – Eventual Consistency, Strong Consistency,Transactional
+
+• Write Modes – Standard,Transactional
+
+• Now to do a transaction, it will consume Consumes 2x WCUs & RCUs
+
+        • DynamoDB performs 2 operations for every item (prepare & commit)
+
+• Now, you need to know Two operations: 
+
+        • TransactGetItems – one or more GetItem operations
+
+        • TransactWriteItems – one or more PutItem, UpdateItem, and DeleteItem operations
+
+
+
+• Use cases: financial transactions, managing orders, multiplayer games, ...
+
+
+
+
+                                                                  Application
+
+                                                                      |
+                                                                      |
+                                                 one transaction      |
+                                                                      |
+                                                                      |              A Transaction is written to both tables, or none!
+                                                                      |
+                                                                      |
+                                                                      |
+                                                                      |
+                                          ----------------------------| -------------------------------
+                                          |                                                           |
+                                          |                                                           |
+                                          |                                                           |
+                           UpdateItem     |                                                           |   PutItem
+                                          |                                                           |
+                                          |                                                           | 
+                                          |                                                           |
+                                          
+             Account_ID          Balance           Last_Tx_ts                        Tx_ID         Tx_ts          From_Acc            To_Acc        Amount   
+
+            acc_759692           230              1631188571                        75969242       230             acc_759692        acc_315972     45
+
+            acc_315972           120              1631274971                        31597232...    120             acc_315972        acc_617055     100
+  
+            acc_315234           125              1234274971                        61705584...    125             acc_315234        acc_759692      150
+
+
+               AccountBalance (Table)                                                                 BankTransactions (Table)
+
+
+
+
+
+
+-- So let's take an example. So we have AccountBalance, which presents the account ID, the balance, 
+
+-- so how many dollars they are on each accounts, and the last time a transaction was made onto this account.
+
+-- then we have another table called BankTransactions, which represents all the transactions that happened to the bank,
+
+-- so the idea is that we want to, obviously, add a transactions and modify the AccountBalance at the same time.
+
+-- So our application is going to do one transaction.
+
+-- as part of this one transaction, is going to do an UpdateItem on the AccountBalance, and a PutItem on the BankTransactions.
+
+-- Now with the DynamoDB transaction, either the transaction is returned to both tables at the same time or to none.
+
+-- especially in a financial setting like this, that it is really, really important to have these level of transaction guarantees.
+
+
+
+
+
+
+---------------------------------------------------------- DynamoDB Transactions Capacity Computations (IMP)
+
+
+• Important for the exam!
+
+
+• Example1: 3 Transactional writes per second, with item size 5 KB
+
+
+ANS : we need 3 * (5 KB / 1 KB) * 2 (𝑡𝑟𝑎𝑛𝑠𝑎𝑐𝑡𝑖𝑜𝑛𝑎𝑙𝑐𝑜𝑠𝑡) = 30 WCU'S
+
+
+• Example 2: 5 Transaction reads per second , with item size 5 KB
+
+ANS : we need 5 * (8 KB / 4 KB) * 2 (𝑡𝑟𝑎𝑛𝑠𝑎𝑐𝑡𝑖𝑜𝑛𝑎𝑙𝑐𝑜𝑠𝑡) = 20 RCU's 
+        
+        • (5 gets rounded to the upper 4 KB)
+
+
+
+
+
+
+
+---------------------------------------------------------- DynamoDB as Session State Cache
+
+
+• It’s common to use DynamoDB to store session states
+
+
+-- So we know that dynamoDB can be used to store data, but it can also be used to store the session state, as a cache.
+
+-- so this is something that your web application can use. And therefore, they can retrieve or store the session states on demand
+
+
+• vs. ElastiCache
+
+       • ElastiCache is in-memory, but DynamoDB is serverless
+
+       • Both are key/value stores
+
+       - So if the exam is saying, okay we need a session state store, that's going to be in memory, it probably means ElastiCache.
+
+       - if it talks about automatic scaling and so on, then DynamoDB is probably the right way.
+
+
+• vs. EFS
+
+       • EFS must be attached to EC2 instances as a network drive
+
+       - But so EFS is a file system and then DynamoDB is a database.
+
+
+
+• vs. EBS & Instance Store
+
+
+       • EBS & Instance Store can only be used for local caching, not shared caching
+
+       - Because your EBS drives and your instance store are attached to only one EC2 instance. So very important, 
+       
+       - this can be used for caching a local dataset, but not for sharing it across many instances.
+
+
+• vs. S3
+       
+        - S3 could be used for session states, but 
+
+       • S3 is higher latency, and not meant for small objects , It's meant for big files, not for small objects.
+
+       - So S3 as a station state cache is not a great tool.
+
+
+
+
+-- preferably DynamoDB and ElastiCache.
+
+
+
+
+      
+
+---------------------------------------------------------- DynamodB partitioning  strategies (DynamoDB Write Sharding)
+
+
+• Imagine we have a voting application with two candidates, candidate A and candidate B
+
+• If Partition Key is “Candidate_ID”, this results into two partitions, which will generate issues (e.g., Hot Partition)
+
+      - Now, if we used the partition key to be candidate ID, the problem is that all the results will go into two partitions only
+
+      - because, well, the data is going to be partitioned by either candidate A or candidate B, which will generate issues for writes and for reads so we're gonna get hot partition issues.
+
+      - So, how do we solve this issue?
+
+
+• A strategy that allows better distribution of items evenly across partitions
+
+• Add a suffix to Partition Key value
+
+      - for example, the number 11. So candidate a 11, and add a row, and then we're going to have candidate b 17, candidate b 18, candidate a 20,
+
+      - the idea is that now the partition key, is a lot more distributed, because it takes more unique values and therefore your data set is going to be fully written and fully readable from your Dynamo DB table.
+
+
+
+• Two methods:
+
+     • Sharding Using Random Suffix
+
+     • Sharding Using Calculated Suffix using a hashing algorithm.
+
+
+
+
+
+Partition Key       Sort Key       Attributes
+
+Candidate_ID        Vote_ts        Voter_ID
+
+Candidate_A-11      1631188571      3524
+Candidate_B-17      1631102171      7659
+Candidate_B-80      1631102171      09987
+Candidate_A-20      1631274971      5432
+    
+    |
+    |
+    |
+    |
+
+Candidate_ID + Random Suffix
+
+
+
+-- Both of these things work. The idea is that you want to get a very, very distributed partition key
+
+
+
+
+
+
+
+
+---------------------------------------------------------- DynamoDB – Write Types (Concurrent Writes , Atomic Writes , Conditional Writes , Batch Writes)
+
+
+
+
+1 Concurrent Writes
+
+
+
+           user 1                             user 2
+           |                                    | 
+           |                                    |
+           | Update: value = 1                  |
+           |                                    |
+           | ---------------------------------  |     Update: value = 2
+                                                |
+                                                |
+                                                |
+                                                |
+
+              7791a3d6-...    Michael           0         (The second write overwrites the first write )
+
+
+
+-- So the first one is concurrent writes, which we have an item and say to the users, "Want to update the item."
+
+-- So the first one say, "Hey, update this item to value equals one." And the second one says, "Hey, I want you to update the item with value equals two."
+
+-- Now what happens? Well, they're both going to succeed.
+
+-- So the first one will maybe update to value equals one. The second updates to value equals two.
+
+-- And so maybe the second write will overwrite the first writes,
+
+-- But one of them will be overwritten. And this is not a very desired behavior because two of them try to update an item and both get success,
+
+-- but obviously only one of them really succeeded. So that's why it's called concurrent writes.
+
+
+So how can we solve this?
+
+
+
+2 Conditional Writes
+
+
+
+
+
+
+           user 1                             user 2
+           |                                    | 
+           |                                    |
+           | Update: value = 1                  |
+           | only if value = 0                  |
+           | ---------------------------------  |     Update: value = 2 , only if value = 0
+                                                |
+                                                |
+                                                |
+                                                |
+
+              7791a3d6-...    Michael           0         (The first write is accepted,the second write fails )
+
+
+
+-- In conditional writes, the idea is that the user says, "Hey, I want to get this item with value equals one, but only if the value is currently zero."
+
+-- the second person says,  "Hey, I want you to do the value of this item with value equals two, but only if the value is zero."
+
+-- What's going to happen now is that, for example, the first write is going to be accepted. So the value will be equals one.
+
+-- And the second write is going to fail because at the time of evaluating the condition value equals zero,
+
+-- it turns out that then it would to be able say, "Hey, you know what? Actually, the value now is one." So we shouldn't do your writes.
+
+-- So this is a way to solve the concurrency problems. And that's why it's called optimistic locking.
+
+
+
+
+
+3 Atomic Writes
+
+
+
+
+   user 1                             user 2
+           |                                    | 
+           |                                    |
+           | Update:INCREASE value by 1         |
+           |                                    |
+           | ---------------------------------  |     Update: INCREASE value by 2
+                                                |
+                                                |
+                                                |
+                                                |
+
+              7791a3d6-...    Michael           0         (Both writes succeed, the value is increased by 3 )
+
+
+
+--  So in this example, the user say, "Hey, I want you to increase the value by one," and the user two say, "I want to increase the value by two."             
+
+-- Now both writes are going to succeed. And the value in total will be increased by 3 (1 + 2 = 3)
+
+
+
+4 Batch Writes
+
+
+-- nothing to do with these kind of concurrency, but just batch writes is when a user writes or updates many items at a time,
+
+
+
+
+
+
+
+---------------------------------------------------------- DynamoDB Patterens with S3 
+
+
+-- let's look at two ways we can use DynamoDB with Amazon S3
+
+
+
+---------------------- 1 DynamoDB – Large Objects Pattern
+
+
+-- the first one is how to store large objects in DynamoDB.
+
+-- Well, it turns out that as you know, in your tables in DynamoDB, you can only store up to 400 kilobytes of data.
+
+-- So obviously if you want to start storing some images, some videos, all that kind of stuff, DynamoDB is not the best place for it.
+
+-- So instead, what we're going to do is that we are going to have an Amazon S3 bucket, that will contain our large objects.
+
+
+
+---- So what is the process to upload a large object?
+
+
+
+
+                  617055.jpg                                        617055.jpg
+Application    --------------->  S3 Bucket (media-assets-bucket) --------------------->  Application
+
+    |              upload                                             download              |
+    |                                                                                       |
+    |
+    |  store metadata                                                                       |      get metadata
+    |
+    |                                                                                       |
+    |
+    |                                                                                       |
+    |
+    | ---------------> Product_ID        Product_Name          Image_URL  -------------------
+
+                       59692               Jeans        https://media-assets-bucket.us-east-1.amazonaws.com/759692.jpg
+
+                       315972              Coat         https://media-assets-bucket.us-east-1.amazonaws.com/315972.jpg
+
+
+                               Products (Table)
+
+
+
+
+--  say we upload an image into Amazon S3. We're going to get back objects key.
+
+-- what we going to do is that we're going to store this metadata from the application into DynamoDB.
+
+-- So we'll have a product ID, a product name, and then an image URL, which is a pointer directly into Amazon S3.
+
+-- what we've done is that we've effectively stored a very small amount of data in our products table in DynamoDB.  we store the large item in Amazon S3.
+
+-- Now from the reading perspective and clients who wants to read this data, first gets the metadata from dynamo DB, 
+
+-- and then we'll get the image back from Amazon S3 to reconstruct these large objects.
+
+
+
+
+
+---------------------- 2 DynamoDB – Indexing S3 Objects Metadata
+
+
+
+
+               upload                     invoke                           store object’s metadata
+Application ----------------> S3 Bucket -------------->  Lambda function ----------------------------->   DynamoDB Table
+
+                                                                                                               |
+                                                                                                               |
+                                                                                                               |
+                                                                                                               |
+                                                                                                               |
+                                                                                                               |   
+                                                                                                               |    (path: to dynamoDB table)
+
+                                         Client ---------------------------------------------------> Application (API for objects’ metadata)
+
+                                                    - Search by date
+                                                    - Total storage used by a customer
+                                                    - List of all objects with certain attributes
+                                                    - Find all objects uploaded within a date range
+
+
+
+-- So the application is going to upload objects into Amazon S3
+
+-- Amazon S3 we'll have notifications set up, for example, to invoke a Lambda function that Lambda function will store the objects metadata into DynamoDB table, for example, object size, date, who created it,
+
+-- why do we do this?
+
+ANS : because it's much easier for us to build some queries on top of the DynamoDB table.
+ 
+     - Than on top of an S3 bucket, again, A S3 bucket is not meant to be really scanned. It's meant to store large objects, and it's supposed to,
+
+     - you're supposed to have some sort of database that knows what these objects are, their attributes and so on.
+
+     - So by creating an application on top of DynamoDB, we can answer some questions such as, we want you to find objects by a specific timestamp on our S3 buckets. etc..
+
+
+
+
+
+
+
+---------------------------------------------------------- DynamoDB Operations
+
+
+
+-- two DynamoDB Operations
+
+
+
+1 • Table Cleanup
+
+    • Option 1: Scan + DeleteItem , you can scan all the items in your table and then delete them one by one,
+
+         • Veryslow,consumes RCU & WCU, expensive
+
+    • Option 2: Drop Table + Recreate table , it is much more quick,
+
+         • Fast,efficient,cheap
+
+
+
+2  • Copying a DynamoDB Table , across accounts, regions, places,
+
+     • Option 1: Using AWS Data Pipeline
+
+     • Option 2: Backup and restore into a new table
+
+             • Takes some time
+
+     • Option 3: Scan + PutItem or BatchWriteItem
+
+             • Write your own code        
+
+              
+
+
+
+
+ ---------------------------------------------------------- DynamoDB – Security & Other Features
+
+
+ • Security
+
+       • VPC Endpoints available to access DynamoDB without using the Internet and only keeping all the traffic within your VPC.
+
+       • Access fully controlled by IAM
+
+       • Encryption at rest using AWS KMS and in-transit using SSL/TLS
+
+
+• Backup and Restore feature available
+
+       • Point-in-time Recovery (PITR) like RDS
+
+       • No performance impact
+
+
+• GlobalTables
+
+       • Multi-region, multi-active, fully replicated, high performance
+
+       - how to enable it?
+
+       - you need to first enable DynamoDB streams.
+
+
+• DynamoDB Local
+
+       • Develop and test apps locally without accessing the DynamoDB web service (without Internet)
+
+       - while DynamoDB is a cloud service, It's possible for you to get a simulation of DynamoDB on your local computer, called DynamoDB local,   
+
+       - the idea is that you have, a local DynamoDB database that you can use to develop and test your applications locally without using the DynamoDB web service,
+
+
+
+
+• AWS Database Migration Service (AWS DMS) can be used to migrate to DynamoDB (from MongoDB, Oracle, MySQL, S3, ...)
+
+
+
+
+
+
+
+
+---------------------------------------------------------- DynamoDB – Users Interact with DynamoDB Directly
+
+
+-- Now another feature you need to understand around DynamoDB is going to be around fine grain access.
+
+-- So for example, if you have clients and applications, web, or mobile, and they need to access directly our DynamoDB table,
+
+-- then we don't want to give them IAM permissions and IAM roles, users directly from AWS, that will be truly inefficient and a security hole.
+
+-- Instead, we're going to use an identity provider. It could be Amazon Cognito User Pools, Google login, Facebook login, open ID connect, or SAML or whatever.
+
+-- the users will, in the simplified flow, login with these identity providers and they will have the feature to exchange the credentials they just got for temporary AWS credentials.
+
+-- the idea is that because they're temporary, they're more secure. And with them, they can be associated with an IAM role,
+
+-- but this IAM role must be restricted because now that our clients and applications can access our DynamoDB table, you want them to be able to do operations only on the data that they own.
+
+How do this?
+
+-- fine grain access control
+
+
+
+
+
+---------------------------------------------------------- DynamoDB – Fine-Grained Access Control
+
+
+• Using Web Identity Federation or Cognito Identity Pools, each user gets AWS credentials
+
+• You can assign an IAM Role to these users with a Condition to limit their API access to DynamoDB
+
+
+Eg :
+
+
+{
+   "Version":"2012-10-17",
+   "Statement":[
+      {
+         "Sid":"FullAccessToUserItems",
+         "Effect":"Allow",
+         "Action":[
+            "dynamodb:GetItem",
+            "dynamodb:BatchGetItem",
+            "dynamodb:Query",
+            "dynamodb:PutItem",
+            "dynamodb:UpdateItem",
+            "dynamodb:DeleteItem",
+            "dynamodb:BatchWriteItem"
+         ],
+         "Resource":[
+            "arn:aws:dynamodb:us-west-2:123456789012:table/GameScores"
+         ],
+         "Condition":{
+            "ForAllValues:StringEquals":{
+               "dynamodb:LeadingKeys":[
+                  "${www.amazon.com:user_id}"
+               ]
+            }
+         }
+      }
+   ]
+}
+
+
+
+-- So in this policy, the user can do get item, batch get item, query, put item, update item, delete item and batch right item on a specific table.
+
+-- But there's a condition here. And the condition is saying,, only amazon userd_id will able to perform
+
+• LeadingKeys – we only limit row-level access for users on the Primary Key , so therefore we make sure that the users can only modify and access their own data.
+
+-- you can also specify conditions on attributes , this would be to limit the specific attributes a user can see in your DynamoDB table,
+
+• Attributes – limit specific attributes the user can see
+
+
+
+
+
+----- So to summarize, you have fine-grain access control by using a federated login 
+
+-- and by specifying a condition on LeadingKeys,if you want it to limit at the role level
+
+-- attributes, if you want your limits at the column level,
+
+-- 
+
+
+
+
