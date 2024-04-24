@@ -15110,11 +15110,858 @@ Client <-------------------------------------------------------------> API Gatew
 
 -- so in this example what I've done is that I've renamed variables so you can map them to anything you want.
 
+
+
+
+
+
+
+---------------------------------------------------------- Mapping Templates hands ON
+
+
 -- create API if u do not have any , or if u have API created then create resource give name as "mapping"
 
--- 
+-- create lambda function with py 3.11 , It's going to return a JSON document,
+
+import json
+
+def lambda_handler(event, context):
+    # TODO implement
+    return {
+        'example' : 'hello world!'
+    }
 
 
+
+-- in API we choose get method and choosinf lambda function but we are not enabled lambda proxy  This time, we're going to integrate directly with the Lambda function.
+
+-- do test in lambda function and in API console also 
+
+-- Now, we didn't need to have the status and the body in here in our Lambda function because we don't have the proxy integration.
+
+-- This time, we're just returning whatever the Lambda returns.
+
+-- Now we want to change the response body to add keys and to rename it and so on.
+
+-- So to do so, we're going to create a mapping template on the integration response.
+
+-- integration response ---> edit ---> create mapping template 
+
+-- we want to remanme "example" to something else
+
+- application/json 
+
+- for the template body, I'm going to create a new response.
+
+{
+  "my-key" : "my-value",
+  "renamed-key" : $input.json('$.example')
+}
+
+
+-- we want to remanme "example" to something else
+
+-- So renamed key is my renamed key, and then the value of that must be the value, "hello world".
+
+-- So to access it, we must take the value corresponding to the key example.
+
+-- So to do so, you do $ inputs, which corresponds to the JSON received as an input.
+
+-- create template and save
+
+-- what's going to happen is that now, the integration response is going to go through this template and change the outcome.
+
+-- now do test in API console , u will get different o/p as lambda function 
+
+-- So the output of the Lambda function, was being sent to our mapping template, which created this final response body.
+
+
+
+
+
+
+---------------------------------------------------------- API Gateway - Open API spec
+
+
+
+-- So the API Gateway has a tight integration with the OpenAPI specification.
+
+-- So what is the OpenAPI specification?
+
+       - it's a very common way to define REST APIs and the API definition itself is code.
+
+
+• Common way of defining REST APIs, using API definition as code
+
+
+• Import existing OpenAPI 3.0 spec to API Gateway So you define the
+
+    • Method
+
+    • Method Request
+
+    • Integration Request
+
+    • Method Response
+
+    • + AWS extensions for API gateway and setup every single option of these extensions directly from within the API spec.
+
+
+
+• Can export current API as OpenAPI spec
+
+   - Similarly, instead of importing stuff into the API Gateway, you can take an existing API in the API Gateway and export it as an OpenAPI spec.
+
+   - Why? Well, because this specification can be used to, for example, generate client code.
+
+
+• OpenAPI specs can be written inYAML or JSON
+
+• Using OpenAPI we can generate SDK for our applications
+
+
+
+
+
+
+---------------------------------------------------------- REST API – Request Validation
+
+
+-- you can use the OpenAPI spec to perform request validation within your API gateway.
+
+• You can configure API Gateway to perform basic validation of an API request before proceeding with the integration request
+
+-- instead of just sending a payload as is to your backend, API Gateway can verify if it corresponds to a proper schema.
+
+• When the validation fails, API Gateway immediately fails the request
+
+    • Returns a 400-error response to the caller
+
+
+• This reduces unnecessary calls to the backend
+
+• Checks:
+
+     • The required request parameters in the URI, query string, and headers of an incoming request are included and non-blank
+
+     • The applicable request payload adheres to the configured JSON Schema request model of the method
+
+
+
+
+
+
+---------------------------------------------------------- Caching API responses
+
+
+• Caching reduces the number of calls made to the backend
+
+     - So that means that our clients, when they talk to the API gateway, 
+     
+     - the API gateway will first check the cache and if a result is already in cache, return that result.
+     
+     - Otherwise, if there's a cache miss, then it will go and talk to the backend to get the response. 
+     
+     - So the idea is that we really leverage a lot of the cache to reduce the amount of pressure on our backend.
+
+
+• Default TTL (time to live) is 300 seconds (min: 0s, max: 3600s)
+
+• Caches are defined per stage
+
+• Possible to override cache settings per method
+
+• Cache encryption option
+
+-- So if you want a method to not use a cache, you can specify it as well at the method level. The cache can be encrypted
+
+• Cache capacity between 0.5GB to 237GB
+
+• Cache is expensive, makes sense in production, may not make sense in dev / test 
+
+-- So caching is really something you wanna use in production or in pre-production.
+
+
+
+
+
+---------------------------------------------------------- API Gateway Cache Invalidation
+
+
+• Able to flush the entire cache (invalidate it) immediately
+
+• Clients can invalidate the cache with header: Cache- Control: max-age=0 (with proper IAM authorization)
+
+
+
+
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "execute-api:InvalidateCache"
+      ],
+      "Resource": [
+        "arn:aws:execute-api:region:account-id:api-id/stage-name/GET/resource-path-specifier"
+      ]
+    }
+  ]
+}            
+        
+
+
+-- So this is an IAM policy that would allow a client to invalidate the cache on a specific resource.
+
+
+• If you don't impose an InvalidateCache policy (or choose the Require authorization check box in the console), any client can invalidate the API cache, and that could be a disaster.
+
+
+-- select ny stage --> edit --> provision API Cache --> save 
+
+-- the cache is there for Entire API , so once u paste link in browser , for the first time it will come from backend , then for nxt time it will come from CACHE 
+
+-- make sure to turn off the API cache , 'coz it is not a feature , it will get charge for U
+
+
+
+
+
+
+---------------------------------------------------------- API Gateway – Usage Plans & API Keys
+
+
+
+
+-- we have now created our API and it is time to make it available for our customers
+
+-- and we may wanna charge them some money for it.
+
+
+
+• If you want to make an API available as an offering ($) to your customers
+
+
+1 • Usage Plan:
+
+     • who can access one or more deployed API stages and methods
+
+     • how much and how fast they can access them
+
+     • uses API keys to identify API clients and meter access
+
+     • configure throttling limits and quota limits that are enforced on individual client
+
+
+
+2 • API Keys:
+
+    • alphanumeric string values to distribute to your customers
+
+    • Ex:WBjHxNtoAb4WPKBC7cGm64CBibIb24b4jt8jJHo9
+
+    • Can use with usage plans to control access
+
+    • Throttling limits are applied to the API keys
+
+    • Quotas limits is the overall number of maximum requests
+
+
+
+
+
+---------------------------------------------------------- API Gateway – Correct Order for API keys
+
+
+• To configure a usage plan
+
+    1. Create one or more APIs, configure the methods to require an API key, and deploy the APIs to stages.
+
+    2. Generate or import API keys to distribute to application developers (your customers) who will be using your API.
+
+    3. Create the usage plan with the desired throttle and quota limits.
+
+    4. Associate API stages and API keys with the usage plan.
+
+
+• Callers of the API must supply an assigned API key in the x-api-key header in requests to the API.
+
+
+
+
+
+
+
+---------------------------------------------------------- API Gateway – Logging & Tracing
+
+
+
+• CloudWatch Logs
+
+     • Log contains information about request/response body
+
+     • Enable CloudWatch logging at the Stage level (with Log Level - ERROR, DEBUG, INFO) , obviously the DEBUG is going to give you the most amount of information,
+
+     • Can override settings on a per API basis
+
+
+
+
+
+                   request                                                 request 
+      -------------------------------------->                    -------------------------------> 
+User                                               API Gateway                                          lambda (backend)
+      <-------------------------------------         |     |       <------------------------------ 
+                                                     |     |
+                 response                            |     |                response
+                                                     |     |
+                                                     |     |
+                                     request         |     |    response
+                                                     |     |
+
+                                                   CloudWatch Logs
+
+
+
+-- we're going to get a user that makes a request into the API gateway, and automatically that request is going to be logged into CloudWatch Logs.
+
+-- Then the request is making it to your backend, your backend will then give a response to the API gateway, and the response again, will be sent to CloudWatch Logs
+
+-- So it's very helpful to get the request and the response, but be careful if you do enable this, then you may get a lot of sensitive information into CloudWatch Logs.
+
+
+
+
+
+
+• X-Ray :
+
+    • Enable tracing to get extra information about requests in API Gateway
+
+    • X-Ray API Gateway + AWS Lambda gives you the full picture
+
+
+
+
+
+---------------------------------------------------------- API Gateway - CloudWatch Metrics
+
+
+• Metrics are by stage, Possibility to enable detailed metrics
+
+• The first one is called  CacheHitCount & the other one is called CacheMissCount:  which gives you some information about the efficiency of the cache
+
+    - So if your cache is very efficient, the cache hit will be very high.
+
+    - If it's not efficient, the cache miss will be very high.
+
+
+• Count:The total number API requests in a given period.
+
+• IntegrationLatency: The time between when API Gateway relays a request to the backend and when it receives a response from the backend.
+
+
+• Latency: The time between when API Gateway receives a request from a client and when it returns a response to the client.
+
+         - The latency includes the integration latency and other API Gateway overhead(checking the authorization and authentication, checking the cache, doing some mapping templates, and so on.)
+
+
+-- So the Latency is always going to be a bit higher than the IntegrationLatency.
+
+-- so you should note, that the maximum amount of time that an API gateway can perform any request is 29 seconds.
+
+-- So if your Latency or your IntegrationLatency is over 29 seconds, that means you will see a timeout from your API gateway.
+
+• 4XXError (client-side) & 5XXError (server-side)
+
+      - So server-side means backend, and client-side means the clients using your API gateway.
+
+
+
+
+
+
+---------------------------------------------------------- API Gateway Throttling
+
+
+• Account Limit
+
+       • API Gateway throttles requests at10000 request per sec across all API
+
+       • Soft limit that can be increased upon request
+
+
+-- So that means that if one of your API is under heavy use the other APIs can also be throttled. So in case you see a throttling, what will you see?
+
+      • In case of throttling => 429 Too Many Requests (retriable error)
+
+
+• Can set Stage limit & Method limits to improve performance , to make sure that each stage does not use all the quotas of the request, if it's under attack.
+
+• Or you can define Usage Plans to throttle per customer
+
+
+
+• Just like Lambda Concurrency, one API that is overloaded, if not limited, can cause the other APIs to be throttled
+
+
+
+
+---------------------------------------------------------- API Gateway - Errors
+
+
+• 4xx means Client errors
+
+     • 400: Bad Request
+
+     • 403: Access Denied,WAF filtered
+
+     • 429: Quota exceeded,Throttle
+
+
+• 5xx means Server errors
+
+     • 502: Bad Gateway Exception, usually for an incompatible output returned from a Lambda proxy integration backend and occasionally for out-of-order invocations due to heavy loads.
+
+     • 503: Service Unavailable Exception
+
+     • 504: Integration Failure – ex Endpoint Request Timed-out Exception (29 sec)
+
+
+
+
+
+
+---------------------------------------------------------- AWS API Gateway - CORS
+
+
+
+-- API Gateway supports the browser security cross-origin resource sharing.
+
+• CORS must be enabled when you receive API calls from another domain.
+
+• The OPTIONS pre-flight request must contain the following headers:
+
+     • Access-Control-Allow-Methods
+
+     • Access-Control-Allow-Headers
+
+     • Access-Control-Allow-Origin
+
+
+• CORS can be enabled through the console
+
+
+
+-- see fig for better understanding   
+
+
+
+
+        
+
+
+---------------------------------------------------------- API Gateway – Security
+
+
+
+------------------- 1 IAM Permissions
+
+    • Create an IAM policy authorization and attach to User / Role , we're able to invoke our API gateway.
+
+    • in this case Authentication = IAM AND  Authorization = IAM Policy
+        
+         - So this is the optimal way to protect your API gateway if it's being accessed within your AWS accounts,
+
+         
+     • Good to provide access within AWS (EC2, Lambda, IAM users...)
+
+        - so that includes if you're using EC2 instances, Lambda functions, or IAM users, etc...
+
+    • Leverages “Sig v4” capability where IAM credential are in headers
+
+
+
+
+
+          REST API w/ Sig v4
+Client <------------------------>  API Gateway  <---------------------------> Backend
+
+                                       |
+                                       |
+                                       |    IAM Policy check
+                                       |
+                                       |
+
+                                      IAM    
+                  
+
+-- the API gateway is deployed into a stage and secured with IAM permissions,
+
+-- there's a backend of Lambda functions.
+
+-- So first our clients is going to do a rest API call and we'll pass the Sig v4 headers,
+
+-- then API gateway knows how to decrypt those, so it will check with IAM if the user is authorized and so there will be an IAM policy check,
+
+-- so as soon as this is done the API gateway will, if it's authorized, talk to the Lambda function in the backend and returned a result to the clients.
+
+-- So there's is a first permission mode and it is very simple. Now this can be combined with resource policies.
+
+
+
+---------------------------------API Gateway – Resource Policies
+
+
+• Resource policies (similar to Lambda Resource Policy) , they allow you to set JSON policy on your API gateway to define who and what can access your API gateway.
+
+• So the main use case of resource policies Allow for Cross Account Access (combined with IAM Security) , we are able to give access of users or roles in other accounts directly into our API gateway.
+
+
+
+{
+   "Version": "2012-10-17",
+   "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": [
+                    "arn:aws:iam::account-id-2:role/developer",
+                    "arn:aws:iam::account-id-2:role/Admin"
+                ]
+            },
+            "Action": "execute-api:Invoke",
+            "Resource": [
+                "execute-api:/stage/GET/pets"
+            ]
+        }
+    ]
+}
+
+
+
+
+• Allow for a specific source IP address or  Allow for a VPC Endpoint
+
+
+
+
+
+----------------- 2 Cognito User Pools
+
+
+     • Cognito fully manages user lifecycle, token expires automatically
+
+     • API gateway verifies identity automatically from AWS Cognito
+
+     • No custom implementation required
+
+     • Authentication = Cognito User Pools |   Authorization = API Gateway Methods
+
+
+
+
+       Authenticate Retrieve token
+    | ------------------------->    Cognito User Pools
+    |                                   |  
+    |                                   |
+    |                                   |      Evaluate Cognito Token
+    |                                   |
+    |                                   |
+    |     REST API + Pass Token     
+Client <------------------------>  API Gateway  <---------------------------> Backend
+
+
+
+-- here our API gateway is talking to Lambda function in our backend,
+
+-- then, our client first authenticates with the Cognito User Pool to retrieve a connection token.
+
+-- So the users are already restarting user pool, then our client is authenticated they received a token and it will pass the token in the API call to our API gateway.
+
+-- Now what will happen is that the API gateway has a direct integration with Cognito User Pools, and it will evaluate the Cognito token with the Cognito User Pool
+
+-- if the token is correct, it's going to allow access to your backend.
+
+
+
+
+
+
+----------------- 3 Lambda Authorizer (formerly Custom Authorizers)
+
+
+-- this one is the most flexible but requires the most involvement on your end.
+
+
+• Token-based authorizer (bearer token) – ex JWT (JSON Web Token) or Oauth
+
+• A request parameter-based Lambda authorizer (headers, query string, stage var)
+
+     - so the idea is that, we can pass a request based parameters with headers or query strings into a Lambda authorizer,
+
+
+• Lambda must return an IAM policy for the user, result policy is cached
+
+• Authentication = External | Authorization = Lambda function
+
+
+
+see fig for better xplanation 
+
+
+
+
+
+
+---------------------------------------------------------- API Gateway – Security  – Summary
+
+
+• IAM:
+
+    • Great for users / roles already within your AWS account, + resource policy for cross account
+
+    • Handle authentication + authorization
+
+    • Leverages Signature v4
+
+
+• Custom Authorizer:
+
+     • Great for 3rd party tokens
+
+     • Very flexible in terms of what IAM policy is returned
+
+     • Handle Authentication verification + Authorization in the Lambdafunction    
+
+     • Pay per Lambda invocation,results are cached
+
+
+• Cognito User Pool:
+
+     • You manage your own user pool (can be backed by Facebook, Google login etc...)
+
+     • No need to write any custom code
+
+     • Must implement authorization in the backend
+
+
+
+
+
+---------------------------------------------------------- API Gateway – HTTP API vs REST API
+
+
+• HTTP APIs
+
+     • low-latency, cost-effective AWS Lambda proxy, HTTP proxy APIs and private integration (no data mapping)
+
+     • support OIDC and OAuth 2.0 authorization, and built-in support for CORS
+
+     • No usage plans and API keys
+
+     - HTTP API's are going to be much cheaper than REST APIs.
+
+
+• REST APIs
+
+     • All features (except Native OpenID Connect / OAuth 2.0)
+
+
+
+
+ 
+ ---------------------------------------------------------- API Gateway – WebSocket API – Overview
+
+
+ • What’s WebSocket?
+
+     • Two-way interactive communication between a user’s browser and a server
+
+     •  it's two-way because Server can push information to the client without having the clients making a request to the server,
+
+     • This enables stateful application use cases
+
+
+• WebSocket APIs are often used in real- time applications such as chat applications, collaboration platforms, multiplayer games, and financial trading platforms.
+
+• Works with AWS Services (Lambda, DynamoDB) or HTTP endpoints
+
+
+
+
+------------------------- Connecting to the API
+
+
+WebSocket URL
+
+
+wss://[some-uniqueid].execute-api.[region].amazonaws.com/[stage-name]
+
+
+-- starts with wss , it's an encrypted WebSocket URL.
+
+
+
+
+
+            connect                                                             invoke 
+Clients ------------------------------>  Amazon API Gateway WebSocket API  ---------------------------->  Lambda function ((onConnect)) ---------------->  Amazon DynamoDB
+    
+                                                                                 connectionId                                              connectionId
+                                   
+
+
+
+
+-- So the client is going to connect to your WebSocket API gateway and establish a persistent connection into it
+
+-- which is going to invoke the Lambda function and perform a connection ID.
+
+-- the connection ID is going to remain persistent as long as the client is connected to the API gateway.
+
+-- Then the connection ID can be for example, persistent into Amazon DynamoDB to store some metadata
+
+
+
+
+------------------------- Client to Server Messaging , ConnectionID is re-used
+
+
+
+WebSocket URL
+
+     wss://abcdef.execute-api.us-west-1.amazonaws.com/dev
+
+
+
+
+
+
+              send message                                                            invoke 
+Clients ------------------------------>  Amazon API Gateway WebSocket API  ---------------------------->  Lambda function ((sendMessage)) ---------------->  Amazon DynamoDB
+        ------------------------------>
+        ------------------------------>                                          connectionId                                              connectionId
+                                   
+
+
+-- the client wants to send some messages to the server. So is going to use the same URL I just gave you,
+
+-- is going to send messages over the persistent connection into the WebSocket API and these messages are called frames.
+
+-- So these frames are going to invoke a new Lambda function 
+
+-- So the Lambda function can interact with DynamoDB to retrieve the user information based on the connection ID,
+
+-- so if the clients chooses to send more messages through the API gateway on the WebSocket API, s just going to send it more frames over the same connection.
+
+-- therefore the connection ID is not going to change and it's going to be reused when the Lambda function is invoked.
+
+
+
+
+
+----------------------------- Now, how does the server, our API gateway communicate back to the clients without the client making a request?
+
+
+
+Server to Client Messaging
+
+
+
+WebSocket URL
+
+     wss://abcdef.execute-api.us-west-1.amazonaws.com/dev
+
+
+-- So again, we use the same WebSocket URL and we do the same thing as sending messages but now we want to get some data back.
+
+-- there is when you have a API gateway, a connection URL callback and it looks like this, wss://abcdef.execute-api.us-west-1.amazonaws.com/dev/@connections/connectionId
+
+-- if a Lambda function or whatever, makes an HTTP post that is signed using IAM Sig v4, to this connection URL callback by specifying the connection ID of the clients,
+
+-- it is going to send back a message from the API gateway into the client. And this allows for two way communication
+
+
+
+
+
+
+
+
+----------------------------- Connection URL Operations
+
+see fig for better explanation
+
+
+Connection URL
+
+     wss://abcdef.execute-api.us-west-1.amazonaws.com/dev/@connections/connectionId
+
+
+Operation                          Action
+
+POST               Sends a message from the Server to the connected WS Client
+
+GET                Gets the latest connection status of the connected WS Client
+
+DELETE             Disconnect the connected Client from the WS connection
+
+
+
+
+
+
+
+---------------------------------------------------------- API Gateway – WebSocket API – Routing
+
+
+--  how does the client know which Lambda function to invoke or which backend to invoke?
+
+--  In WebSocket, there's a concept of routing.
+
+
+• Incoming JSON messages are routed to different backend
+
+• If no routes => sent to $default
+
+• You request a route selection expression to select the field on JSON to route from
+
+• Sample expression: $request.body.action
+
+• The result is evaluated against the route keys available in your API Gateway
+
+• The route is then connected to the backend you’ve setup through API Gateway ,  that could be a Lambda function or anything else that API gateway integrates with.
+
+
+
+
+IMP to know : 
+
+
+-- The routing is used to make sure that you can route to a specific backend based on the routing expression
+
+-- because the connection is already open and the routing should be part of the incoming data message.
+
+
+
+
+
+
+---------------------------------------------------------- API Gateway - Microservice Architecture 
+
+
+see fig for better explanation
+
+
+• Create a single interface for all the microservices in your company
+
+• Use API endpoints with various resources
+
+• Apply a simple domain name and SSL certificates
+
+• Can apply forwarding and transformation rules at the API Gateway level
 
 
 

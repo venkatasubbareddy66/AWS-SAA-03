@@ -272,7 +272,9 @@ we have Floppy -- 2MB
 
 -- volume size can be increased on FLY(no need to stop the ec2 instances)
 
--- volum size cant decrease once u created , so u need to delete the volume n create new volume n migrate ur data to new volm n delete the old volume .
+-- volum size cant decrease once u created , u can only able to increase not decrease the volumse size , so u need to delete the volume n create new volume n migrate ur data to new volm n delete the old volume .
+
+-- u can able to change from one volm type to another (gp2,gp3..)
 
 -- Root volm has a device name for win/linux == /dev/sda1 or /dev/xvda
 
@@ -4754,7 +4756,7 @@ NOTE : if u lost PEM files , how to recover password ?
 
 1 Ceate instance -A
 
-2 create one volume and attach to the instace-A
+2 create one additional volume(give root name as xvd(f-p)) and attach to the instace-A
 
 note: it should be in the same A.Z
 
@@ -4785,7 +4787,9 @@ xvdf      202:80   0   1G  0 disk --------------attached volume
 
 8 now create file direcory by using command
  
-   sudo mkfs -t ext4 /dev/xvdf
+   sudo mkfs -t ext4 /dev/xvdf 
+
+   - here it is xvdf so /dev/xvdf 
 
 9 now create a directory to mount the volume  by using command 
 
@@ -4815,13 +4819,13 @@ here MyRules = FolderName
 
 cd MyRules
 
-14 create some files in it and save
+14 create some files in it and save , (touch hello.txt)
 
 eg: hello.text and write some txt inside it and save
 
 check to see all the files by usng command ls -ll, it will show you all files that you have created
 
-15 Now detach the volume and create snapshot from it and go to napshot and create one volume on different A.Z from 1st instance and attach this new created volume to the 2nd instanc ( volume and instance should be in same A.Z in EBS)
+15 Now detach the volume and create snapshot from it and go to snapshot and create one volume on different A.Z from 1st instance and attach this new created volume to the 2nd instanc ( volume and instance should be in same A.Z in EBS)
 
 16 now connect the instace-2 and enter command to check any file system is there or not by using command
 
@@ -10682,6 +10686,7 @@ Source DB --------(DMS + SCT)-----> Target DB (different engine)
 
 
 =================================================== AWS API Gateway =======================================
+
 
 - Amazon API Gateway is a fully managed service that makes it easy for developers to create, publish, maintain, monitor, and secure APIs at any scale. 
 
