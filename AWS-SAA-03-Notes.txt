@@ -592,6 +592,8 @@ IMP : C.F will cache Static and Dynamic content in the edge locations
 
 --- IAM is Access control on AWS Resource
 
+
+
 ----------------------Organizations
 
 --- it will help to manage multiple root accounts 
@@ -1990,7 +1992,7 @@ S3 Buckets-------(analyze)------> Macie Discover Sensitive Data (PII)-------(not
 
 
 
-======================================== ec2 ============================================
+======================================== ec2 (elastic compute cloud )============================================
 
 --it is  a web sevice from aws that provides resizable compute in the cloud
 
@@ -2429,11 +2431,12 @@ Which purchasing option is right for me?
 - onlt t2 and t3 tyes supports "brustble prformance"
 
 
-=================================== Volumes
+=================================== Volumes ==========================================
 
 - nothing but hard disks
 
 - root volm device name = /dev/sda1
+
 
 - -------------------------------two types of volumes 
 
@@ -2448,6 +2451,8 @@ Which purchasing option is right for me?
 - EBS is billable 
 
 - if u reboot = data is not lost 
+
+
 
 --------Types of EBS Volumes
 
@@ -2823,11 +2828,17 @@ In a region that charges $0.015 per GB-month, you would be charged $0.50 for the
 ---------------------LAB-------------------
 
 -- create 2 instances with t3.micro configuration
+
 -- create one volume with configuration of io2 , as same zone as instance that u have created 
+
 -- now attach volume to the both instances
+
 -- in order to working with these part we have to follow some configurations , we have to convert these volumes to the file systems 
+
 -- how to do?
+
 -- connect both instances
+
 -- perform some cmnds 
 sudo su
 lsblk    -- to check the volume is attached or not 
@@ -3010,6 +3021,17 @@ EXP : By default, user data scripts and cloud-init directives run only during th
 • The EC2 User Data Script runs with the root user
 
 
+EG :
+
+
+#!/bin/bash
+# Use this for your user data (script from top to bottom)
+# install httpd (Linux 2 version)
+yum update -y
+yum install -y httpd
+systemctl start httpd
+systemctl enable httpd
+echo "<h1>Hello World from $(hostname -f)</h1>" > /var/www/html/index.html
 
 
 
@@ -3458,7 +3480,7 @@ EXP : PostgreSQL port = 5432  HTTP port = 80  HTTPS port = 443
 
 
 
-========================NACL(network Acces control list)=============
+==================================NACL(network Acces control list)=============
 
 -- it is another layer of security to the ec2 
 
@@ -3559,7 +3581,7 @@ NOTE : in SG , it is stateful , no need to give inbound and outbound rules , eve
 
 ------------------------------------ Security Group vs. NACLs
 
-Security Group                                                                                     NACL
+        Security Group                                                                                     NACL
 
 Operates at the instance level                                                         Operates at the subnet level
 
@@ -3575,7 +3597,7 @@ Applies to an EC2 instance when specified by someone                            
 
 
 
-===========================AUTO-SCALING======================================================
+=================================================AUTO-SCALING======================================================
 
 -- Scale out and scale in ec2 instance based on demand
 
@@ -13749,6 +13771,8 @@ Step 5 : Resiliency IN the Cloud
 -- if you are using ephemeral stores it's not aws has a responsibility that you lost your customer data the configuration that you have is your responsibility 
 
 -- the encryption of data is your responsibility, hosting your application in multiple regions and having a failover is your responsibility
+
+
 
 Step 6 : Business Continuity Plan (BCP) 
 

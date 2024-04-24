@@ -12195,11 +12195,24 @@ ANS : here it is ECR so,
 we need (16 / 2) * (12KB / 4KB)  = 8 * 3 = 24 RCU'S
 
 
+
+
 • Example 3: 10 Strongly Consistent Reads per second, with item size 6 KB
 
 ANS : 10 * (8KB / 4KB) = 20 RCU's (we must roundup 6KB to 8KB)
 
         - here we do not have 6 we have only 4 and 8 KB so,go for near (only up) so 8KB 
+
+
+
+- example 4 : An application doing Strongly Consistent reads of 10 items per second, with each item 10 KB in size. What RCU do you choose?
+
+Ans : 10 KB gets rounded to 12 KB. 10 * (12 KB / 4 KB) = 30 RCU.
+
+
+- example 5 : An application doing Eventually Consistent reads of 12 items per second, with each item 16 KB in size. What RCU do you choose?
+
+ANS : We can do 2 Eventually Consistent reads per seconds for items of 4 KB with 1 RCU. 12 * (16 KB / 4 KB) = 48 / 2 = 24 RCU.
 
 
 
@@ -12897,6 +12910,8 @@ aws dynamodb delete-item \
        • Choose your GSI partition key carefully!
 
        • Assign your WCU capacity carefully!
+
+       - Global Secondary Index (GSI) uses an independent amount of RCU and WCU and if they are throttled due to insufficient capacity, then the main table will also be throttled.
 
 
 
@@ -14193,6 +14208,913 @@ Eg :
 -- and by specifying a condition on LeadingKeys,if you want it to limit at the role level
 
 -- attributes, if you want your limits at the column level,
+
+
+
+
+
+
+============================================================ Amazon API Gateway =======================================
+
+
+
+-- Build, Deploy and Manage APIs
+
+
+
+
+---------------------------------------------------------- Example: Building a Serverless API
+
+
+
+
+                         Rest Api
+             Client <------------------> API Gateway <----(PROXY REQUESTS)------->  Lambda <----------(CRUD)-----------> DynamoDB
+
+
+
+-- so the functions can use DynamoDB as a database for our API, and we can do create, read, update, delete on our tables,
+
+-- but we'd like our clients to be able to invoke this Lambda function in some way.
+
+-- So there are multiple of doing it.
+
+-- We can have the client directly invoke the Lambda function, but that means that the client would need IAM permissions,
+
+-- or we've seen we can use an application load balancer to have it in between the client and the Lambda function and that would expose our Lambda function as an HTTP endpoint.
+
+-- There's one last thing we can use. It's called the API Gateway.
+
+-- this is a serverless offering from AWS which allows us to create REST APIs that are going to be public and accessible for our clients.
+
+-- So the client will talk to the API Gateway and the beautiful things that the API Gateway will then proxy the request to our Lambda functions.
+
+-- So it would use an API Gateway because it provides us more than just an HTTP endpoint. It will provide us a lot of features
+
+-- such as authentication, such as usage plans, development stages and all that kind of things.
+
+
+
+
+
+
+
+---------------------------------------------------------- AWS API Gateway
+
+
+• AWS Lambda + API Gateway: No infrastructure to manage
+
+• Support for the WebSocket Protocol
+
+• API Gateway Handle API versioning (v1, v2...) and not break our clients.
+
+• Handle different environments (dev, test, prod...)
+
+• Handle security (Authentication and Authorization)
+
+• Create API keys, handle request throttling
+
+• Swagger / Open API import to quickly define APIs
+
+• Transform and validate requests and responses in the API Gateway level
+
+• Generate SDK and API specifications
+
+• Cache API responses
+
+
+-- So lots of features that come with the API Gateway that are not necessarily included when you use something as simple as an application load balancer.
+
+
+
+
+
+---------------------------------------------------------- API Gateway – Integrations High Level
+
+
+• Lambda Function
+
+      • Invoke Lambda function
+
+      • Easy way to expose REST API backed by AWS Lambda
+
+
+• HTTP
+ 
+      • Expose HTTP endpoints in the backend
+
+      • Example: internal HTTP API on premise, Application Load Balancer you have on your cloud environment. ...
+
+      • Why? Add rate limiting, caching, user authentications, API keys, etc...
+
+      - So it's definitely used full to have a layer of API Gateway on top of your HTTP endpoint.
+
+
+ • AWS Service
+
+       • Expose any AWS API through the API Gateway
+
+       • Example: start an AWS Step Function workflow, post a message to SQS directly from an API Gateway API.
+
+       • Why? Add authentication, deploy publicly, rate control...
+
+
+
+
+
+
+---------------------------------------------------------- API Gateway – AWS Service Integration Kinesis Data Streams example
+
+
+
+
+
+           requests                                  send                                        records                                      store .json files
+Client --------------------------> API Gateway --------------------> Kinesis Data Streams ------------------------>  Kinesis Data Firehose ------------------------> Amazon S3
+
+
+
+
+
+-- So we want to have people send data into a Kinesis Data Streams but in a secure way, without giving them access to AWS credentials.
+
+-- So what we do is that's in between our clients and our Kinesis Data Streams,
+
+-- we're going to have the API Gateway. And the clients will send HTTP request into the API Gateway.
+
+-- it's been configured to then send the messages into a Kinesis Data Streams. as you see in this setting, we don't manage any servers.
+
+-- Then Kinesis Data Stream from there, send the records into a Kinesis Data Firehose and eventually put them into an Amazon S3 bucket in the JSON format.
+
+-- You can actually expose any AWS service to the outside through an API Gateway.
+
+
+
+
+
+
+
+
+---------------------------------------------------------- API Gateway Deployment Types 
+
+
+-- There are three ways to deploy your API Gateway. This is called endpoint types.
+
+
+
+• Edge-Optimized (default): For global clients, So that means that your API Gateway is going to be accessible from anywhere in the world.
+
+       • Requests are routed through the CloudFront Edge locations (improves latency)
+
+       • The API Gateway still lives in only one region where you created it, 
+       
+       - but it's accessible efficiently from every CloudFormation Edge location.
+
+
+
+• Regional:
+  
+       • For clients within the same region , So this is when we don't want to use CloudFront Edge locations.
+
+       - So it's when we expect all our users to be within the same region where we created our API Gateway.
+
+       • if you wanted to, Could manually combine with CloudFront (more control over the caching strategies and the distribution)
+
+
+
+• Private: 
+       
+       • Can only be accessed from your VPC using an interface VPC endpoint (ENI)
+
+       • to define access to your API Gateway, Use a resource policy to define access
+
+
+
+
+
+
+
+---------------------------------------------------------- API Gateway – Security
+
+
+-- So you can identify users on the API Gateway in multiple ways.
+
+
+1 • User Authentication through
+
+          • IAM Roles (useful for internal applications) , for example, running on EC2 instances, and they want to access an API on API Gateway, they can just use IAM roles.
+
+          • Cognito (identity for external users – example mobile users)
+
+          • Custom Authorizer (your own logic) - This is a Lambda function.
+
+
+2 • Custom Domain Name HTTPS 
+
+          - security through integration with AWS Certificate Manager (ACM)
+
+          • If using Edge-Optimized endpoint, then the certificate must be in us-east-1
+
+          • If using Regional endpoint, the certificate must be in the API Gateway region
+
+          • Must setup CNAME or A-alias record in Route 53 to point to your domain and API Gateway.
+
+
+
+
+
+---------------------------------------------------------- API Gateway Hands On
+
+
+
+STEP 1 : 
+
+
+-- create Lambda function with python 3.11
+
+-- now generate code like 
+
+
+
+import json
+
+def lambda_handler(event, context):
+    body = "Hello from Lambda!"
+    statusCode = 200
+    return {
+        "statusCode": statusCode,
+        "body": json.dumps(body),
+        "headers": {
+            "Content-Type": "application/json"
+        }
+    }
+
+
+
+-- deploy ur changes and test the function 
+
+
+-- So everything is working fine right now and this is perfect. And what I'm going to do now is to integrate, this Lambda function to my API gateway.
+
+
+
+STEP 2 :
+
+
+-- open API gateway in the amazon console 
+
+-- we have different types of API , choose rest API public 
+
+-- create API with regional endpoint 
+
+-- now we are here, we are going to create our first method in this API.
+
+-- c.o create method --> choose any method (for eg Get) --> choose lambda function --> choose lambda function --> create method
+
+--  we can also integrate with any service in any region. So we choose a region and then we choose a service. 
+
+-- And what it does that you can expose some of your AWS services as an API through API Gateway.
+
+-- So now we have the Lambda function integrated and because we want to see the full requests being passed to Lambda and being sent back from Lambda,
+
+-- enable lambda proxy integration 
+
+-- even though a Lambda function can have a long timeout, for example, five minutes or 15 minutes,
+
+-- API Gateway has a limited timeout and the default is 29 seconds. 
+
+-- You can customize it and have it less than 29 seconds but the default timeout is 29 seconds regardless of how long your Lambda function takes to execute.
+
+-- once u create method , this is going to automatically grant API gateway, the right to invoke our Lambda function.
+
+-- go n check in the lambda function , do refresh 
+
+-- So let's test out this API. , go to test --> do not give any values here , just c.o test --> u will get " hello from lambda"
+
+-- So you can see from the API gateway, the status is 200. That comes right from our code right here which says status is 200.
+
+-- So we have done our first execution of an API gateway on top of a Lambda function.
+
+
+
+
+STEP 3 :
+
+
+-- So now let's actually debug this and see what is being sent to our Lambda function.
+
+import json
+
+def lambda_handler(event, context):
+    print(event)
+    body = "Hello from Lambda!"
+    statusCode = 200
+    return {
+        "statusCode": statusCode,
+        "body": json.dumps(body),
+        "headers": {
+            "Content-Type": "application/json"
+        }
+    }
+
+
+
+-- add print(event) --> deploy 
+
+-- we are going to invoke now our Lambda function again from our API gateway.
+
+-- do test again in the API gateway , which still says hello from Lambda, but this time we are printing the events.
+
+-- So if we go to the CloudWatch logs we should be able to find it. 
+
+-- lambda function --> monitor ---> cloudwatch --> recent log
+
+     - u will see like this  {'resource': '/', 'path': '/', 'httpMethod': 'GET', 'headers': None, 'multiValueHeaders': None, ............
+
+-- our Lambda function can use this information to forge a response and send it back to the API gateway.   
+
+-- So now we can go ahead and actually create a new resource.
+
+-- api gateway --> ur api --> create resource --> houses 
+
+-- go to lambda --> create function with py 3.11
+
+
+import json
+
+def lambda_handler(event, context):
+    body = "Hello from myhouse!"
+    statusCode = 200
+    return {
+        "statusCode": statusCode,
+        "body": json.dumps(body),
+        "headers": {
+            "Content-Type": "application/json"
+        }
+    }
+
+
+
+-- in / houses --> create method --> get --> select new lambda arn --> enable lambda proxy --> create method 
+
+-- do test in api without values , u will get o/p 
+
+-- We have the root, GET and we have the new lambda function have GET, which invoke two different Lambda functions.
+
+-- But we want to be able to access this from a web browser, not just testing it from the API Gateway UI.
+
+-- so for this , u can deploy API --> create stage prod --> copy url and do test in browser 
+
+-- eg : prod/houses 
+
+-- if u did any wrong , it will gives u {"message":"Missing Authentication Token"} 
+
+-- We have deployed our API to API Gateway and this is pretty cool because, well, we have two Lambda functions behind the scenes actually replying to it.
+
+
+
+
+
+
+
+---------------------------------------------------------- API Gateway – Deployment Stages
+
+
+-- So we have deployed our first API through the API Gateway in a deployment stage.
+
+-- whenever we made changes to the API Gateway, they were not effective until we did a deployment.
+
+• Making changes in the API Gateway does not mean they’re effective
+
+• You need to make a “deployment” for them to be in effect
+
+• It’s a common source of confusion , Some people will go and change how the API works, but forget to do a deployment and therefore the API will not be live.
+
+• Changes are deployed to “Stages” (as many as you want)
+
+• Use the naming you like for stages (dev, test, prod)
+
+• Each stage has its own configuration parameters
+
+• Stages can be rolled back as a history of deployments is kept
+
+
+
+EG : API Gateway – Stages v1 and v2 API breaking change
+
+
+
+               https://api.example.com/v1                              v1 Stage 
+V1 Client ------------------------------------------> API GAteway --------------------------------> V1
+
+
+
+
+
+New URL 
+              https://api.example.com/v2                              v2 Stage 
+V2 Client ------------------------------------------> API GAteway --------------------------------> V2
+
+
+
+-- So let's take the example of we have two stages and we're creating a breaking API change.
+
+-- So our Lambda function backing our API Gateway is going to change.
+
+-- So we have the v1 stage and it invokes the v1 function and we've deployed it so our v1 clients are going to be able to access our API through this URL.
+
+-- But we are programming a new version of our Lambda function called v2. 
+
+-- this v2 does not respect the same format of data and so on and so we know that if we deploy the changes on the v1 stage, it will break our v1 clients.
+
+-- So what we do is then instead we decide to create a new stage, call it the v2 stage, pointing to the v2 function. And this will create a new URL.
+
+-- So now the api.example.com/v2, which represents the v2 stage.
+
+-- our clients can now be updated to version two and access this new URL, and we can maintain compatibility.
+
+-- So for a while, the v1 and the v2 can coexist together as two different stages. 
+
+-- We can migrate the clients from the version one to the version two and then when no more clients are using the version one,
+
+
+-- So this is a very common use cases for stages. Now, how do we expand this? : Stage Variables
+
+
+
+---------------------------------------------------------- API Gateway – Stage Variables
+
+
+• Stage variables are like environment variables for API Gateway but for the API Gateway stages.
+
+-- you use them to change configuration values without redeploying your API.
+
+• They can be used in:
+
+      • Lambda function ARN
+
+      • HTTP Endpoint
+
+      • Parameter mapping templates
+
+
+• Use cases: 
+
+      • Configure HTTP endpoints your stages talk to (dev, test, prod...)
+
+      • Pass configuration parameters to AWS Lambda through mapping templates or to point to the right Lambda function,
+
+• Stage variables are passed to the ”context” object in AWS Lambda
+
+      - so we can log it and get access to the value of the stage variables directly from our Lambda functions.
+
+
+-- the format to access the value of a stage variable within API Gateway is  ${stageVariables.variableName}
+
+
+
+
+
+
+
+---------------------------------------------------------- API Gateway Stage Variables & Lambda Aliases
+
+
+-- So here is a very, very common use cases for your stage variables.
+
+• We create a stage variable to indicate the corresponding Lambda alias that our API Gateway should invoke.
+
+• So Our API gateway will automatically invoke the right Lambda function!
+
+
+
+
+
+---------------------------------------------------------- API Gateway – Stages and deployment Hands On
+
+
+-- create lambda fucntion with py 3.11 
+
+-- What we're going to do is that we're going to create code for it, and author versions, version one, version two, et cetera. We're going to create aliases,
+
+
+
+import json
+
+def lambda_handler(event, context):
+    body = "Hello from lambda v1"
+    statusCode = 200
+    return {
+        "statusCode": statusCode,
+        "body": json.dumps(body),
+        "headers": {
+            "Content-Type": "application/json"
+        }
+    }
+
+
+-- deploy and test this code 
+
+-- now , lambda function --> actions -> publish versions --> make as v1 verison --> publish
+
+-- now we are in version 1 
+
+-- now go to main function --> change to v2 --> deploy and do test --> publish as V2 
+
+-- now go back to main code and make it as body = Hello from lambda DEV , now this is the latetst one 
+
+-- now we have 3 versions (v1, v2 , Latest)
+
+-- now create DEV Alias pointing to $Latest
+
+-- now create TEST ALias pointing to V2 
+
+-- now create PROD ALias pointing to v1
+
+-- So now that we have our function with multiple aliases, it's time to map it to the API gateway.
+
+-- API console --> rest APi --> create resource(stage-variables) --> create method for the resource (GET for lambda function , enabled proxy integration ) --> in lambda function add :${stageVariables.lambdaAlias} --> save 
+
+
+EG : arn:aws:lambda:ap-south-1:298132369629:function:stage-varibales-get:${stageVariables.lambdaAlias}
+
+
+-- now u have to add some permissions for this to create and invoke with various stages 
+
+
+
+aws lambda add-permission \
+--function-name "arn:aws:lambda:ap-south-1:298132369629:function:stage-varibales-get:${stageVariables.lambdaAlias}" \
+--source-arn "arn:aws:execute-api:ap-south-1:298132369629:air12uoa3g/*/GET/stage-variables" \
+--principal apigateway.amazonaws.com \
+--statement-id 261ba472-4270-4a6f-884b-51b6fc6a5537 \
+--action lambda:InvokeFunction
+
+
+
+-- in the above permissions --> ${stageVariables.lambdaAlias}" change this value for DEV , TEST and PROD 
+
+-- open cloudshell , invoke for DEV  , So here we will allow our API gateway to invoke the DEV alias of our Lambda function.
+
+
+aws lambda add-permission \
+--function-name "arn:aws:lambda:ap-south-1:298132369629:function:stage-varibales-get:DEV" \
+--source-arn "arn:aws:execute-api:ap-south-1:298132369629:air12uoa3g/*/GET/stage-variables" \
+--principal apigateway.amazonaws.com \
+--statement-id 261ba472-4270-4a6f-884b-51b6fc6a5537 \
+--action lambda:InvokeFunction
+
+
+
+-- invoke for TEST  , So here we will allow our API gateway to invoke the TEST alias of our Lambda function.
+
+
+
+aws lambda add-permission \
+--function-name "arn:aws:lambda:ap-south-1:298132369629:function:stage-varibales-get:TEST" \
+--source-arn "arn:aws:execute-api:ap-south-1:298132369629:air12uoa3g/*/GET/stage-variables" \
+--principal apigateway.amazonaws.com \
+--statement-id 261ba472-4270-4a6f-884b-51b6fc6a5537 \
+--action lambda:InvokeFunction
+
+
+
+-- invoke for PROD , So here we will allow our API gateway to invoke the PROD alias of our Lambda function.
+
+
+
+
+aws lambda add-permission \
+--function-name "arn:aws:lambda:ap-south-1:298132369629:function:stage-varibales-get:PROD" \
+--source-arn "arn:aws:execute-api:ap-south-1:298132369629:air12uoa3g/*/GET/stage-variables" \
+--principal apigateway.amazonaws.com \
+--statement-id 261ba472-4270-4a6f-884b-51b6fc6a5537 \
+--action lambda:InvokeFunction 
+
+
+
+-- now create method , go to test for this method --> give Alias (DEV, PROD , TEST) for testing purpose 
+
+-- u will get 200 status code , do test for other stage variables 
+
+-- So this is showing that this stage variable is now impacting which Lambda alias we are invoking.
+
+-- So now let's deploy our API to DEV, and to other stages afterwards, to show you where to use the stage variables.
+
+-- give dev as stage name , once u create this go to below u will find stage varibale --> edit --> lambdaAlias = DEV
+
+-- give test as stage name , once u create this go to below u will find stage varibale --> edit --> lambdaAlias = TEST
+
+-- give prod as stage name , once u create this go to below u will find stage varibale --> edit --> lambdaAlias = PROD
+
+-- So once we have done that, we can test our deployment of the API. copy URL and paste in browser 
+
+
+EG : 
+
+https://air12uoa3g.execute-api.ap-south-1.amazonaws.com/dev/stage-variables
+
+https://air12uoa3g.execute-api.ap-south-1.amazonaws.com/test/stage-variables
+
+https://air12uoa3g.execute-api.ap-south-1.amazonaws.com/prod/stage-variables
+
+
+
+
+-- So as you can see, each stage is now linked to a specific LambdaAlias, through the usage of stage variables.
+
+
+
+
+
+
+
+
+
+---------------------------------------------------------- API Gateway – Stages Configurations Hands On
+
+
+-- So let's have a look at all the configuration options for your stage.
+
+-- select stage as u want (dev,test,prod) --> edit --> explore 
+
+
+
+
+---------------------------------------------------------- API Gateway –  Canary Deployment
+
+
+• Possibility to enable canary deployments for any stage (usually prod)
+
+        - So the idea is that you want to enable a way to test a small amount of traffic on the change you have done on your API gateway. So usually it's done in production.
+
+
+• Choose the % of traffic the canary channel receives
+
+• Metrics & Logs are separate (for better monitoring)
+
+• Possibility to override stage variables for canary
+
+        - you can override any stage variables you wanted for your canary stage and 
+        
+        
+• this is equivalent of performing blue/green deployment with Lambda and API gateway.
+
+
+
+
+
+---------------------------------------------------------- API Gateway –  Canary Deployment HAnds On
+
+
+-- create resource (canary-demo) --> create method (GET ,lambda function , enable lambda proxy integration , lambdaARN:1) --> create method 
+
+eg : arn:aws:lambda:ap-south-1:298132369629:function:stage-varibales-get:1
+
+
+-- we're going to invoke version one of this Lambda function.
+
+-- now try to test in API console , u will get o/P
+
+-- now deploy this API --> give stage = canary   --> copy url and test it 
+
+https://air12uoa3g.execute-api.ap-south-1.amazonaws.com/canary/canary-demo
+
+-- u will get "Hello from lambda v1"
+
+-- But now what we're going to do is that we're going to set up a canary.
+
+-- go to canary resource --> go down and select canary --> make 50% for canary and 50% for current stage --> create a canary 
+
+-- So once we have created a canary, then we are ready to deploy a new update to our stage.
+
+-- So for this, I go back to my resources, I go to my method, canary-demo, GET, and I will change the integration request.
+
+-- invoke 2nd version  , arn:aws:lambda:ap-south-1:298132369629:function:stage-varibales-get:2
+
+-- do test u will get "Hello from lambda v2"
+
+-- go to browser and test ur url , here my Canary is switching between v1 and v2. (50-50% traffic )
+
+-- i am done , everything is working fine , so promote the canary 
+
+-- go to canary in below --> promote --> save
+
+-- do refresh then link you only get "Hello from Lambda v2." So effectively, the canary has been promoted.
+
+-- That's how you use Canary in API Gateway.
+
+      - So you first modify the resource,
+
+      - you create a canary in your stage
+
+      - then set up canary in down (set how much traffic )
+
+      - you deploy to this canary, and then when you're ready, 
+      
+      - you promote the canary to the final destination with 100% of the request going to the new version now.
+
+       
+
+
+
+
+---------------------------------------------------------- API Gateway - IntegrationTypes
+
+
+-- now let's talk about the different ways we can integrate our API Gateway with our backend.
+
+
+1 • Integration Type MOCK
+
+        • API Gateway returns a response without sending the request to the backend
+
+        - So this is useful when you are programming your API Gateway and configuring it and you don't want to have any work on the backend just yet.
+
+        - So as you can expect, this is not something for production.
+        
+        - This is something for just development and testing.
+
+
+
+2 • Integration Type HTTP / AWS (Lambda & AWS Ser vices)
+
+        • you must configure both the integration request and integration response
+
+        - the API Gateway will forward our request, but we can modify it.
+
+        • Setup data mapping using mapping templates for the request & response
+
+        - that means that we will be able to change the request made to the backend and to change the response back from the backend before sending it to our clients.
+
+
+
+          REST API                                                  AWS Service Integration
+Client <---------------->    API Gateway + Mapping Templates    <--------------------------------> SQS Queue
+
+
+
+
+-- For example, if we create a REST API and our API Gateway and we add mapping templates and 
+
+-- then we're going to map this REST API call to an API call on the SQS Queue by changing, renaming, reordering, all these kind of things such as the SQS Queue can understand the API call made by the API Gateway.
+ 
+-- So here, the API Gateway has the power to change the request and the response.
+
+
+
+
+
+3 • IntegrationType AWS_PROXY (Lambda Proxy):
+
+       • incoming request from the client is the input to Lambda , we haven't modified any request or response because we cannot, it's a proxy.
+
+       • The function is responsible for the logic of request / response
+
+       • No mapping template, headers, query string parameters... All these things are passed as arguments to our function directly.
+
+       - So here in this Proxy Integration, all the work is on the backend and the API Gateway is just here to proxy requests through.
+
+      
+
+
+4 • IntegrationType HTTP_PROXY
+
+       • No mapping template
+
+       - In which case, again because this is a proxy, we don't have any mapping templates
+
+       • The HTTP request  itself is passed directly to the backend , 
+
+       • The HTTP response from the backend is forwarded by API Gateway , hen when the backend replies, then the response is again proxied by the API to going back into the clients.
+
+       • Possibility to add HTTP Headers if need be (ex:API key) , So for example, you can add an API key between your API Gateway and your backend, but your users don't see it.
+
+
+
+
+           HTTP Request                              HTTP_PROXY , Request/Responses are proxied
+Client <-------------------------> API Gateway <----------------------------------------------------->  Application Load Balancer
+
+                                                       + (optional)
+                                                      HTTP Header API Key: asjdh2j3jh3j...
+       
+
+
+
+-- So let's take an example, a client makes an HTTP request into your API Gateway.
+
+-- You're going to proxy that request to your backend, for example an Application Load Balancer.
+
+-- But again, as I said, you can add optional HTTP headers, such as an API key, that really guarantees that your API call is going to work.
+
+-- So the client does not need to know about the secret API key, but yet your backend will see it coming from the API Gateway.
+
+
+
+
+
+
+
+---------------------------------------------------------- Mapping Templates (AWS & HTTP Integration)
+
+
+-- So mapping templates to modify the request and the response,
+
+-- they are only applicable if we integrate within AWS or HTTP, but without using the proxy methods.
+
+• Mapping templates can be used to modify request / responses
+
+• Rename / Modify query string parameters
+
+• Modify body content
+
+• Add headers
+
+• to do this , Uses Velocity Template Language (VTL): for loop, if etc... , It's a scripting language used to modify some requests.
+
+• Filter output results (remove unnecessary data)
+
+• you must set the Content-Type to be application/json or application/xml.
+
+
+
+
+
+---------------------------------------------------------- Mapping Example 1: JSON to XML with SOAP
+
+
+-- how to integrate a client with a SOAP API through an API Gateway.
+
+-- So what is a SOAP API?
+
+• SOAP API are XML based, whereas REST API are JSON based , so we need to have something in between to convert the JSON into XML and back.
+
+
+
+
+          RESTful, JSON Payload                                           XML Payload
+Client <--------------------------> API Gateway + Mapping Template  <-----------------------------> SOAP API
+
+
+
+-- so the idea is that you would create your API Gateway with a mapping template
+
+-- the client would interact with JSON in your API Gateway.
+
+-- But your API Gateway, thanks to the mapping template, can transform this payload into an XML payload, into the SOAP API and back.
+
+• In this case, API Gateway should:
+
+      • Extract data from the request: either path, payload or header
+
+      • Build SOAP message based on request data (mapping template) 
+
+      - necessary for the backend to understand, so this is where we use the mapping template, then call the SOAP service and receive the XML response
+
+      - and finally transform the XML response back into a desired format to respond to your users.
+
+
+
+
+
+
+
+---------------------------------------------------------- Mapping Example 2 : Query String parameters
+
+
+
+
+
+             HTTP                                                                                          JSON 
+             http://example.com/path?name=foo&other=bar                                                    { “my_variable”: “foo”, “other_variable”: “bar” }
+Client <-------------------------------------------------------------> API Gateway + MAPPING TEMPLATE <------------------------------------------------------------->  Lambda 
+
+                                                                                                         You can rename variables! (map them to anything you want)
+
+
+
+
+-- Here is another example where we use the mapping template to use query string parameters.                                                                                                         
+
+-- So our client is integrated with API Gateway which is using Lambda directly, not as a proxy.
+
+-- And so we want to be able to map the query string parameters, so if we send a request like this
+
+        -  http://example.com/path?name=foo&other=bar  
+
+        - we want to be able to rename these query string parameters before passing into the Lambda
+
+
+-- so we can create a mapping template and then the JSON that gets passed into the Lambda function could be my variable foo and other variable bar.
+
+-- so in this example what I've done is that I've renamed variables so you can map them to anything you want.
+
+-- create API if u do not have any , or if u have API created then create resource give name as "mapping"
+
+-- 
+
+
 
 
 
