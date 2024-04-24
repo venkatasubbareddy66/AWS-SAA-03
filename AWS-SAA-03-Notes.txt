@@ -7889,9 +7889,9 @@ explanation :   fs-0c90179e0f0b6c46b.efs.ap-south-1.amazonaws.com  -- u wil get 
 -- now create some files here 
 
 
----- now create 2nd indtance in diff A.Z 
+---- now create 2nd instance in diff A.Z 
 
--- follow the same steps 
+-- follow the same steps , here u can give mkdir names anything u want 
 
 -- once u do ls u will get same filesin diff A.Z zone instances also 
 
