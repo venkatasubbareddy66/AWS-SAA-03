@@ -14391,7 +14391,7 @@ Cognito
 
 
 
-=========================================Connect to AWS EC2 Using AWS SSM Session Manager ,Secure your EC2 by Enabling AWS SSM===========================
+========================================= Connect to AWS EC2 Using AWS SSM Session Manager ,Secure your EC2 by Enabling AWS SSM===========================
 
 
 • Allows you to start a secure shell on your EC2 and on-premises servers
@@ -14499,11 +14499,14 @@ sudo systemctl status amazon-ssm-agent
 
 • Supports EC2 instances and on-premises servers
 
-• Suppor ts Linux, macOS, and Windows
+• Supports Linux, macOS, and Windows
 
 • Patch on-demand or on a schedule using Maintenance Windows
 
 • Scan instances and generate patch compliance report (missing patches)
+
+
+
 
 ----------------------------------- Systems Manager – Maintenance Windows
 
