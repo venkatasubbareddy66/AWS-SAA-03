@@ -17339,3 +17339,2537 @@ ANS : codepipeline + CodeBuild
 EXP : CodeBuild can run any commands, so you can use it to run commands including build a static website and copy your static web files to an S3 bucket.
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+================================================================================ AWS Serverless Application Model (SAM) ==================================================
+
+
+Taking your Serverless Development to the next level
+
+
+-- try in ur personal lap for Hands On 
+
+
+----------------------------------------------------------------- AWS SAM
+
+
+-- this is really cool because we are going to view how SAM regroups all the serverless development
+
+• Framework used for developing and deploying serverless applications
+
+• All the configuration is YAML code
+
+• Generate complex CloudFormation from simple SAMYAML file
+
+• Supports anything from CloudFormation: Outputs, Mappings, Parameters, Resources...
+
+• Only two commands to deploy to AWS
+
+• SAM can use CodeDeploy to deploy Lambda functions
+
+• SAM can help you to run Lambda, API Gateway, DynamoDB locally
+
+
+
+
+
+
+
+----------------------------------------------------------------- AWS SAM – Recipe
+
+
+•  SAM has a YAML template and at the top of it, you will find this transform header.
+
+         • Transform: 'AWS::Serverless-2016-10-31'
+
+         - Well, it means is that this is a SAM template and the CloudFormation will be smart enough to know how to transform these templates into a CloudFormation template.
+
+
+• Write Code
+
+         • AWS::Serverless::Function
+
+         • AWS::Serverless::Api
+
+         • AWS::Serverless::SimpleTable
+
+         - So these are meant to help you go faster at creating functions, databases and API gateways.
+
+
+
+
+• Package & Deploy:
+
+         - 2 cmnds 
+
+         • aws cloudformation package / sam package
+
+         • aws cloudformation deploy / sam deploy
+ 
+
+
+
+----------------------------------------------------------------- Deep Dive into SAM Deployment
+
+
+
+
+
+                              Build the application locally (sam build)            Package the application(sam package OR aws cloudformation package)        Deploy the application(sam deploy OR aws cloudformation deploy)
+
+
+SAM Template                           transform                                                                 zip & upload                 create/execute ChangeSet
+(YAML)        + Application Code   -----------------------> CloudFormation Template (YAML) + Application Code ------------------> S3 Bucket ----------------------------->    CloudFormation --------> CloudFormation Stack(API Gateway ,lambda, DynamoDB) 
+
+
+
+
+-- So we have a SAM template, which is written in YAML and our application code.
+
+-- we're going to do a sam build to build the application locally and it's going to create a transformed CloudFormation template and our application code.
+
+-- then we're going to run sam package or aws cloudformation package to zip and upload our function and have it uploaded into an S3 bucket.
+
+-- So both the CloudFormation template and our application code is going to be uploaded and then using the sam deploy command, we're going to deploy our application from the S3 bucket.
+
+-- It's going to create and execute a change set onto CloudFormation to start deploying our application.
+
+-- And then CloudFormation will deploy our Lambda functions, our API gateways, and DynamoDB.
+
+-- So SAM templates gets transformed into CloudFormation with sam build, then packaged into Amazon S3 using the sam package command, and then deployed onto CloudFormation using the sam deploy command.
+
+
+
+
+-- we have a question? how can you run Lambda locally? 
+
+AMS : to run Lambda functions locally, you can use the SAM CLI
+
+
+
+
+----------------------------------------------------------------- SAM – CLI Debugging
+
+
+
+• Locally build, test, and debug your serverless applications that are defined using AWS SAM templates
+
+• Provides a lambda-like execution environment locally
+
+• SAM CLI + AWS Toolkits => step-through and debug your code
+
+          - So instead of deploying a Lambda function on the cloud and then stepping through it or trying to find where it failed, 
+          
+          - you can do all the development that you used to do directly on your local computer without deploying to AWS.
+
+
+• Supported IDEs:AWS Cloud9,Visual Studio Code, JetBrains, PyCharm, IntelliJ, ...
+
+• AWS Toolkits: IDE plugins which allows you to build, test, debug, deploy, and invoke Lambda functions built using AWS SAM
+
+
+
+
+
+----------------------------------------------------------------- SAM Policy Templates
+
+
+• List of templates to apply permissions to your Lambda Functions
+
+https://docs.aws.amazon.com/serverless- application- model/latest/developerguide/serverless- policy-templates.html#serverless-policy- template-table
+
+
+• Important examples:
+
+     • S3ReadPolicy: Gives read only permissions to objects in S3
+
+     • SQSPollerPolicy: Allows to poll an SQS queue
+
+     • DynamoDBCrudPolicy: CRUD = create read update delete
+
+
+
+
+
+
+
+----------------------------------------------------------------- SAM and CodeDeploy
+
+
+• SAM framework natively uses CodeDeploy to update Lambda functions
+
+• Traffic Shifting feature
+
+• Pre and Post traffic hooks features to validate deployment (before the traffic shift starts and after it ends)
+
+• Easy & automated rollback using CloudWatch Alarms
+
+
+
+
+• AutoPublishAlias
+
+      • Detects when new code is being deployed
+
+      • Creates and publishes an updated version of that function with the latest code
+
+      • Points the alias to the updated version of the Lambda function
+
+
+• DeploymentPreference
+
+      • Canary,Linear,AllAtOnce
+
+
+• Alarms      
+
+      • Alarms that can trigger a rollback
+
+
+• Hooks
+
+      • Pre and post traffic shifting Lambda functions to test your deployment
+
+
+
+
+
+
+
+
+
+----------------------------------------------------------------- SAM – Local Capabilities
+
+
+
+• by using SAM FrameWork , u can Locally start AWS Lambda
+
+        • sam local start-lambda
+
+        • you will have your Lambda function available as a local endpoint on your computer with an emulation of the Lambda framework.
+
+        • Can run automated tests against this local endpoint
+
+
+
+• Locally Invoke Lambda Function
+
+        • sam local invoke
+
+        • Invoke Lambda function with payload once and quit after invocation completes
+
+        • Helpful for generating test cases
+
+        • If the function make API calls to AWS, make sure you are using the correct --profile option
+
+
+
+• Locally Start an API Gateway Endpoint
+
+        • sam local start-api
+
+        • Starts a local HTTP server that hosts all your functions
+
+        • Changes to functions are automatically reloaded
+
+
+• Generate AWS Events for Lambda Functions
+
+
+        • sam local generate-event
+
+        • Generate sample payloads for event sources
+
+        • S3, API Gateway, SNS, Kinesis, DynamoDB...
+
+
+
+
+
+
+----------------------------------------------------------------- SAM – Exam Summary
+
+
+• SAM is built on CloudFormation
+
+• SAM requires the Transform and Resources sections
+
+     - SAM needs to work with two things; 
+
+     - 1 the transform header or YAML indication which present the fact that it is a SAM templates
+
+     - 2 the resources section which is necessary in any CloudFormation templates.
+
+
+
+• Commands to know:
+
+     • sam build: fetch dependencies and create local deployment artifacts
+
+     • sam package: package and upload to Amazon S3, generate CF template
+
+     • sam deploy: deploy to CloudFormation
+
+
+• SAM Policy templates for easy IAM policy definition
+
+• SAM is integrated with CodeDeploy to do deploy to Lambda aliases
+
+
+
+
+
+
+
+
+================================================================================ AWS Cloud Development Kit ========================
+
+
+
+• Define your cloud infrastructure using a familiar language:
+
+       • JavaScript/TypeScript,Python,Java,and.NET
+
+
+• Contains high level components called "constructs"
+
+• The code is “compiled” into a CloudFormation template (JSON/YAML)
+
+• You can therefore deploy infrastructure and application runtime code together
+
+    • Great for Lambda functions
+
+    • Great for Docker containers in ECS / EKS
+
+        
+
+
+
+----------------------------------------------------------------- CDK vs SAM
+
+
+• SAM:
+
+     • Serverless focused
+
+     • Write your template declaratively in JSON orYAML
+
+     • Great for quickly getting started with Lambda
+
+     • Leverages CloudFormation
+
+
+• CDK:     
+ 
+    • All AWS services
+
+    • Write infra in a programming language JavaScript/TypeScript, Python, Java, and .net
+
+    • Leverages CloudFormation
+
+
+
+
+
+----------------------------------------------------------------- CDK + SAM
+
+
+• You can use SAM CLI to locally test your CDK apps
+
+• You must first run cdk synth
+
+
+
+
+
+
+
+----------------------------------------------------------------- CDK Hands on 
+
+
+-- u have to follow some cmnds to do this DEMO 
+
+
+
+
+# 1. install the CDK
+sudo npm install -g aws-cdk-lib
+
+# directory name must be cdk-app/ to go with the rest of the tutorial, changing it will cause an error
+mkdir cdk-app
+cd cdk-app/
+
+# initialize the application
+cdk init app --language javascript
+# verify it works correctly
+cdk ls
+
+# 2. copy the content of cdk-app-stack.js into lib/cdk-app-stack.js
+
+ls lib 
+cd lib
+rm  cdk-app-stack.js
+touch cdk-app-stack.js
+nano cdl-app-stack.js (paste this content )
+
+
+
+const cdk = require("aws-cdk-lib");
+
+const s3 = require("aws-cdk-lib/aws-s3");
+const iam = require("aws-cdk-lib/aws-iam");
+const lambda = require("aws-cdk-lib/aws-lambda");
+const lambdaEventSource = require("aws-cdk-lib/aws-lambda-event-sources");
+const dynamodb = require("aws-cdk-lib/aws-dynamodb");
+
+const imageBucket = "cdk-rekn-imagebucket";
+
+class CdkAppStack extends cdk.Stack {
+    /**
+     *
+     * @param {cdk.Construct} scope
+     * @param {string} id
+     * @param {cdk.StackProps=} props
+     */
+    constructor(scope, id, props) {
+        super(scope, id, props);
+
+        // The code that defines your stack goes here
+
+        // ========================================
+        // Bucket for storing images
+        // ========================================
+        const bucket = new s3.Bucket(this, imageBucket, {
+            removalPolicy: cdk.RemovalPolicy.DESTROY,
+        });
+        new cdk.CfnOutput(this, "Bucket", { value: bucket.bucketName });
+
+        // ========================================
+        // Role for AWS Lambda
+        // ========================================
+        const role = new iam.Role(this, "cdk-rekn-lambdarole", {
+            assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
+        });
+        role.addToPolicy(
+            new iam.PolicyStatement({
+                effect: iam.Effect.ALLOW,
+                actions: [
+                    "rekognition:*",
+                    "logs:CreateLogGroup",
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents",
+                ],
+                resources: ["*"],
+            })
+        );
+
+        // ========================================
+        // DynamoDB table for storing image labels
+        // ========================================
+        const table = new dynamodb.Table(this, "cdk-rekn-imagetable", {
+            partitionKey: { name: "Image", type: dynamodb.AttributeType.STRING },
+            removalPolicy: cdk.RemovalPolicy.DESTROY,
+        });
+        new cdk.CfnOutput(this, "Table", { value: table.tableName });
+
+        // ========================================
+        // AWS Lambda function
+        // ========================================
+        const lambdaFn = new lambda.Function(this, "cdk-rekn-function", {
+            code: lambda.AssetCode.fromAsset("lambda"),
+            runtime: lambda.Runtime.PYTHON_3_9,
+            handler: "index.handler",
+            role: role,
+            environment: {
+                TABLE: table.tableName,
+                BUCKET: bucket.bucketName,
+            },
+        });
+        lambdaFn.addEventSource(
+            new lambdaEventSource.S3EventSource(bucket, {
+                events: [s3.EventType.OBJECT_CREATED],
+            })
+        );
+
+        bucket.grantReadWrite(lambdaFn);
+        table.grantFullAccess(lambdaFn);
+    }
+}
+
+module.exports = { CdkAppStack };
+
+
+-- crtl and y and enter to exit 
+
+cd ..
+
+
+# 3. setup the Lambda function
+
+mkdir lambda && cd lambda
+touch lambda.py
+nano lambda.py
+
+
+
+#
+# Lambda function detect labels in image using Amazon Rekognition
+#
+
+from __future__ import print_function
+import boto3
+import json
+import os
+from boto3.dynamodb.conditions import Key, Attr
+
+minCofidence = 60
+
+
+def handler(event, context):
+    for record in event['Records']:
+        bucket = record['s3']['bucket']['name']
+        key = record['s3']['object']['key']
+
+    rekFunction(bucket, key)
+
+
+def rekFunction(bucket, key):
+    print("Detected the following image in S3")
+    print("Bucket: " + bucket + " key name: " + key)
+
+    client = boto3.client("rekognition")
+
+    response = client.detect_labels(Image={"S3Object": {"Bucket": bucket, "Name": key}},
+                                    MaxLabels=10, MinConfidence=minCofidence)
+
+    # Get the service resource
+    dynamodb = boto3.resource("dynamodb")
+
+    # Instantiate a table resource object
+    imageLabelsTable = os.environ["TABLE"]
+    table = dynamodb.Table(imageLabelsTable)
+
+    # Put item into table
+    table.put_item(
+        Item={"Image": key}
+    )
+
+    objectsDetected = []
+
+    for label in response["Labels"]:
+        newItem = label["Name"]
+        objectsDetected.append(newItem)
+        objectNum = len(objectsDetected)
+        itemAtt = f"object{objectNum}"
+        response = table.update_item(
+            Key={"Image": key},
+            UpdateExpression=f"set {itemAtt} = :r",
+            ExpressionAttributeValues={":r": f"{newItem}"},
+            ReturnValues="UPDATED_NEW"
+        )
+
+
+
+-- cd ..
+
+
+# 4. bootstrap the CDK application
+cdk bootstrap
+      
+      - this will create all the stuff for u , go n check in CF
+
+
+# 5. (optional) synthesize as a CloudFormation template
+cdk synth
+
+
+# 6. deploy the CDK stack
+cdk deploy
+
+     - So let's go into the S3 bucket right here, open it in a new tab, and then the DynamoDB table as well.
+
+     - So the idea is that whenever we upload a file into this S3 bucket, the Lambda function that get deployed will be run and then we will have some data in our DynamoDB table.
+
+     - upload any image , see in DynamoDB , u will see that what ever the image has it will have the data 'coz Lambda function detect labels in image using Amazon Rekognition
+
+# 7. empty the s3 bucket
+# 8. destroy the stack
+cdk destroy
+
+
+
+
+-- open cloudshell and perform this cmnds 
+
+-- 
+
+
+
+
+
+----------------------------------------------------------------- CDK Constructs
+
+
+
+• CDK Construct is a component that encapsulates everything CDK needs to create the final CloudFormation stack
+
+• Can represent a single AWS resource (e.g., S3 bucket) or multiple related resources (e.g., worker queue with compute)
+
+• how do we get these Constructs? 
+
+   - AWS Construct Library
+
+         • A collection of Constructs included in AWS CDK which contains Constructs for every AWS resource
+
+         • Contains 3 different levels of Constructs available (L1, L2, L3)
+
+
+    - • Construct Hub
+
+         - contains additional Constructs from AWS, 3rd parties, and open-source CDK community         
+
+
+
+
+
+----------------------------------------------------------------- CDK Constructs – Layer 1 Constructs (L1)
+
+
+• Can be called CFN Resources which represents all resources directly available in CloudFormation
+
+• Constructs are periodically generated from CloudFormation Resource Specification
+
+• Construct names start with Cfn (e.g., CfnBucket)
+
+• You must explicitly configure all resource properties
+
+
+
+const bucket = new s3.CfnBucket(this, "MyBucket", {
+  bucketName: "MyBucket"
+});
+
+
+
+
+----------------------------------------------------------------- CDK Constructs – Layer 2 Constructs (L2)
+
+
+• Represents AWS resources but with a higher level (intent-based API)
+
+• Similar functionality as L1 but with convenient defaults and boilerplate
+
+     • You don’t need to know all the details about the resource properties
+
+• Provide methods that make it simpler to work with the resource
+
+      (e.g., bucket.addLifeCycleRule())
+
+
+
+const s3 = require('aws-cdk-lib/aws-s3');
+
+// "this" is HelloCdkStack
+new s3.Bucket(this, 'MyFirstBucket', {
+  versioned: true
+});
+
+
+
+
+----------------------------------------------------------------- CDK Constructs – Layer 3 Constructs (L3)
+
+
+
+• Can be called Patterns, which represents multiple related resources
+
+• Helps you complete common tasks in AWS
+
+• Examples:
+
+      • aws-apigateway.LambdaRestApi represents an API Gateway backed by a Lambda function
+
+      • aws-ecs-patterns.ApplicationLoadBalancerFargateService which represents an architecture that includes a Fargate cluster with Application Load Balancer
+
+
+
+
+
+
+
+
+----------------------------------------------------------------- CDK – Important Commands to know
+
+
+npm install -g aws-cdk-lib      -    Install the CDK CLI and libraries
+
+cdk init app - Create a new CDK project from a specified template
+
+cdk synth    - Synthesizes and prints the CloudFormation template
+
+cdk bootstrap - Deploys the CDK Toolkit staging Stack
+
+cdk deploy    - Deploy the Stack(s)
+
+cdk diff      - View differences of local CDK and deployed Stack
+
+cdk destroy   - Destroy the Stack(s)
+
+
+
+
+----------------------------------------------------------------- CDK – Bootstrapping
+
+
+• The process of provisioning resources for CDK before you can deploy CDK apps into an AWS environment
+
+• AWS Environment = account & region , for CDK, it's the combination of an account and a region.
+
+-- So the idea is that before you are able to deploy to an account and a region, 
+
+-- you must deploy a CloudFormation stack called the CDKToolkit that will contain an S3 bucket and it will contain an IAM role.
+
+• CloudFormation Stack called CDKToolkit is created and contains:
+
+     • S3 Bucket – to store files
+
+     • IAM Roles – to grant permissions to perform deployments
+
+     - these are necessary prerequisites to deploying any CDK stack in that specified environment.
+
+
+• You must run the following command for each new environment:
+
+      • cdk bootstrap aws://<aws_account>/<aws_region>
+
+      - So here is what happens. We have the account and the region, and the user runs the bootstrap. 
+      
+      - A CloudFormation stack called CDKToolkit is going to be created with what we need.
+
+
+• Otherwise, you will get an error “Policy contains a statement with one or more invalid principal”      
+
+
+
+
+
+
+----------------------------------------------------------------- CDK –Testing
+
+
+• To test CDK apps, use CDK Asser tions Module combined with popular test frameworks such as Jest (JavaScript) or Pytest (Python)
+
+• Verify we have specific resources, rules, conditions, parameters...
+
+• Two types of tests:
+
+      • Fine-grained Assertions (common) – test specific aspects of the CloudFormation template (e.g., check if a resource has this property with this value)
+
+      • Snapshot Tests – test the synthesized CloudFormation template against a previously stored baseline template
+
+
+• To import a template
+
+      • Template.fromStack(MyStack) : stack built in CDK
+
+      • Template.fromString(mystring) : stack build outside CDK
+
+
+
+
+
+
+
+
+
+
+============================================================================== Amazon Cognito ==================================================
+
+
+
+
+• Give users an identity to interact with our web or mobile application
+
+-- So these users usually sit outside of our AWS account, hence the name Cognito, because it gives an identity to users that we don't know about yet.
+
+-- So we have two kind of sub-services within Cognito.
+
+
+1 • Cognito User Pools:
+
+      • Sign in functionality for app users
+
+      • Integrate with API Gateway & Application Load Balancer
+
+
+2 • Cognito Identity Pools (Federated Identity):
+
+      • Provide AWS temporarily credentials to users so they can access some AWS resources directly
+
+      • Integrate with Cognito User Pools as an identity provider
+
+
+
+
+• Cognito vs IAM: “hundreds of users”, ”mobile users”, “authenticate with SAML” 
+
+       - So if you are asking yourself don't we already have users in IAM?
+
+       - But Cognito is gonna be for your web and mobile application users, which sits outside of AWS.
+
+       - So look for the keywords such as hundreds of users or mobile users, or authentication with whatever mechanisms such as SAML and so on.
+
+
+
+
+
+
+----------------------------------------------------------------- Cognito User Pools (CUP) – User Features
+
+
+• Create a serverless database of user for your web & mobile apps
+
+• Simple login: Username (or email) / password combination
+
+• Password reset
+
+• Email & Phone Number Verification
+
+• Multi-factor authentication (MFA)
+
+• Federated Identities: users from Facebook, Google, SAML...
+
+• Login sends back a JSON Web Token (JWT)
+
+      - when your users log in with the Cognito User Pool, what they get back from the API is a JWT, so a JSON Web Token.
+
+
+
+
+
+
+----------------------------------------------------------------- Cognito User Pools (CUP) - Integrations
+
+
+• CUP integrates with API Gateway and Application Load Balancer
+
+
+
+
+
+--------------------------------------------------------------- CUP LAB 
+
+
+
+
+
+
+ Cognito User Pools (CUP) 
+
+ -- create user pool 
+
+ -- open console and create user pool
+
+ -- Cognito user pool sign-in options --> email 
+
+ --  step 2 Required attributes --> add any one for user to register --> name 
+
+ -- step 3 --> Send email with Cognito 
+
+ -- step 5 --> name of userpool --> enable hosted UI  --> give domain name any thing eg demo-user-pool-cognito
+
+ -- Initial app client --> public client name --> Allowed callback URL = localhost or anything like www.flipkart.comß
+
+ -- once u created usewr pool --> open user pool ,u can see users and groups 
+
+ -- create user --> set password , once u create user pool 
+
+ --  go to google and search for amazon cognito ui --> view signup page in documentation 
+
+ https://<your domain>/oauth2/authorize?response_type=code&client_id=<your app client id>&redirect_uri=<your callback url>
+
+ -- go to user pools --> app integration -->  change ur details in the above link 
+
+ 
+https://demo-user-pool-66.auth.ap-south-1.amazoncognito.com/oauth2/authorize?response_type=code&client_id=juroqdd4a95dac05aom4dvadj&redirect_uri=https://www.amazon.com
+
+-- u will get domain name  in APP integration section
+
+-- once the url is ready , paste the link in the browser 
+
+-- this will pop-up sign in page , this is called hosted UI , enter ur details 
+
+-- once u enter it will ask u to change password 
+
+-- once u enter details , u will redirected to the link which u have given in call back url 
+
+--  so delete cookies in ur browser and try to login again 
+
+-- now try to sign up as new user and see how it works 
+
+-- u can also do MFA for another layer of security 
+
+
+
+
+
+
+----------------------------------------------------------------- Cognito User Pools – Lambda Triggers
+
+
+
+• CUP can invoke a Lambda function synchronously on these triggers:
+
+
+1 Authentication Events : 
+
+
+        - Pre Authentication Lambda Trigger : Custom validation to accept or deny the sign-in request
+
+        - Post Authentication Lambda Trigger : Event logging for custom analytics
+
+        - Pre Token Generation Lambda Trigger : Augment or suppress token claims
+
+
+2 Sign-Up
+
+        - Pre Sign-up Lambda Trigger : Custom validation to accept or deny the sign-up request
+
+        - Post Confirmation Lambda Trigger : Custom welcome messages or event logging for custom analytics
+
+        - Migrate User Lambda Trigger : Migrate a user from an existing user directory to user pools
+
+
+3 Messages : 
+
+        - Custom Message Lambda Trigger : Advanced customization and localization of messages
+
+
+4 Token Creation : 
+
+        - Pre Token Generation Lambda Trigger : Add or remove attributes in Id tokens
+
+
+
+
+
+
+
+----------------------------------------------------------------- Cognito User Pools – Hosted Authentication UI
+
+
+• Cognito has a hosted authentication UI that you can add to your app to handle sign-up and sign-in workflows
+
+• Using the hosted UI, you have a foundation for integration with social logins, OIDC or SAML
+
+• Can customize with a custom logo and custom CSS
+
+
+
+
+
+----------------------------------------------------------------- CUP – Hosted UI Custom Domain
+
+
+• For custom domains, you must create an ACM certificate in "us-east-1"
+
+         - So the trick you need to know is that if you're using custom domains with Cognito User Pools, regardless of where it is created, 
+         
+         - you must create an certificate for using HTTPS. That certificate must be in ACM, 
+
+
+• The custom domain must be defined in the “App Integration” section
+
+         - because this is going to be a configuration for all app claims. This is a general configuration.
+
+
+
+
+
+
+----------------------------------------------------------------- CUP – Adaptive Authentication
+
+
+
+• Block sign-ins or require MFA if the login appears suspicious
+
+• Cognito examines each sign-in attempt and generates a risk score (low, medium, high) for how likely the sign-in request is to be from a malicious attacker
+
+• Users are prompted for a second MFA only when risk is detected
+
+• Risk score is based on different factors such as if the user has used the same device, location, or IP address
+
+• Checks for compromised credentials, account takeover protection, and phone and email verification
+
+• Integration with CloudWatch Logs (sign-in attempts, risk score, failed challenges...)
+
+
+
+
+
+----------------------------------------------------------------- Decoding a ID Token; JWT – JSON Web Token
+
+
+• CUP issues JWT tokens (Base64 encoded): 
+
+   • Header
+   • Payload
+   • Signature
+   - so Base64 is allowing you to transmit that over the network easily,   
+
+
+• The signature must be verified to ensure the JWT can be trusted
+
+• Libraries can help you verify the validity of JWT tokens issued by Cognito User Pools
+
+• The Payload will contain the user information (sub UUID, given_name, email, phone_number, attributes...)
+
+• From the sub UUID, you can retrieve all users details from Cognito / OIDC
+
+
+
+<header>.
+{
+   "sub":"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+   "device_key": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+   "cognito:groups":[
+      "testgroup"
+   ],
+   "iss":"https://cognito-idp.us-west-2.amazonaws.com/us-west-2_example",
+   "version":2,
+   "client_id":"xxxxxxxxxxxxexample",
+   "origin_jti":"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+   "event_id":"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+   "token_use":"access",
+   "scope":"phone openid profile resourceserver.1/appclient2 email",
+   "auth_time":1676313851,
+   "exp":1676317451,
+   "iat":1676313851,
+   "jti":"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+   "username":"my-test-user"
+}
+.<token signature>
+
+
+
+
+
+----------------------------------------------------------------- Application Load Balancer – Authenticate Users
+
+
+
+• Your Application Load Balancer can securely authenticate users
+
+    • Offload the work of authenticating users to your load balancer
+
+    • Your applications can focus on their business logic
+
+
+-- So you can authenticate in multiple ways for your application load balancer.    
+
+
+
+• Authenticate users through:
+
+        1 Identity Provider (IdP): OpenID Connect (OIDC) compliant
+
+        2 Cognito User Pools:
+
+              • SocialIdPs,such as Amazon,Facebook,or Google
+
+              • Corporate identities using SAML, LDAP, or MicrosoftAD
+
+
+-- So the first one, first option is to integrate directly without Cognito user pools              
+
+
+• Must use an HTTPS listener to set authenticate-oidc & authenticate-cognito rules
+
+• OnUnauthenticatedRequest – authenticate (default), deny, allow
+
+
+
+
+
+
+----------------------------------------------------------------- Application Load Balancer – Cognito Auth.
+
+
+
+
+
+
+
+           1. GET /api/data                                                3. GET /api/data
+Users ---------------------------------> Application Load Balancer ------------------------------->  Amazon ECS
+
+                                                   |
+                                                   |
+                                                   |
+                          2. authenticate          |            HTTPS listener Action: authenticate-cognito
+                                                   |
+                                                   |
+                                                   |
+
+                                              Amazon Cognito
+
+
+
+
+-- let's say we have an application load balancer connected to Amazon ECS and we want to implement a login through Amazon Cognito
+
+-- the users will do GET/api/data. Then the ALB is going to be set up with HTTPS with the action authenticate-cognito.
+
+-- So Cognito will do its thing and authenticate the user, 
+
+-- and then the payload and the request is passed on to Amazon ECS with the added information of the user that was doing the request from Cognito.
+
+
+
+
+
+
+
+----------------------------------------------------------------- ALB – Auth through Cognito User Pools
+
+
+• Create Cognito User Pool, Client and Domain
+
+• Make sure an ID token is returned
+
+• Add the social or Corporate IdP if needed
+
+• Several URL redirections are necessary
+
+• Allow your Cognito User Pool Domain on your IdP app's callback URL.  for example 
+
+      • https://domain- prefix.auth.region.amazoncognito.com/saml2/ idpresponse
+
+      • https://user-pool-domain/oauth2/idpresponse
+
+
+
+
+
+----------------------------------------------------------------- Application Load Balancer – OIDC Auth.
+
+
+see fig 
+
+
+
+
+
+
+----------------------------------------------------------------- ALB – Auth.Through an Identity Provider (IdP) That is OpenID Connect (OIDC) Compliant
+
+
+
+
+• Configure a Client ID & Client Secret
+
+• Allow redirect from OIDC to your Application Load Balancer DNS name (AWS provided) and CNAME (DNS Alias of your app)
+
+• https://DNS/oauth2/idpresponse
+
+• https://CNAME/oauth2/idpresponse
+
+
+
+
+
+----------------------------------------------------------------- Cognito Identity Pools (Federated Identities) -------------
+
+
+
+• Get identities for “users” so they obtain temporary AWS credentials
+
+       - So, our users are outside of our AWS environment, and there can be a web application users, or mobile users, and they want access to stuff within our AWS environments.
+
+       - So for example, they want to have access to DynamoDB table, or an S3 bucket. And so to access these things, they need temporary AWS credentials.
+
+       - So we cannot create normal IAM users for these users because there are too many of them, it doesn't scale, and we don't trust them.
+
+       - So instead, we're going to give these users access to AWS through a Cognito Identity Pool.
+
+
+-- So this identity pool can allow your users to log in through a trusted third party.       
+
+• Your identity pool (e.g identity source) can include:
+
+      • Public Providers (Login with Amazon, Facebook, Google, Apple)
+
+      • Users in an Amazon Cognito user pool
+
+      • OpenID Connect Providers & SAML Identity Providers
+
+      • Developer Authenticated Identities (custom login server)
+
+      • Cognito Identity Pools allow for unauthenticated (guest) access
+
+
+
+• Users can then access AWS services directly or through API Gateway
+
+      - So, once the users have obtained these AWS credentials, then they can access the AWS services directly,
+
+      - with an API call using an SDK, or through the API gateway.
+
+      • The IAM policies applied to the credentials are defined in Cognito
+
+      • They can be customized based on the user_id for fine grained control
+
+
+
+
+
+
+----------------------------------------------------------------- Cognito Identity Pools – IAM Roles
+
+
+• Default IAM roles for authenticated and guest users
+
+       - So that means the guest users will have one IAM role, and the other will have another one's IAM role.
+
+
+• Define rules to choose the role for each user based on the user’s ID       
+
+• You can partition your users’ access using policy variables
+
+        - hen we can customize the IAM policy, thanks to using policy variables, and 
+        
+        - this will be allowing us to make sure that the users will only get access to what they need in DynamoDB or Amazon S3, 
+
+
+• IAM credentials are obtained by Cognito Identity Pools through STS
+
+• The roles must have a “trust” policy of Cognito Identity Pools
+
+
+
+
+
+
+
+
+----------------------------------------------------------------- Cognito Identity Pools – Guest User example
+
+
+
+
+
+
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+    
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject"
+      ],
+      "Resource": "arn:aws:s3:region:accountID:map/ExampleMap"
+    }
+  ]
+}
+
+
+
+-- So we want to give our guest users access to AWS, so we want to create an IAM policy,
+
+-- that would allow any guest user to do a get object on a bucket for my picture, 
+
+-- So this would give us, for the guest users, access to AWS with a very simple, and obviously restricted, IAM policy.
+
+
+
+
+
+
+----------------------------------------------------------------- Cognito Identity Pools – Policy variable on S3
+
+
+
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ListYourObjects",
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": [
+        "arn:aws:s3:::bucket-name"
+      ],
+      "Condition": {
+        "StringLike": {
+          "s3:prefix": [
+            "cognito/application-name/${cognito-identity.amazonaws.com:sub}/*"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "ReadWriteDeleteYourObjects",
+      "Effect": "Allow",
+      "Action": [
+        "s3:DeleteObject",
+        "s3:GetObject",
+        "s3:PutObject"
+      ],
+      "Resource": [
+        "arn:aws:s3:::bucket-name/cognito/application-name/${cognito-identity.amazonaws.com:sub}/*"
+      ]
+    }
+  ]
+}
+
+
+
+-- for the authenticated users, you can define a policy variable on Amazon S3,
+
+-- so our users are connected, but we want to make sure that they only have access to a prefix in your S3 bucket,
+
+
+
+
+
+
+----------------------------------------------------------------- Cognito User Pools vs Identity Pools
+
+
+
+• Cognito User Pools (for authentication = identity verification)
+
+    • Database of users for your web and mobile application
+
+    • Allows to federate logins through Public Social, OIDC, SAML...
+
+    • Can customize the hosted UI for authentication (including the logo)
+
+    • Has triggers with AWS Lambda during the authentication flow
+
+    • Adapt the sign-in experience to different risk levels (MFA, adaptive authentication, etc...)
+
+
+• Cognito Identity Pools (for authorization = access control) 
+
+    • Obtain AWS credentials for your users
+
+    • Users can login through Public Social, OIDC, SAML & Cognito User Pools
+
+    • Users can be unauthenticated (guests)
+
+    • Users are mapped to IAM roles & policies, can leverage policy variables
+
+
+• CUP + CIP = authentication + authorization    
+
+
+
+
+
+
+
+
+
+
+
+============================================================================== Other Serverless ==================================================
+
+
+
+================================ 1 AWS Step Functions =================
+
+
+
+
+• Model your workflows as state machines (one per workflow)
+
+      • So this could be used if you want to have an Order fulfillment, Data processing
+
+      • Web applications, Any workflow
+
+
+• Written in JSON
+
+• Visualization of the workflow and the execution of the workflow, as well as history
+
+• Start workflow with SDK call, API Gateway, Event Bridge (CloudWatch Event)
+
+
+-- AWS Step Functions is a low-code visual workflow service used to orchestrate AWS services, automate business processes, and build Serverless applications. It manages failures, retries, parallelization, service integrations, ...
+
+
+-------------------------------------- Step Function –Task States
+
+
+- So step functions have a bunch of boxes and these boxes are called tasks.
+
+• so the task state is used to Do some work in your state machine
+
+• Invoke one AWS service
+
+     • Can invoke a Lambda function
+     • Run an AWS Batch job
+     • Run an ECS task and wait for it to complete
+     • Insert an item from DynamoDB
+     • Publish message to SNS, SQS
+     • Launch another Step Function workflow...
+
+
+• Run an one Activity
+
+    • EC2, Amazon ECS, on-premises
+
+    • Activities poll the Step functions for work
+
+    • Activities send results back to Step Functions
+
+
+
+
+
+
+-------------------------------------- Example – Invoke Lambda Function
+
+
+
+
+{  
+   "StartAt":"CallLambda",
+   "States":{  
+      "CallLambda":{  
+         "Type":"Task",
+         "Resource":"arn:aws:states:::lambda:invoke",
+         "Parameters":{  
+            "FunctionName":"arn:aws:lambda:us-east-1:123456789012:function:MyFunction"
+         },
+         "End":true
+      }
+   }
+}
+
+
+
+
+
+
+------------------------------------------- Step Function - States
+
+
+
+• Choice State - Test for a condition to send to a branch (or default branch)
+
+• Fail or Succeed State - Stop execution with failure or success
+
+• Pass State - Simply pass its input to its output or inject some fixed data, without performing work.
+
+• Wait State - Provide a delay for a certain amount of time or until a specified time/date.
+
+• Map State - Dynamically iterate steps.’
+
+• Parallel State - Begin parallel branches of execution.
+
+
+
+
+------------------------------------------- Step Function - hands ON
+
+
+-- open step functions in console 
+
+-- run Hello World and observe the things 
+
+--  ASL (Amazon State Language)
+
+ "Result": {
+        "IsHelloWorldExample": true
+      },
+
+-- remove the aboe lines from the hello world code 
+
+-- c.o create 
+
+{
+        "IsHelloWorldExample": true
+      },
+
+-- give above lines in input and start execution 
+
+-- try with  "IsHelloWorldExample": false and observe the things 
+
+
+
+
+
+
+
+------------------------------------------- Step Function - Invoke Lambda Function hands ON
+
+
+-- c.o create state Machine 
+
+-- choose blank format and start 
+
+-- drag and paste the lambda 
+
+-- now add the code 
+
+
+
+
+{
+  "Comment": "A Hello World example of the Amazon States Language using Pass states",
+  "StartAt": "Lambda Invoke",
+  "States": {
+    "Lambda Invoke": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "OutputPath": "$.Payload",
+      "Parameters": {
+        "Payload.$": "$",
+        "FunctionName": "arn:aws:lambda:ap-south-1:298132369629:function:hello"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Next": "Choice State"
+    },
+    "Choice State": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$",
+          "StringMatches": "*Subbu*",
+          "Next": "Is Teacher"
+        }
+      ],
+      "Default": "Not Teacher"
+    },
+    "Is Teacher": {
+      "Type": "Pass",
+      "Result": "Woohoo!",
+      "End": true
+    },
+    "Not Teacher": {
+      "Type": "Fail",
+      "Error": "ErrorCode",
+      "Cause": "Subbu the teacher wasn't found in the output of the Lambda Function"
+    }
+  }
+}
+
+
+
+--   now go to lambda and create a function 
+
+-- use nodejs latest version , and give function name as "Hello"
+
+-- add this code 
+
+
+export const handler = async (event) => {
+    return "Hello, " + event.who + "!";
+  };
+
+
+-- now deploy and do test with 
+
+"who" : "subbu" in test event and do test 
+
+
+
+-- copy ARN of lambda and paste in step functions (API parameters section )
+
+-- now do create funtion , u will see it will invoke lambda finction 
+
+-- c.o confirm and do start execution , givr input as 
+
+
+
+{
+  "who" : "Subbu"
+}
+
+
+
+
+
+
+
+
+----------------------------------------------------- Error Handling in Step Functions
+
+
+-- So a step function will execute many small tasks and these tasks will do very little amount of work.
+
+-- For example, talk to an API and so on. But all the error handling should happen outside of these tasks by step functions themselves.
+
+
+• Any state can encounter runtime errors for various reasons:
+
+     • State machine definition issues (for example, no matching rule in a Choice state)
+
+     • Task failures (for example, an exception in a Lambda function)
+
+     • Transient issues (for example, network partition events)
+
+
+• Use Retry (to retry failed state) and Catch (transition to failure path) in the State Machine to handle the errors instead of inside the Application Code
+
+• Predefined error codes:
+
+      • States.ALL : matches any error name
+      • States.Timeout:Task ran longer thanTimeoutSeconds or no heartbeat received
+      • States.TaskFailed: execution failure
+      • States.Permissions: insufficient privileges to execute code
+
+
+
+• The state may report is own errors
+
+
+
+
+
+
+----------------------------------------------------- Step Functions – Retry (Task or Parallel State)
+
+
+• Evaluated from top to bottom
+
+• ErrorEquals: match a specific kind of error
+
+• IntervalSeconds: initial delay before retrying
+
+• BackoffRate: multiple the delay after each retry
+
+• MaxAttempts: default to 3, set to 0 for never retried
+
+• When max attempts are reached, the Catch kicks in
+
+-- if you were to define all the Retry logic from within the Lambda function, we would make the Lambda function run for a very, very long time, obviously, and maybe would timeout.
+
+
+
+
+
+{
+    "Comment": "A Retry and Catch example of the Amazon States Language using an AWS Lambda Function",
+    "StartAt": "InvokeMyFunction",
+    "States": {
+      "InvokeMyFunction": {
+        "Type": "Task",
+        "Resource": "<enter resource ARN here>",
+        "Retry": [
+          {
+            "ErrorEquals": [
+              "CustomError"
+            ],
+            "IntervalSeconds": 1,
+            "MaxAttempts": 2,
+            "BackoffRate": 2
+          },
+          {
+            "ErrorEquals": [
+              "States.TaskFailed"
+            ],
+            "IntervalSeconds": 30,
+            "MaxAttempts": 2,
+            "BackoffRate": 2
+          },
+          {
+            "ErrorEquals": [
+              "States.ALL"
+            ],
+            "IntervalSeconds": 5,
+            "MaxAttempts": 5,
+            "BackoffRate": 2
+          }
+        ],
+
+        "End" : true 
+      }       
+
+
+
+
+
+
+----------------------------------------------------- Step Functions – Catch (Task or Parallel State)
+
+
+  "hello world" : {
+  "Type": "Task",
+  "Resource": "<enter resource ARN here>",
+
+
+  "Catch": [
+          {
+            "ErrorEquals": [
+              "CustomError"
+            ],
+            "Next": "CustomErrorFallback"
+          },
+          {
+            "ErrorEquals": [
+              "States.TaskFailed"
+            ],
+            "Next": "ReservedTypeFallback"
+          },
+          {
+            "ErrorEquals": [
+              "States.ALL"
+            ],
+            "Next": "CatchAllFallback"
+          }
+        ],
+        "End": true
+      },
+      "CustomErrorFallback": {
+        "Type": "Pass",
+        "Result": "This is a fallback from a custom lambda function exception",
+        "End": true
+      },
+      "ReservedTypeFallback": {
+        "Type": "Pass",
+        "Result": "This is a fallback from a reserved error code",
+        "End": true
+      },
+      "CatchAllFallback": {
+        "Type": "Pass",
+        "Result": "This is a fallback from a reserved error code",
+        "End": true
+      }
+    }
+  }
+
+
+
+
+• Evaluated from top to bottom
+
+• ErrorEquals: match a specific kind of error
+
+• Next: State to send to
+
+• ResultPath - A path that determines what input is sent to the state specified in the Next field.
+
+
+
+
+
+
+
+----------------------------------------------------- Step Function – ResultPath
+
+
+• Include the error in the input
+
+-- So the ResultPath is how you pass the errors from the inputs into the output, into the next task.
+
+
+
+
+
+
+
+----------------------------------------------------- Step Function – Error Handling hands ON
+
+
+-- lambda --> choose blue print --> search for step-function --> create function
+
+-- now do test , u will get error 
+
+-- we're going to handle this error directly from our Step functions.
+
+-- opem step functions create new state machine 
+
+
+
+
+{
+    "Comment": "A Retry and Catch example of the Amazon States Language using an AWS Lambda Function",
+    "StartAt": "InvokeMyFunction",
+    "States": {
+      "InvokeMyFunction": {
+        "Type": "Task",
+        "Resource": "<enter resource ARN here>",
+        "Retry": [
+          {
+            "ErrorEquals": [
+              "CustomError"
+            ],
+            "IntervalSeconds": 1,
+            "MaxAttempts": 2,
+            "BackoffRate": 2
+          },
+          {
+            "ErrorEquals": [
+              "States.TaskFailed"
+            ],
+            "IntervalSeconds": 30,
+            "MaxAttempts": 2,
+            "BackoffRate": 2
+          },
+          {
+            "ErrorEquals": [
+              "States.ALL"
+            ],
+            "IntervalSeconds": 5,
+            "MaxAttempts": 5,
+            "BackoffRate": 2
+          }
+        ],
+        "Catch": [
+          {
+            "ErrorEquals": [
+              "CustomError"
+            ],
+            "Next": "CustomErrorFallback"
+          },
+          {
+            "ErrorEquals": [
+              "States.TaskFailed"
+            ],
+            "Next": "ReservedTypeFallback"
+          },
+          {
+            "ErrorEquals": [
+              "States.ALL"
+            ],
+            "Next": "CatchAllFallback"
+          }
+        ],
+        "End": true
+      },
+      "CustomErrorFallback": {
+        "Type": "Pass",
+        "Result": "This is a fallback from a custom lambda function exception",
+        "End": true
+      },
+      "ReservedTypeFallback": {
+        "Type": "Pass",
+        "Result": "This is a fallback from a reserved error code",
+        "End": true
+      },
+      "CatchAllFallback": {
+        "Type": "Pass",
+        "Result": "This is a fallback from a reserved error code",
+        "End": true
+      }
+    }
+  }
+
+
+
+
+
+-- paste ur ARN of lambda in code 
+
+-- start execution 
+
+
+
+
+
+
+
+----------------------------------------------------- Step Functions – Wait for Task Token
+
+
+• Allows you to pause Step Functions during aTask until aTaskToken is returned
+
+• Task might wait for other AWS services, human approval, 3rd party integration, call legacy systems...
+
+• Append .waitForTaskToken to the Resource field to tell Step Functions to wait for the Task Token to be returned
+
+• Task will pause until it receives thatTaskToken back with a SendTaskSuccess or SendTaskFailure API call
+
+
+
+
+
+----------------------------------------------------- Step Functions – Activity Tasks
+
+
+• Enables you to have theTask work performed by an Activity Worker
+
+• Activity Worker apps can be running on EC2, Lambda, mobile device...
+
+• Activity Worker poll for a Task using GetActivityTask API
+
+• After Activity Worker completes its work, it sends a response of its success/failure using SendTaskSuccess or SendTaskFailure
+
+• To keep theTask active:
+
+       • Configure how long a task can wait by setting TimeoutSeconds
+
+       • Periodically send a heartbeat from your Activity Worker using SendTaskHeartBeat within the time you set in HeartBeatSeconds
+
+
+• By configuring a long TimeoutSeconds and actively sending a heartbeat,ActivityTask can wait up to 1 year
+
+
+
+
+
+
+
+----------------------------------------------------- Step Functions – Standard vs. Express
+
+
+1 Standard (default):
+
+
+Max. Duration : 1 yr
+
+Execution Model : Exactly-once Execution
+
+Execution Rate : Over 2000 / second
+
+Execution History : Up to 90 days or using CloudWatch
+
+Pricing : # of State Transitions
+
+Use cases : Non-idempotent actions ( (e.g., processing Payments))
+
+
+
+
+2 Express
+
+
+Max. Duration : Up to 5 minutes
+
+Execution Rate :Over 100,000 / second
+
+Execution History : CloudWatch Logs
+
+Pricing : # of executions, duration, and memory consumption
+
+Use cases : IoT data ingestion, streaming data, mobile app backends, ...
+
+
+in Express we have two 
+
+1 Asynchronous (At-least once)
+
+    - Doesn’t wait for Workflow to complete (get results from CW Logs)
+
+    - You don’t need an immediate response (e.g., messaging services)
+
+    - Must manage idempotence
+
+
+2 Synchronous At-most once    
+
+    - Wait for Workflow to complete
+
+    - You need an immediate response (e.g., orchestrate microservices)
+
+    - Can be invoked from API Gateway or Lambda function
+
+
+
+
+
+
+
+
+----------------------------------------------------- AWS AppSync - Overview ---------------------
+
+
+
+• AppSync is a managed service that uses GraphQL
+
+         - So if we wants to build a GraphQL API on AWS, look no further than AppSync.
+
+• GraphQL makes it easy for applications to get exactly the data they need.
+
+• This includes combining data from one or more sources
+
+      • NoSQL data stores, Relational databases, HTTP APIs...
+
+      • Integrates with DynamoDB, Aurora, OpenSearch & others
+
+      • Custom sources with AWS Lambda
+
+
+• Retrieve data in real-time with WebSocket or MQTT on WebSocket
+
+• For mobile apps: local data access & data synchronization
+
+• It all starts with uploading one GraphQL schema
+
+
+
+
+
+----------------------------------------------------- AppSync – Security
+
+• There are four ways you can authorize applications to interact with your AWS AppSync GraphQL API:
+
+    • API_KEY
+
+    • AWS_IAM: IAM users / roles / cross-account access
+
+    • OPENID_CONNECT: OpenID Connect provider / JSON Web Token
+
+    • AMAZON_COGNITO_USER_POOLS
+
+
+• For custom domain & HTTPS, use CloudFront in front of AppSync
+
+
+
+
+
+
+----------------------------------------------------- AppSync Hands On
+
+
+-- open appsync in console --> GraphQL APIs ---> Design from scratch ---> Create type backed by a DynamoDB table now --> add fiels as u want ---> give table name as u want and Primary key --> Create
+
+-- if u look at schema in left side automatically it creates for u 
+
+-- go to dynamodb and check whether the table is created or not 
+
+-- now in appsync --> queries --> run --> liststudents , u won't get any 'coz u do not have any list of students 
+
+--  so run --> createstudent --> give data in below and c.o run --> createstudent 
+
+-- now run--> liststudent , u will get list of students from the API
+
+-- go to dynamodb and check the users data created or not as items in table 
+
+-- the cool thing about it is that now we have a full GraphQL-compatible API on top of our DynamoDB table.
+
+-- So we can expose it to our mobile clients or any websites that is using GraphQL and API mechanism, which is very, very handy.
+
+
+
+
+
+
+
+
+----------------------------------------------------- AWS Amplify --------------------
+
+
+
+- AWS Amplify Create mobile and web applications
+
+-- it's made of different components.
+
+        1 Amplify Studio : Visually build a full-stack app, both front-end UI and a backend.
+
+        2 Amplify CLI : Configure an Amplify backend With a guided CLI workflow
+
+        3 Amplify Libraries : Connect your app to existing AWS Services (Cognito, S3 and more)
+
+        4 Amplify Hosting : Host secure, reliable, fast web apps or websites via the AWS content delivery network.
+
+
+
+
+
+
+-----------------------------------------------------  AWS Amplify
+
+
+• Set of tools to get started with creating mobile and web applications
+
+• “Elastic Beanstalk for mobile and web applications”
+
+• Must-have features such as data storage, authentication, storage, and machine-learning, all powered by AWS services
+
+• Front-end libraries with ready-to-use components for React.js,Vue, Javascript, iOS, Android, Flutter, etc...
+
+• Incorporates AWS best practices to for reliability, security, scalability
+
+• Build and deploy with the Amplify CLI or Amplify Studio
+
+
+
+
+
+----------------------------------------------------- AWS Amplify – Important Features
+
+
+
+1 AUTHENTICATION
+
+     - For this, we do amplify add auth,
+
+     • Leverages Amazon Cognito
+
+     • User registration, authentication, account recovery & other operations
+
+     • Support MFA, Social Sign-in, etc...
+
+     • Pre-built UI components
+
+     • Fine-grained authorization
+
+
+2 DATASTORE
+
+     • For this, we do amplify add api
+
+     • Leverages Amazon AppSync and Amazon DynamoDB
+
+     • Work with local data and have automatic synchronization to the cloud without complex code
+
+     • Powered by GraphQL
+
+     • Offline and real-time capabilities
+
+     • Visual data modeling w/ Amplify Studio
+
+
+
+
+
+
+
+
+----------------------------------------------------- AWS Amplify Hosting
+
+
+• For this, we do amplify add hosting
+
+• Build and Host Modern Web Apps
+
+• CICD (build, test, deploy)
+
+• Pull Request Previews
+
+• Custom Domains
+
+• Monitoring
+
+• Redirect and Custom Headers
+
+• Password protection
+
+
+
+
+
+
+----------------------------------------------------- AWS Amplify – End-to-End (E2E) Testing
+
+
+- you have two kind of testing, you have unit testing and end-to-end testing.
+
+• Run end-to-end (E2E) tests in the test phase in Amplify
+
+• Catch regressions before pushing code to production
+
+• Use the test step to run any test commands at build time (amplify.yml)
+
+• Integrated with Cypress testing framework
+
+     • Allows you to generate UI report for your tests
+
+
+
+
+Build(run tests while the app is being built) -----------> Test (E2E) (run tests while the app is deployed (staging)) ----------> Deploy
+
+
+
+
+
+
+
+
+==================================================== Advanced Identity in AWS =========================================
+
+
+
+-----------------------------------------------------  AWS STS – Security Token Service
+
+
+• Allows to grant limited and temporary access to AWS resources (up to 1 hour).
+
+• AssumeRole: Assume roles within your account or cross account
+
+• AssumeRoleWithSAML: return credentials for users logged with SAML
+
+• AssumeRoleWithWebIdentity
+  
+      • return creds for users logged with an IdP (Facebook Login, Google Login, OIDC compatible...)
+
+      • AWS recommends against using this, and using Cognito Identity Pools instead
+
+
+• GetSessionToken: for MFA, from a user or AWS account root user
+
+• GetFederationToken: obtain temporary creds for a federated user
+
+• GetCallerIdentity: return details about the IAM user or role used in the API call
+
+• DecodeAuthorizationMessage: decode error message when an AWS API is denied
+
+
+
+
+
+----------------------------------------------------- Using STS to Assume a Role
+
+
+
+• Define an IAM Role within your account or cross-account
+
+• Define which principals can access this IAM Role and we authorize everything with IAM policies.
+
+• Use AWS STS (Security Token Service) to retrieve credentials and impersonate the IAM Role you have access to (AssumeRole API)
+
+• Temporary credentials can be valid between 15 minutes to 1 hour
+
+
+
+
+
+----------------------------------------------------- STS with MFA
+
+
+• Use GetSessionToken from STS
+
+• Appropriate IAM policy using IAM Conditions
+
+• aws:MultiFactorAuthPresent:true
+
+        - For example, this role only allows us to stop instances or terminate instances only if we have MFA on,
+
+        - so MultiFactorAuthPresent:true. And this is how we would use it.
+
+• Reminder, GetSessionToken returns:
+
+      • Access ID
+      • Secret Key
+      • SessionToken
+      • Expiration date
+
+
+
+
+
+
+----------------------------------------------------- Advanced IAM - Authorization Model Evaluation of Policies, simplified
+
+
+1. If there’s an explicit DENY in ut policy , end decision and DENY
+
+2. If there’s an ALLOW, end decision with ALLOW
+
+3. Else DENY
+
+
+
+
+
+----------------------------------------------------- IAM Policies & S3 Bucket Policies
+
+
+• IAM Policies are attached to users, roles, groups
+
+• S3 Bucket Policies are attached to buckets
+
+• When evaluating if an IAM Principal can perform an operation X on a bucket, the union of its assigned IAM Policies and S3 Bucket Policies will be evaluated.
+
+
+
+
+IAM Policy + S3 Bucket Policy = Total Policy Evaluated
+
+
+- So that means that, for example, if you have an EC2 instance and you remove the S3 policies in the IAM policy,
+
+- but there's still an S3 bucket policy authorizing the EC2 instance to do something, then it will still be able to do stuff in S3.
+
+
+
+
+
+
+
+----------------------------------------------------- Example 1
+
+
+• IAM Role attached to EC2 instance, authorizes RW to “my_bucket”
+
+• No S3 Bucket Policy attached
+
+-- In this case, can the EC2 instance write and read to the bucket?
+
+ANS : • => EC2 instance can read and write to “my_bucket”
+
+      - Because the union of these two things, is that our EC2 instance has the right to read and write to my bucket.
+
+
+
+
+----------------------------------------------------- Example 2
+
+
+• IAM Role attached to EC2 instance, authorizes RW to “my_bucket”
+
+• S3 Bucket Policy attached, explicit deny to the IAM Role
+
+- In this case, is the EC2 instance allowed or denied to write to the bucket?
+
+ANS : • => EC2 instance cannot read and write to “my_bucket”
+
+      - we've seen that explicit denies have higher priority than explicit allow.
+
+
+
+
+
+----------------------------------------------------- Example 3
+
+
+• IAM Role attached to EC2 instance, no S3 bucket permissions
+
+• S3 Bucket Policy attached, explicit RW allow to the IAM Role
+
+-- In this case, can our EC2 instance read and write to our bucket?
+
+ANS : • => EC2 instance can read and write to “my_bucket”
+
+      - because the union policy, again, has the read write allow from the S3 bucket policy
+
+      - so our EC2 instance, even though within its IAM role it's not specified that it can do stuff in S3,
+
+      - the S3 bucket policy will still allow this and so our EC2 instance can read and write to my bucket.
+
+
+
+ 
+
+
+----------------------------------------------------- Example 4
+
+
+• IAM Role attached to EC2 instance, explicit deny S3 bucket permissions
+
+• S3 Bucket Policy attached, explicit RW allow to the IAM Role
+
+• => EC2 instance cannot read and write to “my_bucket”
+
+
+
+
+----------------------------------------------------- Dynamic Policies with IAM
+
+
+• How do you assign each user a /home/<user> folder in an S3 bucket?
+
+
+• Option 1:
+
+      • Create an IAM policy allowing georges to have access to /home/georges
+
+      • Create an IAM policy allowing sarah to have access to /home/sarah
+
+      • Create an IAM policy allowing matt to have access to /home/matt
+
+      • ... One policy per user!
+
+      - every time you add a new user, you will have to create an IAM policy allowing them access to their own home directory.
+
+      • This doesn’t scale
+
+
+• Option 2:
+
+      • Create one dynamic policy with IAM
+
+      • Leverage the special policy variable ${aws:username}
+
+
+
+
+
+
+----------------------------------------------------- Inline vs Managed Policies
+
+
+• AWS Managed Policy
+
+     • Maintained by AWS
+
+     • Good for power users and administrators
+
+     • Updated in case of new services / new APIs
+
+
+• Customer Managed Policy (u create policies)
+
+     • Best Practice, re-usable, can be applied to many principals
+
+     • Version Controlled + rollback, central change management
+
+
+• Inline     
+
+     • Strict one-to-one relationship between policy and principal
+
+     • Policy is deleted if you delete the IAM principal
+
+     - They're not version control, you cannot roll them back,
+
+
+
+
+
+
+
+
+
+----------------------------------------------------- Granting a User Permissions to Pass a Role to an AWS Service
+
+
+• To configure many AWS services, you must pass an IAM role to the service (this happens only once during setup)
+
+• The service will later assume the role and perform actions
+
+• Example of passing a role:
+
+    • To an EC2 instance
+
+    • To a Lambda function
+
+    • To an ECS task
+
+    • To CodePipeline to allow it to invoke other services
+
+
+• For this, you need the IAM permission iam:PassRole    
+
+• It often comes with iam:GetRole to view the role being passed
+
+
+
+
+
+
+----------------------------------------------------- IAM PassRole example
+
+
+
+{
+    "Version": "2012-10-17",
+    "Statement": [{
+        "Effect": "Allow",
+        "Action": [
+            "iam:GetRole",
+            "iam:PassRole"
+        ],
+        "Resource": "arn:aws:iam::account-id:role/EC2-roles-for-XYZ-*"
+    }]
+}
+
+
+
+----- Can a role be passed to any service?
+
+ANS : NO  Roles can only be passed to what their trust allows
+
+• A trust policy for the role that allows the service to assume the role
+
+
+{
+    "Version": "2012-10-17",
+    "Statement": {
+        "Sid": "TrustPolicyStatementThatAllowsEC2ServiceToAssumeTheAttachedRole",
+        "Effect": "Allow",
+        "Principal": { "Service": "ec2.amazonaws.com" },
+       "Action": "sts:AssumeRole"
+    }
+}                    
+
+
+
+
+
+----------------------------------------------------- AWS Directory Services --------------
+
+
+What is Microsoft Active Directory (AD)?
+
+
+ANS : it is a software that is found on any windows server with AD domain services.
+
+
+• Found on any Windows Server with AD Domain Services
+
+• Database of objects: User Accounts, Computers, Printers, File Shares, Security Groups
+
+• Centralized security management, create account, assign permissions
+
+• Objects are organized in trees
+
+• A group of trees is a forest
+
+
+
+
+
+----------------------------------------------------- AWS Directory Services
+
+
+
+
+1 • AWS Managed Microsoft AD
+
+   • Create your own AD in AWS, manage users locally, supports MFA
+
+   • Establish “trust” connections with your on- premise AD
+
+
+
+2 • AD Connector
+
+    • Directory Gateway (proxy) to redirect to on-premise AD, supports MFA
+
+    • Users are managed on the on-premise AD
+
+
+3 • Simple AD
+
+    • AD-compatible managed directory on AWS
+
+    • Cannot be joined with on-premise AD
+
+
+
+
+
+-- look console for more info 
+
+
+
