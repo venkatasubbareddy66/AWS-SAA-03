@@ -19873,3 +19873,572 @@ ANS : it is a software that is found on any windows server with AD domain servic
 
 
 
+
+
+
+
+
+
+
+======================================================= AWS Security & Encryption (KMS, Encryption SDK, SSM Parameter Store) ==============================================
+
+
+
+----------------------------------------------- Why encryption? 
+
+
+
+1 Encryption in flight (TLS / SSL)
+
+
+
+• Data is encrypted before sending and decrypted after receiving
+
+      - So this is for communication between a client and a server over a network.
+
+• TLS certificates help with encryption (HTTPS)
+
+      - that means that the connection between you and the server is going to be encrypted using TLS certificates.
+
+
+Why do we want encryption in flight?
+
+ANS : Well, because we're sending data over a network and sometimes a public network and the data goes around many different servers.
+
+- We don't want to be having a man in the middle attacks where a middle server receives the data
+
+
+
+• Encryption in flight ensures no MITM (man in the middle attack) can happen
+
+
+
+
+
+2 Server-side encryption at rest
+
+
+• Data is encrypted after being received by the server
+
+• Data is decrypted before being sent
+
+• It is stored in an encrypted form thanks to a key (usually a data key)
+
+• The encryption / decryption keys must be managed somewhere, and the server must have access to it
+
+- As we can see in this case, there is a server side encryption because all the encryption and decryption happens on the server.
+
+
+
+3 Client-side encryption
+
+
+• Data is encrypted by the client and never decrypted by the server
+
+• Data will be decrypted by a receiving client
+
+• The server should not be able to decrypt the data
+
+• Could leverage Envelope Encryption
+
+
+
+
+
+
+---------------------------------------------------------- AWS KMS (Key Management Service)
+
+
+- Limit is 4KB 
+
+
+• Anytime you hear “encryption” for an AWS service, it’s most likely KMS
+
+• AWS manages encryption keys for us
+
+• Fully integrated with IAM for authorization
+
+• Easy way to control access to your data
+
+• Able to audit KMS Key usage using CloudTrail
+
+• Seamlessly integrated into most AWS services (EBS, S3, RDS, SSM...)
+
+• Never ever store your secrets in plaintext, especially in your code!
+
+     • KMS Key Encryption also available through API calls (SDK, CLI)
+
+     • Encrypted secrets can be stored in the code / environment variables
+
+
+
+
+
+---------------------------------------------------------- KMS Keys Types
+
+
+• KMS Keys is the new name of KMS Customer Master Key
+
+
+
+1 • Symmetric (AES-256 keys)
+
+
+        • Single encryption key that is used to Encrypt and Decrypt
+
+        • AWS services that are integrated with KMS use Symmetric CMKs
+
+        • You never get access to the KMS Key unencrypted (must call KMS API to use)
+
+
+
+2 • Asymmetric (RSA & ECC key pairs)
+
+        • Public (Encrypt) and Private Key (Decrypt) pair
+
+        • Used for Encrypt/Decrypt, or Sign/Verify operations
+
+        • The public key is downloadable, but you can’t access the Private Key unencrypted
+
+        • Use case: encryption outside of AWS by users who can’t call the KMS API
+
+
+
+
+
+
+
+---------------------------------------------------------- AWS KMS (Key Management Service)
+
+
+• Types of KMS Keys:
+
+        • AWS Owned Keys (free): SSE-S3, SSE-SQS, SSE-DDB (default key)
+
+        • AWS Managed Key: free (aws/service-name, example: aws/rds or aws/ebs) , but only from within the service that it's assigned to.
+
+        • Customer managed keys created in KMS: $1 / month
+
+        • Customer managed keys imported (must be symmetric key): $1 / month
+
+        • + pay for API call to KMS ($0.03 / 10000 calls)
+
+
+
+
+• Automatic Key rotation:
+
+        • AWS-managed KMS Key: automatic every 1 year
+
+        • Customer-managed KMS Key: (must be enabled) automatic every 1 year
+
+        • Imported KMS Key: only manual rotation possible using alias
+
+
+
+
+
+
+
+---------------------------------------------------------- Copying Snapshots across regions
+
+
+
+-- That means that if we have an EBS volume encrypted with KMS key in a region, for example, eu-west-2,
+
+-- then if you want to copy that to a different region we have to do several steps.
+
+-- First of all, we have to take a snapshot of this EBS volume. And if we take a snapshot from an encrypted snapshot then this snapshot itself will also be encrypted with the same KMS key.
+
+-- Then, to copy the snapshot to another region, we need to re-encrypt the snapshot using a different KMS key. And this is something AWS will do for you.
+
+-- But the same KMS key cannot live in two regions. So now we have an EBS snapshot. It's encrypted with KMS with a different key and it lives in another region.
+
+-- Now we restore the snapshot into its own EBS volume with KMS,  and it's KMS key B into the region ap-southeast-2.
+
+
+
+
+
+---------------------------------------------------------- KMS Key Policies
+
+
+• Control access to KMS keys, “similar” to S3 bucket policies
+
+• Difference: you cannot control access without them
+
+       - if you don't have a KMS key policy on your KMS key, then no one can access it.
+
+
+
+1 • Default KMS Key Policy:
+
+       • Created if you don’t provide a specific KMS Key Policy , the idea is that the default allows everyone in your account to access this key.
+
+       • Complete access to the key to the root user = entire AWS account
+
+
+
+2 • Custom KMS Key Policy:
+
+       • Define users, roles that can access the KMS key
+
+       • Define who can administer the key
+
+       • Useful for cross-account access of your KMS key
+
+
+
+
+
+
+
+---------------------------------------------------------- Copying Snapshots across accounts
+
+
+1. Create a Snapshot, encr ypted with your own KMS Key (Customer Managed Key)
+
+2. Attach a KMS Key Policy to authorize cross-account access
+
+3. Share the encr ypted snapshot with the target accounts.
+
+4. (in target) Create a copy of the Snapshot, encrypt it with a CMK in your account
+
+5. Create a volume from the snapshot
+
+
+
+
+
+
+
+
+---------------------------------------------------------- KMS Hands ON
+
+
+
+-- open KMS in console --> customer - managed Keys --->  Symmetric ----> Encrypt and decrypt ---> KMS - recommended ----> Single-region key --> alias = give anyname ---> nxt ---> nxt ---> create 
+
+-- now do some data encrypt and decrypt 
+
+-- open cloudshell create one folder like kms 
+
+-- cd kms --> create onefile "ExampleSecretFile.txt" and enter some secrets 
+
+-- u have to cmnds 
+
+
+
+# 1) encryption
+aws kms encrypt --key-id alias/tutorial --plaintext fileb://ExampleSecretFile.txt --output text --query CiphertextBlob  --region ap-south-1 > ExampleSecretFileEncrypted.base64
+
+# base64 decode for Linux or Mac OS 
+cat ExampleSecretFileEncrypted.base64 | base64 --decode > ExampleSecretFileEncrypted
+
+# base64 decode for Windows
+certutil -decode .\ExampleSecretFileEncrypted.base64 .\ExampleSecretFileEncrypted
+
+
+# 2) decryption
+
+aws kms decrypt --ciphertext-blob fileb://ExampleSecretFileEncrypted   --output text --query Plaintext > ExampleFileDecrypted.base64  --region ap-south-1
+
+# base64 decode for Linux or Mac OS 
+cat ExampleFileDecrypted.base64 | base64 --decode > ExampleFileDecrypted.txt
+
+
+# base64 decode for Windows
+certutil -decode .\ExampleFileDecrypted.base64 .\ExampleFileDecrypted.txt
+
+
+
+-- give cmnds without any gaps at the starting point 
+
+--  now perform 1st cmnd , this will create one file , ExampleSecretFileEncrypted.base64 , do cat this , this represents my encrypted file.
+
+        aws kms encrypt --key-id alias/tutorial --plaintext fileb://ExampleSecretFile.txt --output text --query CiphertextBlob  --region ap-south-1 > ExampleSecretFileEncrypted.base64
+
+
+-- now decode 
+
+       cat ExampleSecretFileEncrypted.base64 | base64 --decode > ExampleSecretFileEncrypted
+
+     - this will create "ExampleSecretFileEncrypted " this file 
+
+     - So this is the kind of secret file that you would share with someone.
+
+
+-- now decrypt the file 
+
+      aws kms decrypt --ciphertext-blob fileb://ExampleSecretFileEncrypted   --output text --query Plaintext > ExampleFileDecrypted.base64  --region ap-south-1
+
+
+      - this will create "ExampleFileDecrypted.base64" 
+
+      - cat ExampleFileDecrypted.base64
+
+
+-- now decode 
+
+      cat ExampleFileDecrypted.base64 | base64 --decode > ExampleFileDecrypted.txt
+
+
+      - now do cat ExampleFileDecrypted.txt , u will see the secret 
+
+
+
+
+
+
+
+---------------------------------------------------------- Envelope Encryption
+
+
+• KMS Encrypt API call has a limit of 4 KB
+
+• If you want to encrypt >4 KB, we need to use Envelope Encryption
+
+• The main API that will help us is the GenerateDataKey API
+
+
+
+• For the exam: anything over 4 KB of data that needs to be encrypted must use the Envelope Encryption == GenerateDataKey API
+
+
+
+
+
+
+---------------------------------------------------------- Encryption SDK
+
+
+• The AWS Encryption SDK implemented Envelope Encryption for us
+
+• The Encryption SDK also exists as a CLI tool we can install
+
+• Implementations for Java, Python, C, JavaScript
+
+
+- this encryption SDK has a feature called data key caching.
+
+
+
+• Feature - Data Key Caching:
+
+         • re-use data keys instead of creating new ones for each encryption
+
+         • Helps with reducing the number of calls to KMS with a security trade-off
+
+         • Use LocalCryptoMaterialsCache (max age, max bytes, max number of messages)
+
+
+
+
+
+
+---------------------------------------------------------- KMS Symmetric – API Summary
+
+
+• Encrypt: encrypt up to 4 KB of data through KMS
+
+• GenerateDataKey: generates a unique symmetric data key (DEK)
+
+- this API will do two things,
+
+      • returns a plaintext copy of the data key
+
+      • AND a copy that is encrypted under the CMK that you specify
+
+
+
+• GenerateDataKeyWithoutPlaintext:
+
+      • Generate a DEK to use at some point (not immediately)
+
+      • DEK that is encrypted under the CMK that you specify (must use Decrypt later)
+
+      - So the exam will try to trick you to perform envelope encryption right now, you need to use GenerateDataKey API not GenerateDataKeyWithoutPlaintext.
+
+
+
+• Decrypt: decrypt up to 4 KB of data (including Data Encryption Keys)
+
+
+• GenerateRandom: Returns a random byte string
+
+
+
+
+
+
+
+---------------------------------------------------------- Encryption SDK CLI Hands ON
+
+
+https://docs.aws.amazon.com/encryption-sdk/latest/developer-guide/crypto-cli-install.html
+
+
+-- open cloudshell , 
+
+- sudo pip install aws-encryption-sdk-cli
+
+- aws-encryption-cli --version
+
+- now do key="paste ARN of ur Customer key"
+
+          EG : key="arn:aws:kms:ap-south-1:298132369629:key/268efdd6-1429-4f97-93e1-f278df0de909"
+
+
+- create one file like hello.txt
+
+             vi hello.txt , add some secrets 
+
+
+- Here it contains some very super secret data, what we want to do is encrypt this,
+
+      sudo aws-encryption-cli --encrypt \
+                     --input hello.txt \
+                     --wrapping-keys key=$key \
+                     --metadata-output /metadata \
+                     --output output/
+
+
+- now do ls and if u go to output folder u will get hello.txt.encrypted file 
+
+- do cat hello.txt.encrypted 
+
+- our file was being encrypted using this KMS key and the generated data key, so it allows the Encryption SDK to decrypt that file in the future.
+
+- now do decrypt this file using SDK 
+
+- cd ..
+
+- mkdir decrypted 
+
+- enter this cmnd 
+
+      
+      sudo aws-encryption-cli --decrypt \
+                     --input output/hello.txt.encrypted \
+                     --wrapping-keys key=$key \
+                     --metadata-output /metadata \
+                     --output decrypted/
+
+- ls
+
+- ls decrypted/ , u will find "hello.txt.encrypted.decrypted"
+
+- cat decrypted/hello.txt.encrypted.decrypted
+
+- if u cat this , u will get the secret 
+
+
+
+
+
+
+---------------------------------------------------------- KMS Request Quotas
+
+
+• When you exceed a request quota, you get a ThrottlingException:
+
+• To respond, use exponential backoff (backoff and retry)
+
+• For cryptographic operations, they share a quota
+
+• This includes requests made by AWS on your behalf (ex: SSE-KMS)
+
+- So that means that if we use our key too much, then we will get a ThrottlingException.
+
+- So what can we do to solve it?
+
+      1 if we're using the GenerateDataKey API then we can use DEK cachings. So cache the data encryption key locally , so that we reduce the number of API calls done onto AWS and that is a feature of the encryption ID kit itself.
+
+      2 The other thing we can do is to generate a request quota increase in case we are indeed going over that limit way too many times. so, for this, we can request a quota increase through either an API call or by opening a ticket with the AWS support.
+
+
+
+
+
+
+
+
+---------------------------------------------------------- KMS and Lambda Practice 
+
+
+-- open lambda in condole and use py 3.8 and create one function 
+
+import json
+import os
+
+db_password = os.getenv("DB_PASSWORD")
+
+def lambda_handler(event, context):
+
+    return "great"
+
+
+-- So here we're going to play with how we can encrypt environment variables within Lambda.
+
+-- for this, we'll be using the tutorial key that we have generated from before in KMS,
+
+-- go to configuraation --> environmentvariables --> create environmentvariables ( DB_PASSWORD = Subbu)
+
+-- go to configuraation --> environmentvariables --> edit --> Enable helpers for encryption in transit ---> use customer key ---> c.o encrypt ---> select customer key --> encrypt
+
+-- if u see the secret value it get encrypted 
+
+-- now c.o encrypt beside secret value -----> Decrypt secrets snippet ----> u will get code 
+
+
+import boto3
+import os
+
+from base64 import b64decode
+
+ENCRYPTED = os.environ['DB_PASSWORD']
+# Decrypt code should run once and variables stored outside of the function
+# handler so that these are decrypted once per container
+DECRYPTED = boto3.client('kms').decrypt(
+    CiphertextBlob=b64decode(ENCRYPTED),
+    EncryptionContext={'LambdaFunctionName': os.environ['AWS_LAMBDA_FUNCTION_NAME']}
+)['Plaintext'].decode('utf-8')
+
+def lambda_handler(event, context):
+    print(ENCRYPTED)
+    print(DECRYPTED)
+    return "great"
+
+
+-- do deploy and test  , u will get run time error so go to configuration ---> general configuration ---> increate time to execute 
+
+-- now u will get AccessDeniedException  ,'coz  Our Lambda function is trying to run a decrypt call on our KMS environment variable 
+
+-- That we have in the encrypted one but we haven't provided the, IAM role with a right to decrypt, anything using that KMS key.
+
+-- to fix this issue --> configuration --> permission ---> create inline policy for kms --> give all permissions ---> all resources ---> create policy
+
+-- if u test , u will get o/p 
+
+-- if u look at START RequestId: this is the encrypted environment variable that was passed to my Lambda function as an encrypted secrets.
+
+-- So using this method we have a code that doesn't show any information about the environment variable or the password itself.
+
+-- then if we go into the configuration and look at the environment variables anyone who doesn't have access to the KMS key right here will not be able to decrypt this.
+
+
+
+
+
+
+
+
+
+      
+
+
+       
+
+
+
+
