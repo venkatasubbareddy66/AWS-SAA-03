@@ -1679,6 +1679,8 @@ EPV :
 
 ========================================== SSM Parameter Store ================================
 
+
+
 • Secure storage for configuration and secrets
 
 • Optional Seamless Encryption using KMS 
@@ -17567,7 +17569,7 @@ E in the question , if it is mention EKS , then blindly go for EKS in Answers , 
 
 F in question if is for AWS services , then choose IAM , if it is not for the AWS services , then go for Amazon cognito user pools for authenticate
 
-G 
+
 
 
 

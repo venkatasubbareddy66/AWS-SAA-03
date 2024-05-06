@@ -20433,12 +20433,770 @@ def lambda_handler(event, context):
 
 
 
+---------------------------------------------------------- S3 Bucket Key for SSE-KMS encryption
 
+
+• New setting to decrease...
+
+      • Number of API calls made to KMS from S3 by 99%
+
+      • Costs of overall KMS encryption with Amazon S3 by 99%
+
+
+• This leverages data keys
+
+      • A “S3 bucket key” is generated , So how does that work?
+
+      - Well, a customer master key and KMS is going to be used to generate a data key for your Amazon S3 Bucket once in a while and this key will rotates.
+
+      - this key is what's going to be used to encrypt objects in your Amazon S3 Buckets with KMS encryption.
+
+
+• That key is used to encrypt KMS objects with new data keys
+
+     - So this extra bucket key is going to generate a lot of data keys using envelope encryption which is going to go into encrypting your S3 Buckets.
+
+     - by adding an S3 Bucket key and not using KMS directly to generate these data keys,
+
+     - we are reducing the number of API calls we are making into KMS. And therefore, we are reducing our costs by a lot.
+
+
+
+• You will see less KMS CloudTrail events in CloudTrail
+
+
+--  to enable this in console ---> s3 bucket --> create bucket ---> default encryption (enable) ---> enable bucket key
+
+
+
+
+
+
+
+---------------------------------------------------------- Key Policy – Examples
+
+
+
+
+{
+  "Sid": "Enable IAM User Permissions",
+  "Effect": "Allow",
+  "Principal": {
+    "AWS": "arn:aws:iam::111122223333:root"
+   },
+  "Action": "kms:*",
+  "Resource": "*"
+}
+
+
+-- So we know that a Key Policy is used to define who has access to your KMS Key. 
+
+-- And the default KMS Key Policy that you create through the AWS Console allows anyone within your account to access your KMS Key, as long as they have the proper IAM permissions.
+
+
+
+
+------ key policy for federator user 
+
+
+
+-- if you wanted to explicitly authorize a specific user, it could be whatever user, it could be a user, an IAM role, it could be a federated user,
+
+-- allow which KMS actions you want, such as encrypt, decrypt, list, describe , And then you explicitly outline the principle.
+
+-- In that case, the federated user in this example, does not need, additionally, an extra IAM policy to use your KMS key
+
+-- because it's been explicitly allowed in the KMS key policy.
+
+-- 
+
+
+           
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": "arn:aws:iam::111122223333:federator-user/user-name"
+            },
+            "Action": [
+                "kms:Create*",
+                "kms:Describe*",
+                "kms:Enable*",
+                "kms:List*",
+                "kms:Put*",
+                "kms:Update*",
+                "kms:Revoke*",
+                "kms:Disable*",
+                "kms:Get*",
+                "kms:Delete*",
+                "kms:TagResource",
+                "kms:UntagResource",
+                "kms:ScheduleKeyDeletion",
+                "kms:CancelKeyDeletion",
+                "kms:RotateKeyOnDemand"
+            ],
+            "Resource": "*"
       
 
 
+
+
+
+
+---------------------------------------------------------- Principal Options in IAM Policies
+
+
+-- So what kind of principles can we explicitly allow in KMS key policies, but also in anything IAM?
+
+
+• AWS Account and Root User
+
+        
+       - "Principal": {  "AWS": "1234456778" }
+
+       - "Principal": {  "AWS": "arn:aws:iam::111122223333:root" }
+      
+       - So when you define something like this, such as principle AWS and the new account number, or the account number, and root
+
+       - i.e you allow every principle within the accounts,
+
+
+
+• IAM Roles
+
+       - "Principal": {  "AWS": "arn:aws:iam::111122223333:role/rolename" }
+
+       - you can authorize a specific IAM role by outlining the role arn directly in the principle statements.
+
+
+
+
+• IAM Role Sessions
+
+       - "Principal": {  "AWS": "arn:aws:iam::111122223333:role/rolename/role-session-name" }
+
+       - "Principal": {  "Federated": "arn:aws:iam::111122223333:saml-provider/provider-name" }
+
+       - "Principal": {  "Federated": "cognito-identity.amazonaws.com" }
+
+
+
+
+• IAM Users 
+
+       - "Principal": {  "AWS": "arn:aws:iam::111122223333:user/user-name" }
+
+
+
+• Federated User Sessions
+
+       - "Principal": {  "AWS": "arn:aws:iam::111122223333:Fedareated-user/user-name" }
+
+
+
+
+
+
+
+
+---------------------------------------------------------- CloudHSM
+
+
+• KMS => AWS manages the software for encryption , and will have control over the encryption keys.
+
+• CloudHSM => AWS provisions encryption hardware , AWS will provision some encryption hardware.
+
+              - It's called an HSM device, so a dedicated hardware which is a hardware security module.
+
+• Dedicated Hardware (HSM = Hardware Security Module)
+
+• You manage your own encryption keys entirely (not AWS)
+
+
+- The HSM device is going to be set up within the cloud of AWS,
+
+• HSM device is tamper resistant, FIPS 140-2 Level 3 compliance
+
+• Supports both symmetric and asymmetric encryption (SSL/TLS keys)
+
+• No free tier available
+
+• Must use the CloudHSM Client Software
+
+• Redshift supports CloudHSM for database encryption and key management
+
+• Good option to use with SSE-C encryption
+
+
+- IAM permissions:
+
+       • CRUD an HSM Cluster
+
+- CloudHSM Software:
+
+       • Manage the Keys
+       • Manage the Users
+
+
+
+
+
+
+---------------------------------------------------------- CloudHSM High Availability
+
+
+• CloudHSM clusters are spread across Multi AZ (HA)
+
+• Great for availability and durability
+ 
+
+
+
+---------------------------------------------------------- CloudHSM – Integration with AWS Services
+
+
+• Through integration with AWS KMS
+
+• Configure KMS Custom Key Store with CloudHSM
+
+• Example: EBS, S3, RDS ...
+
+        
        
 
 
+
+
+---------------------------------------------------------- SSM Parameter Store -------------------------------- 
+
+
+
+• Secure storage for configuration and secrets
+
+• Optional Seamless Encryption using KMS
+
+• Serverless, scalable, durable, easy SDK
+
+• Version tracking of configurations / secrets
+
+• Security through IAM
+
+• Notifications with Amazon EventBridge
+
+• Integration with CloudFormation
+
+
+
+
+
+---------------------------------------------------------- SSM Parameter Store Hierarchy
+
+
+• /my-department/
+    • my-app/
+        • dev/
+            • db-url
+            • db-password
+
+        • prod/
+            • db-url
+            • db-password
+
+• other-app/
+
+
+
+- You also have the opportunity to access Secrets of Secrets Manager through the Parameter Store by using this reference right here.
+
+        • /aws/reference/secretsmanager/secret_ID_in_Secrets_Manager
+
+
+- there are something called Public Parameters that are issued by AWS that you can use.
+
+        • /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2 (public)
+           
+
+
+
+
+
+
+
+---------------------------------------------------------- SSM Parameter Standard and advanced parameter tiers
+
+
+
+
+Standard :
+
+- Total number of parameters allowed (per AWS account and Region) :  10,000
+
+- Maximum size of a parameter value                               :  4 KB
+
+- Parameter policies available                                    :  No
+
+- Cost                                                            :  No additional charge
+
+- Storage Pricing                                                 :  Free
+
+
+
+
+
+
+Advanced :
+
+- Total number of parameters allowed (per AWS account and Region) :  100,000
+
+- Maximum size of a parameter value                               :  8 KB
+
+- Parameter policies available                                    : yes
+
+- Cost                                                            :  charges Apply
+
+- Storage Pricing                                                 :  $0.05 per advanced parameter per month
+
+
+
+
+
+
+---------------------------------------------------------- Parameters Policies (for advanced parameters)
+
+
+
+• Allow to assign a TTL to a parameter (expiration date) to force updating or deleting sensitive data such as passwords
+
+• Can assign multiple policies at a time
+
+
+
+
+1 Expiration (to delete a parameter) : 
+
+{
+    "Type": "Expiration",
+    "Version": "1.0",
+    "Attributes": {
+        "Timestamp": "2018-12-02T21:34:33.000Z"
+    }
+}
+
+
+
+
+
+2 ExpirationNotification (EventBridge)
+
+
+
+{
+    "Type": "ExpirationNotification",
+    "Version": "1.0",
+    "Attributes": {
+        "Before": "15",
+        "Unit": "Days"
+    }
+}
+
+
+-- So in this example, 15 days before the parameter expires we'll receive notification in EventBridge which gives us enough time to actually update it
+
+-- and make sure the parameter is not getting deleted because of the TTL.
+
+
+
+
+
+3 NoChangeNotification (EventBridge)
+
+
+{
+    "Type": "NoChangeNotification",
+    "Version": "1.0",
+    "Attributes": {
+        "After": "20",
+        "Unit": "Days"
+    }
+}
+
+
+-- maybe sometimes you wanna make sure the parameters change once in a while.
+
+-- So you can have a no change notification in EventBridge so that if a parameter has not been updated for 20 days, then you will be notified as well.
+
+
+
+
+
+
+
+
+---------------------------------------------------------- SSM Parameter Store Hands ON CLI
+
+
+
+-- open ssm in console --> choose parameter store on left side panel ---> give path to store value (/my-app/dev/db-url) ---> string --> value = dev.database.subbu.com:3306 --> create parameter
+
+-- dev.database.subbu.com:3306 = u can give any value 
+
+-- now do create dev password
+  
+-- give path to store value (/my-app/dev/db-password) ---> securestring --> value = give password here --> KMS Key ID = i am using my own key (eg: tutorial) -----> create parameter       
+
+-- now do create for prod environment also same like as Dev
+
+EG : /my-app/prod/db-url , /my-app/prod/db-password
+
+
+-- So we are going to use this CLI to get the parameters.
+
+-- open cloudshell
+
+       aws ssm get-parameters --names /my-app/dev/db-url /my-app/dev/db-password
+
+
+-- for the password it's a SecureString, and here is the value of it, which is an encrypted value.
+
+-- So for this, you basically need to decrypt it.
+
+-- for this you have a special parameter and it's called with-decryption,
+
+-- so this will check whether or not I have the KMS permission to decrypt this secret that was encrypted with the KMS tutorial key.
+
+         aws ssm get-parameters --names /my-app/dev/db-url /my-app/dev/db-password --with-decryption
+
+
+-- now observe changes 
+
+
+  aws ssm get-parameters-by-path --path /my-app/dev     =  u will get all parameters from specific path if u want 
+
+   aws ssm get-parameters-by-path --path /my-app/ --recursive  --with-decryption     = u will get all parameters under /my-app/ 
+
+
+
+
+
+
+
+
+
+---------------------------------------------------------- SSM Parameter Store Hands ON with LAMBDA 
+
+
+-- create one function with py 3.8 runtime 
+
+
+
+
+import json
+
+import boto3
+
+ssm = boto3.client('ssm', region_name="ap-south-1")
+
+def lambda_handler(event, context):
+    # TODO implement
+    db_url = ssm.get_parameters(Names=["/my-app/dev/db-url"])
+    print(db_url)
+    db_password = ssm.get_parameters(Names=["/my-app/dev/db-password"])
+    print(db_password)
+    return "Worked!"
+
+
+
+-- now go to configuration ---> permissons --->  create inline policy --> system manager ---> give all access --> all resources --> nxt 
+
+-- now do refresht he lambda page 
+
+-- if u get errror , after adding permissions , then wait for 5 min 
+
+-- now u will get this
+
+-- u can see 'SecureString' is encrypted here 
+
+-- So what we'd like to do is now decrypt it,
+
+-- so in code for password decrypt , add 
+
+        db_password = ssm.get_parameters(Names=["/my-app/dev/db-password"], WithDecryption = True)
+
+
+-- now do test , u will get (AccessDeniedException) error 
+
+-- because we're not allowed to use the customer master key and decrypt our secrets.
+
+-- So it turns out that because having given KMS access to my IAM role we're not allowed to decrypt the secrets,
+
+-- so this is a good proof that even though I have access to this database password, because it's encrypted and I don't have access to KMS I'm not able to decrypt it,
+
+-- and so that DB password is really safe and secure.
+
+-- to fix this add permissions 
+
+     permissons --> create inline policy --> kms --> add all permissions --> all resources--> create 
+
+
+-- now do test , u will get decrypted values 
+
+
+-- now to access through the Environment Variables 
+
+-- create  Environment Variable --> DEV_OR_PROD	 = dev
+
+-- add this in code 
+
+
+
+import json
+
+import boto3
+import os 
+
+ssm = boto3.client('ssm', region_name="ap-south-1")
+dev_or_prod = os.environ['DEV_OR_PROD']
+
+
+def lambda_handler(event, context):
+    # TODO implement
+    db_url = ssm.get_parameters(Names=["/my-app/" + dev_or_prod + "/dev/db-url"])
+    print(db_url)
+    db_password = ssm.get_parameters(Names=["/my-app/" + dev_or_prod + "/dev/db-password"], WithDecryption = True)
+    print(db_password)
+    return "Worked!"
+
+
+
+
+-- if u test this u will get dev values 
+
+--  go to env variable , change to prod (DEV_OR_PROD	 = prod )
+
+--  do test again , u will prod values 
+
+        
+
+
+
+
+
+
+
+
+
+
+---------------------------------------------------------- AWS Secrets Manager ------------------------
+
+
+
+• Newer service, meant for storing secrets
+
+• Capability to force rotation of secrets every X days
+
+• Automate generation of secrets on rotation (uses Lambda)
+
+• Integration with Amazon RDS (MySQL, PostgreSQL, Aurora)
+
+• Secrets are encrypted using KMS
+
+• Mostly meant for RDS integration
+
+
+
+
+
+
+---------------------------------------------------------- AWS Secrets Manager – Multi-Region Secrets
+
+
+• Replicate Secrets across multiple AWS Regions
+
+• Secrets Manager keeps read replicas in sync with the primary Secret
+
+• Ability to promote a read replica Secret to a standalone Secret
+
+• Use cases: multi-region apps, disaster recovery strategies, multi-region DB...
+
+
+
+
+
+
+---------------------------------------------------------- AWS Secrets Manager Hands ON
+
+
+-- open secret manager --> store a new secret ---> Other type of secret ---> give key and values ----> select ur KMS key or default ----> Secret name = prod/my-key-api --> create 
+
+
+
+
+
+
+
+
+
+---------------------------------------------------------- SSM Parameter Store vs Secrets Manager
+
+
+
+
+• Secrets Manager ($$$): 
+
+       • Automatic rotation of secrets with AWS Lambda
+
+       • Lambda function is provided for RDS, Redshift, DocumentDB
+
+       • KMS encryption is mandatory
+
+       • Can integration with CloudFormation
+
+
+• SSM Parameter Store ($):
+
+       • Simple API
+
+       • No secret rotation (can enable rotation using Lambda triggered by EventBridge)
+
+       • KMS encryption is optional
+
+       • Can integration with CloudFormation
+
+       • Can pull a Secrets Manager secret using the SSM Parameter Store API
+
+
+
+
+
+
+
+---------------------------------------------------------- CloudFormation – Dynamic References
+
+
+• Reference external values stored in Systems Manager Parameter Store and Secrets Manager within CloudFormation templates
+
+• CloudFormation retrieves the value of the specified reference during create/update/delete operations
+
+• For example: retrieve RDS DB Instance master password from Secrets Manager
+
+• Supports , 3 kinds 
+
+     • ssm – for plaintext values stored in SSM Parameter Store
+
+     • ssm-secure – for secure strings stored in SSM Parameter Store
+
+     • secretsmanager – for secret values stored in Secrets Manager
+
+
+
+
+syntax : ‘{{resolve:service-name:reference-key}}’
+
+
+
+
+
+1 SSM parameters
+
+
+  MyS3Bucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      AccessControl: '{{resolve:ssm:S3AccessControl:2}}' 
+
+
+
+
+2 SSM secure string parameters
+
+
+  MyIAMUser:
+    Type: AWS::IAM::User
+    Properties:
+      UserName: 'MyUserName'
+      LoginProfile:
+        Password: '{{resolve:ssm-secure:IAMUserPassword:10}}'
+
+
+
+
+
+
+3 Secrets Manager secrets
+
+
+
+  MyRDSInstance:
+    Type: 'AWS::RDS::DBInstance'
+    Properties:
+      DBName: MyRDSInstance
+      AllocatedStorage: '20'
+      DBInstanceClass: db.t2.micro
+      Engine: mysql
+      MasterUsername: '{{resolve:secretsmanager:MyRDSSecret:SecretString:username}}'
+      MasterUserPassword: '{{resolve:secretsmanager:MyRDSSecret:SecretString:password}}'
+
+
+
+
+
+
+
+---------------------------------------------------------- CloudFormation, Secrets Manager & RDS Option 1 – ManageMasterUserPassword
+
+
+
+• ManageMasterUserPassword – creates admin secret implicitly
+
+• RDS, Aurora will manage the secret in Secrets Manager and its rotation
+
+
+
+
+---------------------------------------------------------- CloudFormation, Secrets Manager & RDS Option 2 – Dynamic Reference
+
+
+1. secret is generated
+
+2. Reference secret in RDS DB instance
+
+3. link the secret to RDS DB instance (for rotation)
+
+
+
+
+
+---------------------------------------------------------- CloudWatch Logs - Encryption
+
+
+
+• You can encrypt CloudWatch logs with KMS keys
+
+• Encryption is enabled at the log group level, by associating a CMK with a log group, either when you create the log group or after it exists.
+
+• You cannot associate a CMK with a log group using the CloudWatch console.
+
+- you have to use the CloudWatch Logs API for the CLI and the SDK, 
+
+
+• You must use the CloudWatch Logs API:
+
+         • associate-kms-key : if the log group already exists
+
+         • create-log-group: if the log group doesn’t exist yet
+
+
+
+
+
+---------------------------------------------------------- CloudWatch Logs - Encryption Hands ON
+
+
+-- go to cloud watch and select any log group which does not have KMS KEY ID
+
+-- so here we are using our own key (tutorial) and do associate with this log group 
+
+-- this will donw through the CLI only , u can't do this through the console 
+
+-- 
+ 
 
 
