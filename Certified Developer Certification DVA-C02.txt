@@ -19941,6 +19941,8 @@ ANS : Well, because we're sending data over a network and sometimes a public net
 
 • Could leverage Envelope Encryption
 
+- With Client-Side Encryption, the server doesn't need to know any information about the encryption scheme being used, as the server will not perform any encryption or decryption operations.
+
 
 
 
@@ -21196,7 +21198,182 @@ syntax : ‘{{resolve:service-name:reference-key}}’
 
 -- this will donw through the CLI only , u can't do this through the console 
 
--- 
+
+
+
+# associate with existing log group
+aws logs associate-kms-key --log-group-name /aws/lambda/hello --kms-key-id arn:aws:kms:ap-south-1:298132369629:key/268efdd6-1429-4f97-93e1-f278df0de909 --region ap-south-1
+
+# create new log group
+aws logs create-log-group --log-group-name /example-encrypted --kms-key-id arn:aws:kms:eu-west-2:387124123361:key/0509dc31-00a4-4ef6-a739-3d77b2e011f5 --region eu-west-2
+
+
+
+-- u have 2 options u can use anyone here , i am using existing log group 
+
+-- open cloushell 
+
+       aws logs associate-kms-key --log-group-name /aws/lambda/hello --kms-key-id arn:aws:kms:ap-south-1:298132369629:key/268efdd6-1429-4f97-93e1-f278df0de909 --region ap-south-1
+
+
+-- once u apply this cmnd u will accessdeniederrror 
+
+-- So, we need to apply a certain key policy.
+
+
+
+ {
+      "Effect": "Allow",
+      "Principal": { "Service": "logs.region.amazonaws.com" },
+      "Action": [ 
+        "kms:Encrypt*",
+        "kms:Decrypt*",
+        "kms:ReEncrypt*",
+        "kms:GenerateDataKey*",
+        "kms:Describe*"
+      ],
+      "Resource": "*"
+    }  
+
+
+
+-- go to kms ---> key policy ---> switch to view key policy --> edit 
+
+
+
+
+{
+    "Id": "key-consolepolicy-3",
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "Enable IAM User Permissions",
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": "arn:aws:iam::298132369629:root"
+            },
+            "Action": "kms:*",
+            "Resource": "*"
+        },
+         {
+      "Effect": "Allow",
+      "Principal": { "Service": "logs.region.amazonaws.com" },
+      "Action": [ 
+        "kms:Encrypt*",
+        "kms:Decrypt*",
+        "kms:ReEncrypt*",
+        "kms:GenerateDataKey*",
+        "kms:Describe*"
+      ],
+      "Resource": "*"
+    }  
+    ]
+}
+
+
+
+
+--  the overall policy will look like this , in region u have to add ur region 
+
+-- save and try again the command 
+
+-- now go to c.w and do refresh , u will get KMS ID for the log group 
+
+--  so that mean that this log group is going to be fully encrypted with this KMS key ID.
+
+
+
+
+-- now do with the 2nd cmnd to create with new log group , jst change ur values in cmnd n paste in cli 
+
+     
+
+
  
+
+
+
+
+
+---------------------------------------------------------- CodeBuild Security
+
+
+
+-- So first of all, we know that CodeBuild is out of your VPC, but you can launch your CodeBuild inside of your VPC to access your VPC resources.
+
+• To access resources in your VPC, make sure you specify a VPC configuration for your CodeBuild
+
+
+• Secrets in CodeBuild:
+
+• Don’t store them as plaintext in environment variables
+
+• Instead...
+
+       • Environment variables can reference parameter store parameters
+
+       • Environment variables can reference secrets manager secrets
+
+
+
+
+
+
+---------------------------------------------------------- AWS Nitro Enclaves
+
+
+•  sometimes in the cloud you wanna Process highly sensitive data in an isolated compute environment
+
+        • Personally Identifiable Information (PII), healthcare, financial, ...
+
+
+-- historically, if you wanted to create this very isolated compute environment, 
+
+-- you would create a new VPC, you would restrict access to it, 
+
+-- you would restrict the networking, and so on, and that would be cumbersome.        
+
+
+-- So instead, what you can use is Nitro Enclaves.
+
+      • Fully isolated virtual machines, hardened, and highly constrained
+
+             • Not a container, not persistent storage, no interactive access, no external networking
+
+
+• Helps reduce the attack surface for sensitive data processing apps
+
+     • Cryptographic Attestation – only authorized code can be running in your Enclave
+
+     • Only Enclaves can access sensitive data (integration with KMS)
+
+
+• Use cases: securing private keys, processing credit cards, secure multi-party computation...
+
+
+
+
+
+
+
+AWS Nitro Enclave 
+
+
+1. Launch a compatible Nitro-based EC2 instance with the ‘EnclaveOptions’ parameter set to ‘true’
+
+2. Use the Nitro CLI to convert your app to an Enclave Image File (EIF)
+
+3. Using the EIF file as an input, use the Nitro CLI to create an Enclave
+
+4. The Enclave is a separate virtual machine with its own kernel, memory, and CPU
+
+
+
+
+
+
+
+
+
 
 
