@@ -21375,5 +21375,416 @@ AWS Nitro Enclave
 
 
 
+=============================================================== Other Services ==============================
+
+
+
+
+
+
+---------------------------------------------------------- Amazon Simple Email Service (Amazon SES)
+
+
+
+• Fully managed service to send emails securely, globally and at scale
+
+• Allows inbound/outbound emails
+
+• Reputation dashboard, performance insights, anti-spam feedback
+
+• Provides statistics such as email deliveries, bounces, feedback loop results, email open
+
+• Supports DomainKeys Identified Mail (DKIM) and Sender Policy Framework (SPF)
+
+• Flexible IP deployment: shared, dedicated, and customer-owned IPs
+
+• Send emails using your application using AWS Console, APIs, or SMTP
+
+• Use cases: transactional, marketing and bulk email communications
+
+
+
+
+
+
+
+
+---------------------------------------------------------- Amazon OpenSearch Service
+
+
+• Amazon OpenSearch is successor to Amazon ElasticSearch
+
+• In DynamoDB, queries only exist by primary key or indexes...
+
+• With OpenSearch, you can search any field, even par tially matches
+
+• It’s common to use OpenSearch as a complement to another database
+
+• Two modes: managed cluster or serverless cluster
+
+• Does not natively support SQL (can be enabled via a plugin)
+
+• Ingestion from Kinesis Data Firehose, AWS IoT, and CloudWatch Logs
+
+• Security through Cognito & IAM, KMS encryption,TLS
+
+• Comes with OpenSearch Dashboards (visualization)
+
+
+
+
+
+
+
+
+---------------------------------------------------------- Amazon Athena
+
+
+• Serverless query service to analyze data stored in Amazon S3
+
+• Uses standard SQL language to query the files (built on Presto)
+
+• Supports CSV, JSON, ORC, Avro,and Parquet
+
+• Pricing: $5.00 per TB of data scanned
+
+• Commonly used with Amazon Quicksight for repor ting/dashboards
+
+
+• Use cases: Business intelligence / analytics / reporting, analyze & queryVPC Flow Logs,ELB Logs,CloudTrail trails,etc...
+
+• Exam Tip: analyze data in S3 using serverless SQL, use Athena
+
+
+
+
+
+
+
+---------------------------------------------------------- Amazon Athena – Performance Improvement
+
+
+• Use columnar data for cost-savings (less scan)
+ 
+         • Apache Parquet or  ORC (Optimized Row Columnar)  is recommended 
+
+         • Huge performance improvement
+
+         • Use Glue to convert your data to Parquet or ORC
+
+
+• Compress data for smaller retrievals (bzip2, gzip, lz4, snappy, zlip, zstd...)         
+
+• Partition datasets in S3 for easy querying on virtual columns
+
+      • s3://yourBucket/pathToTable
+
+                /<PARTITION_COLUMN_NAME>=<VALUE>
+                /<PARTITION_COLUMN_NAME>=<VALUE>
+                /<PARTITION_COLUMN_NAME>=<VALUE>
+
+
+• Example:s3://athena-examples/flight/parquet/year=1991/month=1/day=1/
+
+• Use larger files (> 128 MB) to minimize overhead
+
+
+
+
+
+
+
+
+---------------------------------------------------------- Amazon Athena – Federated Query
+
+
+
+• Allows you to run SQL queries across data stored in relational, non-relational, object, and custom data sources (AWS or on-premises)
+
+
+• Uses Data Source Connectors that run on AWS Lambda to run Federated Queries (e.g., CloudWatch Logs, DynamoDB, RDS, ...)
+
+       - It's a Lambda function, and that Lambda function is going to run the Federated Queries in other services. So that could be, for example, CloudWatch Logs, DynamoDB, RDS, and so on.
+
+
+• Store the results back in Amazon S3
+
+
+
+
+
+
+---------------------------------------------------------- Athena Hands ON 
+
+
+
+Step 1 : create s3 bucket and insert some .csv data 
+
+--  insert some  data in the bucket 
+
+--   create one folder inside bucket and go to google and search for sample .csv files downlaod and upload in the s3 bucket 
+
+Step 2 : Glue
+
+-- open glue in console
+
+-- glue --> from left panel data Catalog --> crawlers --> add crawlers --> give name of ur crawler --> not yet --> add a data source --> choose s3 --> copy uri of ur bucket and paste in S3 path --> click on create new role , give name of ur role and select nxt --> click on create new database --> give name of ur database , nxt --> frequency = on-demand --> create crawler
+
+-- now try to run the crawler , 
+
+--  u can also check the logs in cloudwatch 
+
+-- once u done with the running part , a table will added to the database , table name is same as the folder name of s3 that u have uploaded 
+
+--  if ur data is not match , then u can also do edit ur schema 
+
+
+step 3 : Athena
+
+-- open Athena in the console
+
+-- in the left panel u will see the database and table , u can check all the coloums of ur table
+
+-- now do queries , before that u should add destination to store our outputs in the s3 bucket 
+
+-- go to s3 buckets create one folder in the bucket to store the outputs
+
+-- now try to query in athena editor
+
+-- SELECT * FROM "weather-database"."weather_csv" limit 10;
+
+above is eg query , u can replace with ur details 
+
+weather-database = database name 
+
+weather_csv = table name
+
+
+NOTE : if u r getting zero records but query is successfull then do 
+
+ur s3 location is like this 
+
+s3://doc-example-bucket/table1.csv 
+
+-- to get avoid from this error , jst create one sub-folder and upload .csv file in that subfolder 
+
+s3://doc-example-bucket/table1/table1.csv
+
+
+
+-- in the crawler location u have to give like this , then u won't get any error
+
+s3://doc-example-bucket/table1/
+
+
+
+
+
+
+
+---------------------------------------------------------- Amazon Managed Streaming forApache Kafka,(Amazon MSK)
+
+
+• Alternative to Amazon Kinesis , Kafka and Kinesis both allow you to stream data.
+
+• Fully managed Apache Kafka on AWS
+
+       • Allow you to create, update, delete clusters
+
+       • MSK creates & manages Kafka brokers nodes & Zookeeper nodes for you
+
+       • Deploy the MSK cluster in your VPC, multi-AZ (up to 3 for HA)
+
+       • Automatic recovery from common Apache Kafka failures
+
+       • Data is stored on EBS volumes for as long as you want
+
+
+• MSK Serverless
+
+      • Run Apache Kafka on MSK without managing the capacity
+
+      • MSK automatically provisions resources and scales compute & storage
+
+
+
+
+
+
+---------- So what is Apache Kafka then?
+
+
+-- Apache Kafka is a way for you to stream data and a Kafka cluster is made of multiple brokers
+
+-- then you will have producers that will produce data and so they will have to ingest data from places, such as Kinesis, IoT RDS, et cetera,
+
+-- they will send the data directly into a Kafka topic that is going to be fully replicated into other brokers.
+
+-- Now, this Kafka topic is having real-time streaming of data and consumers will pull from the topic to consume the data itself
+
+-- then your consumer can do whatever he wants, process it or send it to various destinations, such as EMR, S3, SageMaker, Kinesis and RDS.
+
+-- So the idea is that Kafka is quite similar to Kinesis, but there are differences to look 
+
+
+
+
+
+
+
+---------------------------------------------------------- Kinesis Data Streams vs. Amazon MSK
+
+
+
+Kinesis Data Streams
+
+     • 1 MB message size limit
+
+     • Data Streams with Shards
+
+     • Shard Splitting & Merging
+
+     • TLS In-flight encryption
+
+     • KMS at-rest encryption
+
+
+
+Amazon MSK
+
+     • 1MB default, configure for higher (ex: 10MB)
+
+     • KafkaTopics with Partitions
+
+     • Can only add partitions to a topic
+
+     • PLAINTEXT or TLS In-flight Encryption
+
+     • KMS at-rest encryption
+
+
+
+
+
+
+
+
+
+
+
+---------------------------------------------------------- AWS Certificate Manager (ACM)
+
+
+
+• Let’s you easily provision, manage, and deploy SSL/TLS Certificates
+
+• Used to provide in-flight encryption for websites (HTTPS)
+
+• Supports both public and privateTLS certificates
+
+• Free of charge for publicTLS certificates
+
+• AutomaticTLS certificate renewal
+
+
+• Integrations with (loadTLS certificates on)
+
+     • Elastic Load Balancers
+     • CloudFront Distributions
+     • APIs on API Gateway
+
+
+
+
+
+
+
+---------------------------------------------------------- AWS Private Certificate Authority (CA)
+
+
+• Managed service allows you to create private Certificate Authorities (CA), including root and subordinaries CAs
+
+• Can issue and deploy end-entity X.509 certificates
+
+• Certificates are trusted only by your Organization (not the public Internet)
+
+• Works for AWS services that are integrated with ACM
+
+• Use cases:
+
+     • Encrypted TLS communication, Cryptographically signingcode
+
+     • Enterprise customers building a Public Key Infrastructure (PKI)
+
+     • Authenticateusers , computers, APIendpoints, and IoTdevices
+
+
+
+
+
+
+---------------------------------------------------------- AWS Macie
+
+
+
+• Amazon Macie is a fully managed data security and data privacy service that uses machine learning and pattern matching to discover and protect your sensitive data in AWS.
+
+• Macie helps identify and alert you to sensitive data, such as personally identifiable information (PII)
+
+
+
+
+
+
+---------------------------------------------------------- AWS AppConfig 
+
+
+
+• Configure, validate, and deploy dynamic configurations
+
+• Deploy dynamic configuration changes to your applications independently of any code deployments
+
+      • You don’t need to restart the application
+
+
+• Feature flags, application tuning, allow/block listing...
+
+• Use with apps on EC2 instances, Lambda, ECS, EKS...
+
+• Gradually deploy the configuration changes and rollback if issues occur
+
+• Validate configuration changes before deployment using:
+
+     • JSON Schema (syntactic check) or
+
+     • Lambda Function – run code to perform validation (semantic check)
+
+
+
+
+
+
+
+---------------------------------------------------------- CloudWatch Evidently
+
+
+
+• Safely validate new features by serving them to a specified % of your users
+
+     • Reduce risk and identify unintended consequences
+
+     • Collect experiment data, analyze using stats, monitor performance
+
+
+• Launches (= feature flags): enable and disable features for a subset of users
+
+• Experiments (= A/B testing): compare multiple versions of the same feature
+
+• Overrides: pre-define a variation for a specific user
+
+• Store evaluation events in CloudWatch Logs or S3
+
+
+
 
 

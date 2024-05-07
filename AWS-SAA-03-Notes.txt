@@ -10321,6 +10321,9 @@ change, does it need to scale or fluctuate during the day?
 
 • License costs? Switch to Cloud Native DB such as Aurora?
 
+
+
+
 ------------------------------------ DatabaseTypes
 
 • RDBMS (= SQL / OLTP): RDS,Aurora – great for joins
