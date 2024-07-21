@@ -1010,7 +1010,111 @@ EXP : The given policy denies all EC2 specification actions on all resources whe
 -- go to roles > aws service > ec2 > select permision 
 
 
-=================================== identity center 
+
+======================================= Real time use case Demo ========================
+
+
+------------------ if u want to access the s3 bucket from another account , so in account A u have ec2 and Account B u have S3 Bucket so how to access the S3 Bucket 
+
+DEMO
+
+
+
+-- suppose U have 2 aws accounts 
+
+-- open 2nd account ---> IAM ---> Create policy --> choose s3 service and give permissions as per requiremnt -> create policy.
+
+-- open 2nd account ---> IAM ---> Create Role --> AWS Account ---> attach policy u have created above --> give role name --> create role
+
+-- copy the ARN of the Role that u have created just now and store it somewhere
+
+-- Account B setup is done 
+
+-- now go to Account A --> IAM --> Create Role --> Aws service --> use case = Ec2 --> do not assign any permissions --> give role name and create Role 
+
+-- now go to created Role --> add permissions --> create inline policy (below) --> 
+
+
+inline policy ? Why : Inline policy completely restricted to this role only we can't use this inline policy for another any roles or users this is specifically bound to only this role basically and if you tomorrow after the session completed and we if you delete this role so this inline policy automatically get deleted
+
+
+{
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Sid": "Statement1",
+			"Effect": "Allow",
+			"Action": "sts:AssumeRole",
+			"Resource": "arn:aws:iam::851725361030:role/demo-s3-cross-iam-role"      
+		}
+	]
+}
+
+
+
+-- "arn:aws:iam::851725361030:role/demo-s3-cross-iam-role"  # this is Account B Role Arn 
+
+-- now our basic arrnagement is done 
+
+-- now login into ec2 and configure profile 
+
+-- sudo su
+
+-- cd
+
+-- pwd      # u are in root
+
+-- ls -la    # u can have .aws 
+
+Note : if u not getting .aws folder then u have to give access and secret key , so do aws configure and give access and secret key of ur account A and save 
+
+-- cd .aws
+
+-- ls
+
+-- u have 2 files 
+
+-- vim config
+
+-- here u have to create profile to access form another account so 
+
+[profile test]
+role_arn = arn:aws:iam::851725361030:role/demo-s3-cross-iam-role
+
+credential_source = Ec2InstanceMetadata
+
+region = ap-south-1
+
+
+-- here "test" = u can change to any name and "region" u can change to any region in aws 
+
+-- to test whether u are configured or not 
+
+aws sts get-caller-identity --profile test
+
+
+-- u will get details
+
+-- so now access the bucket in anoher account 
+
+aws s3 ls  --profile test 
+
+-- by above cmnd u will get all buckets in account b
+
+-- if u want objects in particular bucket 
+
+     aws s3 ls s3://cross-bucket-access-demo-for-account-a --profile test
+
+
+-- cross-bucket-access-demo-for-account-a , replace with ur bucket name u will get objects inside that bucket in account B     
+
+
+-- like this u can access 
+
+
+
+
+=================================== identity center =======================================
 
 eg :if someone want to access 3 aws accounts u no need to create iam user in 3 aws accounts , u jst go to I.C and create user name and give URL to the person he will able to login with 3 aws accounts with SSO(single sign one ) as they wants to login into which account with same credentils 
 
@@ -4194,6 +4298,8 @@ Eg : u have 2 AZ's so load balancer will route traffic to each AZ evenly
 -- so here total 20% traffic to AZ-1 and 80% traffic to AZ-2 , total traffic is distributed by LB is 100% 
 
 
+
+
 2 Without Cross Zone Load Balancing : each load balancer distrubuted in the instance of node of ELB 
 
 -- eg : from above example AZ-1 get 25% for each instances (2 * 25% = 50% for AZ-1)
@@ -5889,7 +5995,7 @@ ANs: i have to store particular value(json document which is used to fetch the m
 
 eg :  /alarm/AWS-CWAgentLinConfig 
 
-- go system manager -->paramter store --> give name --> in the value place copy json script 
+- go system manager --> paramter store --> give name --> in the value place copy json script 
 
 {
 	"metrics": {
@@ -5925,7 +6031,7 @@ sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-c
 
 -- if it is running it is success
 
--- now go to CLoudwatch and --> all metrics --> CW Agent --> give instacne id and chck logs of memory
+-- now go to CLoudwatch and --> all metrics --> CW Agent --> give instacne id and check logs of memory
 
 
 
@@ -7022,7 +7128,10 @@ VERY IMP for EPV :
 
 
 
-=====================S3 has 3 types of Encryptions ==================
+================================================ S3 has 3 types of Encryptions ==================
+
+
+
 
 1 server-side encryption : 
 
@@ -7042,7 +7151,7 @@ VERY IMP for EPV :
 explanation : Server-side encryption is the encryption of data at its destination by the application or service that receives it. Amazon S3 encrypts your data at the object level as it writes it to disks in AWS data centers and decrypts it for you when you access it. As long as you authenticate your request and you have access permissions, there is no difference in the way you access encrypted or unencrypted objects. For example, if you share your objects by using a presigned URL, that URL works the same way for both encrypted and unencrypted objects. Additionally, when you list objects in your bucket, the list API operations return a list of all objects, regardless of whether they are encrypted.
 
 
--- When you use Server-Side Encryption with Amazon S3-Managed Keys (SSE-S3), each object is encrypted with a unique key. As an additional safeguard, it encrypts the key itself with a master key that it regularly rotates. So this option is incorrect.
+-- When you use Server-Side Encryption with Amazon S3-Managed Keys (SSE-S3), each object is encrypted with a unique key. As an additional safeguard, it encrypts the key itself with a master key that it regularly rotates.
 
 
 ------ B SSE-KMS ( AWS KMS KEY)
@@ -10334,7 +10443,7 @@ change, does it need to scale or fluctuate during the day?
 
 • Data Warehouse (= SQL Analytics / BI): Redshift (OLAP), Athena, EMR
 
-• Search: OpenSearch (JSON) – free text, unstructured searches
+• Search:  OpenSearch(JSON) – free text, unstructured searches
 
 • Graphs: Amazon Neptune – displays relationships between data
 
@@ -10347,7 +10456,9 @@ change, does it need to scale or fluctuate during the day?
 
 -------------------------------------- 1  Amazon RDS – Summary
 
-• Managed PostgreSQL / MySQL / Oracle / SQL Server / DB2 / MariaDB / Custom • Provisioned RDS Instance Size and EBS Volume Type & Size
+• Managed PostgreSQL / MySQL / Oracle / SQL Server / DB2 / MariaDB / Custom 
+
+• Provisioned RDS Instance Size and EBS Volume Type & Size
 
 • Auto-scaling capability for Storage
 
@@ -12811,6 +12922,7 @@ OK                    =  log-status
 
 
 ------------------------------------------------------------ AWS Site-to-Site VPN
+
 
 -- A VPN connection refers to the connection between your VPC and your own on-premises network. Site-to-Site VPN supports Internet Protocol security (IPsec) VPN connections.
 
@@ -15756,6 +15868,8 @@ Note : only EXTERNAL tables re created in the Athena if u dont provides EXTERNAL
 
 
 ---------------Practicals---------------------
+
+
 
 Step 1 : create s3 bucket and insert some .csv data 
 

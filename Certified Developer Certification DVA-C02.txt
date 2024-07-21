@@ -302,6 +302,7 @@ Dynamic         --------------> CDN Layer CloudFront (Cache based on correct hea
 
 ------------------------------------------ CloudFront Signed URL Process
 
+
 • Two types of signers:
 
     1 • Either a trusted key group (recommended)
@@ -343,7 +344,7 @@ Dynamic         --------------> CDN Layer CloudFront (Cache based on correct hea
 
 -- Origina Domain = load balancer / S3 -- these are the places wher u can host ur applications 
 
--- OAC --> Create control settings --> do not change any n create 
+--  OAC--> Create control settings --> do not change any n create 
 
 -- it is created access from S3 
 
@@ -423,6 +424,9 @@ TYPE 2
 • Origin Group: one primary and one secondary origin
 
 • If the primary origin fails, the second one is used
+
+
+
 
 
 -------------------------------------- CloudFront – Field Level Encryption
@@ -2687,6 +2691,7 @@ IMP : you need to make sure that your resources don't have the same name as your
 
 ------------------------------- CloudFormation – Pseudo Parameters
 
+
 • AWS offers us Pseudo Parameters in any CloudFormation template
 
 • These can be used at any time and are enabled by default
@@ -3772,6 +3777,12 @@ EG :
 
 ---------------- LAB 
 
+-- u have 2 options to delete non-empty s3 bucket using cloudformation
+
+
+Option -1 
+
+
 
 -- in this demo , we are going to create lambda function , s3 bucket , lambdaexecutionrole, and custom resource 
 
@@ -3964,6 +3975,101 @@ curl -H 'Content-Type: ''' -X PUT -d '{
 
 
 -- u will able to delete successfully 
+
+
+
+
+Optione -2 
+
+
+-- Go to AWS Console > CloudFormation.
+
+-- Deploy this cloud formation template to create the required role with necessary policy.
+
+
+
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  This CloudFormation template creates a role assumed by CloudFormation
+  during CRUDL operations to mutate resources on behalf of the customer.
+
+Resources:
+  ExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      MaxSessionDuration: 8400
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: resources.cloudformation.amazonaws.com
+            Action: sts:AssumeRole
+      Path: "/"
+      Policies:
+        - PolicyName: ResourceTypePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                - "s3:DeleteObject"
+                - "s3:GetBucketTagging"
+                - "s3:ListBucket"
+                - "s3:ListBucketVersions"
+                - "s3:PutBucketTagging"
+                - "cloudformation:ListExports"
+                Resource: "*"
+Outputs:
+  ExecutionRoleArn:
+    Value:
+      Fn::GetAtt: ExecutionRole.Arn
+
+
+
+
+
+-- Once the stack is successfully created, copy the ARN of the IAM role created.
+
+
+Activate the Extension:
+
+    - Go to AWS Console > CloudFormation
+    - On the left menu select ‘Public extensions’.
+    - Choose ‘Third party’ under the publisher.
+    - Search for ‘AwsCommunity::S3::DeleteBucketContents’ and select it.
+    - Under the execution role, provide the ARN of the role created above.
+    - Click ‘Activate’.
+
+-- You are now ready to use this extension in your cloudformation template.    
+
+
+-- As a final step, update your bucket creation template to look like below:
+
+
+Resources:
+
+  MyS3Bucket:
+
+    Type: AWS::S3::Bucket
+
+    Properties:
+
+      BucketName: MyBucketName
+
+  Deleter:
+
+    Type: AwsCommunity::S3::DeleteBucketContents
+
+    Properties:
+
+      BucketName: !Ref MyS3Bucket
+
+
+-- Now whenever you delete the stack, the bucket is automatically emptied and then deleted by cloud formation without any hassle !
+
+
+
 
 
 
@@ -6616,7 +6722,7 @@ sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-c
 
 -- You specify the timeframe you want to apply your query to and then automatically you're going to get a result as a visualization.
 
--- This visualization can also be exported either as a result or added to a dashboard for being able to rerun it whenever you want.
+-- This visualization can also be exported either as a result or added to a dashboard for being able to return it whenever you want.
 
 • Search and analyze log data stored in CloudWatch Logs
 
@@ -14986,7 +15092,7 @@ Client <---------------->    API Gateway + Mapping Templates    <---------------
 
        • The HTTP request  itself is passed directly to the backend , 
 
-       • The HTTP response from the backend is forwarded by API Gateway , hen when the backend replies, then the response is again proxied by the API to going back into the clients.
+       • The HTTP response from the backend is forwarded by API Gateway , then when the backend replies, then the response is again proxied by the API to going back into the clients.
 
        • Possibility to add HTTP Headers if need be (ex:API key) , So for example, you can add an API key between your API Gateway and your backend, but your users don't see it.
 
@@ -16963,7 +17069,7 @@ hooks:
       runas: root
 
 
-index.html 
+index.html - any index.html page 
 
 
 
