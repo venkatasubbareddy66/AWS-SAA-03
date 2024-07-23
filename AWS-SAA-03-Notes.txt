@@ -1005,9 +1005,8 @@ EXP : The given policy denies all EC2 specification actions on all resources whe
 
 ========================================== Roles
 
---  without credentials we can acess ervice for certain period
+--  without credentials we can acess service for certain period
 
--- go to roles > aws service > ec2 > select permision 
 
 
 
@@ -1016,7 +1015,7 @@ EXP : The given policy denies all EC2 specification actions on all resources whe
 
 ------------------ if u want to access the s3 bucket from another account , so in account A u have ec2 and Account B u have S3 Bucket so how to access the S3 Bucket 
 
-DEMO
+DEMO : using STS Assume Role 
 
 
 
@@ -1110,6 +1109,376 @@ aws s3 ls  --profile test
 
 
 -- like this u can access 
+
+
+
+
+
+
+
+================================================ Demo 2 : Provide Cross Account S3 Bucket Access to EC2 Instance without using STS Assume Role ===============
+
+
+
+-- we have 2 aws accounts 
+
+-- here in account A one ec2 instance is there and one IM role is attached
+
+-- In Account B once s3 bucket is there and corresponding S3 bucket policy is attached 
+
+-- now we are going to access the objects in Account B  from Account A
+
+-- in Account A create one ec2 instance 
+
+-- now create one role and attach this role to the Ec2 instance 
+
+-- IAM --> Roles --> create Role --> choose ec2 --> create role with out any policies
+
+-- now create policy --> select s3 --> give permission as per requred ( here i have given list bucket ,get objects , putobjects,delete object)--> 
+
+in Resouce section : give name of Bucket in AccountB and give * for objects  --> name the policy and create the policy 
+
+-- attach this policy the role we have Created
+
+-- now attach the role to the ec2 instance 
+
+-- now connect the ec2 instance
+
+-- if you list the s3 buckets , u will get this error
+
+aws s3 ls cross-bucket-access-demo-for-account-a             # cross-bucket-access-demo-for-account-a = bucket name in account B
+
+        An error occurred (AccessDenied) when calling the ListObjectsV2 operation: Access Denied
+
+
+-- although we have given the IM policy so that the ec2 instance can access the S3 bucket present in account B it is not able to access        
+
+-- because that S3 bucket is there in another account so for that what we need to do we need to attach one bucket policy with that particular S3 bucket.
+
+-- so that it can allow access to this IAM role which is attached to this ec2 instance
+
+-- now to go to Account B and go to S3 bucket ---> permissions --> bucket policy --> edit policy --> policy generator 
+
+so in policy generator :
+               
+               - Select Type of Policy = s3 bucket policy
+
+               - principal = *      # change this later
+
+               - Actions   =  list bucket , get object , put object , delete object 
+
+               - Amazon Resource Name (ARN) = ARN of S3 bucket , here we need 2 ARN's one is for bucket and one is for object 
+
+               - add statement and generate policy
+
+               - once u generate the policy it will look like this 
+
+
+
+{
+  "Id": "Policy1721714148079",
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "Stmt1721714143645",
+      "Action": [
+        "s3:DeleteObject",
+        "s3:GetObject",
+        "s3:ListBucket",
+        "s3:PutObject"
+      ],
+      "Effect": "Allow",
+      "Resource": "arn:aws:s3:::cross-bucket-access-demo-for-account-a",
+      "Principal": "*"
+    }
+  ]
+}
+
+
+-- now u have to add something in the ploicy , like this 
+
+
+
+
+{
+  "Id": "Policy1721714148079",
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "Stmt1721714143645",
+      "Action": [
+        "s3:DeleteObject",
+        "s3:GetObject",
+        "s3:ListBucket",
+        "s3:PutObject"
+      ],
+      "Effect": "Allow",
+      "Resource": ["arn:aws:s3:::cross-bucket-access-demo-for-account-a","arn:aws:s3:::cross-bucket-access-demo-for-account-a/*"],
+
+      "Principal": {"AWS":["arn:aws:iam::298132369629:role/withoutSTSAssumeRoleToAccessS3FromAnotherAccount"]}
+    }
+  ]
+}
+
+
+
+
+ "Resource": ["arn:aws:s3:::cross-bucket-access-demo-for-account-a","arn:aws:s3:::cross-bucket-access-demo-for-account-a/*"] = one is for bucket and one is for object 
+
+  "Principal": {"AWS":["ARN of ur Role that u ahve attached to ec2"]}
+
+
+
+
+-- now try aws s3 ls < bucket name >
+
+-- u will get objects in the s3 bucket 
+
+-- now create one file like    echo "Hello World"> demo.txt
+
+-- copy this file to the s3 bucket 
+         
+         aws s3 cp <file name> s3://< bucket name u want to upload>          ---> if u want to upload file from local to s3 
+
+        aws s3 cp demo.txt s3://cross-bucket-access-demo-for-account-a
+
+
+-- now delete the demo.txt file from the local and download it from S3
+
+       aws s3 cp s3://cross-bucket-access-demo-for-account-a/mark.html .     ------> download file from the s3 bucket to local (ec2)
+
+       . = path (local)
+
+
+--  if u want to delete file in s3 bucket from ec2   
+
+
+- first u have to create one delete.json file      vi delete.json 
+
+
+{
+  "Objects": [
+    {
+      "Key": "test1.txt"       # add ur file to delete
+    }
+  ],
+  "Quiet": false
+}
+
+  
+
+- now use API to delete the file in s3 bucket from server 
+
+     aws s3api delete-objects --bucket cross-bucket-access-demo-for-account-a --delete file://delete.json
+
+
+-- if u want to delete multiple files then change in delete.json file 
+
+{
+  "Objects": [
+    {
+      "Key": "demo.txt"
+    },
+    {
+      "Key": "demo1.txt"
+    }
+  ]
+}
+
+
+-- u can add so many keys to delete 
+
+-- like this u can do withoutSTSAssumeRoleToAccessS3FromAnotherAccount
+
+-- done 
+
+
+
+
+
+================================================ Demo 3 :Access S3 Objects From Any Servers Without Credentials =====================
+
+
+
+-- lets say we have bucket in Account A , so if u want to access this bucket objects from any server like local computer and ec2 in Account b
+
+-- connect ec2 instance in account A and try to remove the .aws folder , coz we are not using any credentials here 
+    
+    sudo su
+    cd
+    ls -la      , u will find .aws folder , then remove , if it is not there no need to remove 
+    rm -rf .aws
+
+-- create one ec2 in Account A and Account B 
+
+-- create s3 bucket in Account A
+
+-- now connect ec2 insatnce and try to list the bucket 
+
+aws s3 ls <bucket name>
+
+-- u will error ,coz u aere not providing any roles here , we are doing this demo without any credentials 
+
+-- so try this command 
+
+     aws s3 ls <bucket name> --no-sign-request
+
+-- now also u will get error coz , we did not mention anywhere to list the bucket , get object .....
+
+-- now to go to Account B and go to S3 bucket ---> permissions --> bucket policy --> edit policy --> policy generator 
+
+
+               - Select Type of Policy = s3 bucket policy
+
+               - principal = *      # change this later
+
+               - Actions   =  list bucket , get object , put object , delete object 
+
+               - Amazon Resource Name (ARN) = ARN of S3 bucket , here we need 2 ARN's one is for bucket and one is for object 
+
+               - add condition 
+
+                       - Condition = IpAddress
+                       - Key       = aws:SourceIp
+                       - Value     = public IP of ur Server
+
+              - add condition        
+
+               - add statement and generate policy
+
+               - once u generate the policy it will look like this 
+
+
+{
+  "Id": "Policy1721724823144",
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "Stmt1721724821411",
+      "Action": [
+        "s3:DeleteObject",
+        "s3:GetObject",
+        "s3:ListBucket",
+        "s3:PutObject"
+      ],
+      "Effect": "Allow",
+      "Resource": "arn:aws:s3:::hfgvgdgs",
+      "Condition": {
+        "IpAddress": {
+          "aws:SourceIp": "3.109.60.179"
+        }
+      },
+      "Principal": "*"
+    }
+  ]
+}
+
+
+
+-- u have to make some changes 
+
+
+
+{
+  "Id": "Policy1721724823144",
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "Stmt1721724821411",
+      "Action": [
+        "s3:DeleteObject",
+        "s3:GetObject",
+        "s3:ListBucket",
+        "s3:PutObject"
+      ],
+      "Effect": "Allow",
+      "Resource": ["arn:aws:s3:::hfgvgdgs","arn:aws:s3:::hfgvgdgs/*"],
+      "Condition": {
+        "IpAddress": {
+          "aws:SourceIp": "3.109.60.179"
+        }
+      },
+      "Principal": "*"
+    }
+  ]
+}
+
+
+-- now go to ec2 instance again , try to list the objects in bucket
+
+aws s3 ls <bucket name> --no-sign-request --region <region-name>
+
+-- aws s3 ls hfgvgdgs --no-sign-request --region ap-south-1
+
+-- u will get all list objects in rthe s3 bucket 
+
+-- now if u want to downlaod 
+
+     aws s3 --no-sign-request --region ap-south-1 cp s3://hfgvgdgs/ec2.py .
+
+     aws s3 --no-sign-request --region ap-south-1 cp s3://<bucket name>/<file name> .
+
+-- to upload the file from ec2 to s3 
+
+     aws s3 --no-sign-request --region ap-south-1 cp demo.txt s3://hfgvgdgs
+
+     aws s3 --no-sign-request --region ap-south-1 cp <file name> s3://<bucket name>
+
+
+-- to delete file from ec2 to s3 , u have create one delete.json file 
+
+
+{
+  "Objects": [
+    {
+      "Key": "test1.txt"       # add ur file to delete
+    }
+  ],
+  "Quiet": false
+}
+
+
+
+
+      aws s3api --no-sign-request --region ap-south-1 delete-objects --bucket <bucket name> --delete file://delete.json
+
+      aws s3api --no-sign-request --region ap-south-1 delete-objects --bucket hfgvgdgs --delete file://delete.json
+
+
+-- so by this u are able to access the objects without giving any roles from the Account b
+
+-- so now try with your laptop
+
+-- search for myip of ur laptop
+
+-- get ip of ur lap 
+
+-- now go to cmd on lap and see if access key and secret key is there? if it is there remove the credentials    # rm -rf .aws
+
+-- aws configure , it will show you null values , now good to go 
+
+-- now open cmd n try to run the cmd
+  
+       aws s3 ls hfgvgdgs --no-sign-request --region ap-south-1
+
+-- u will get error , coz u do not have permissions to list get objects 
+
+-- copy ip of ur lap and paste in S3 bucket policy 
+
+            	"aws:SourceIp": ["3.109.60.179","167.103.20.197"]       #like this
+
+-- like this u can add IP's then run 
+
+              aws s3 ls <bucket name>  --no-sign-request --region <region of ur s3 bucket>
+
+       
+
+
+
+
+
+
+
 
 
 

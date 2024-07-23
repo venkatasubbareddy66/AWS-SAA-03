@@ -260,6 +260,63 @@ Dynamic         --------------> CDN Layer CloudFront (Cache based on correct hea
 
 
 
+---------------------------------------- CloudFront – ALB or EC2 as an origin
+
+
+
+
+
+-- it's possible for CloudFront to access any custom HTTP backend.
+
+-- So this includes as well an EC2 instance or an application load balancer.
+
+-- So let's say we've developed an HTTP backend on top of an EC2 instance and so we want our users to access it through CloudFront.
+
+-- How do we do?
+
+-- we have 2 Patterens :
+
+
+1 Ec2 as origin 
+
+      - Well, they will access the edge locations of CloudFront and these edge locations will be making requests into our EC2 instances.
+
+      - And therefore the EC2 instances must be public, otherwise the edge locations will not be able to access our EC2 instances because there's no private VPC connectivity in CloudFront.
+
+      - So therefore, we must also have a security group that allows the list of all the public IP of the edge locations of CloudFront to make sure the security is compatible and works.
+
+      - you can find a list of these CloudFront IPs in this URL right here.
+
+                  http://d7uri8nf7uskq.cloudfront.net/tools/list-cloudfront-ips                
+
+
+
+                                               Allow Public IP of Edge Locations                    
+        users <-----------> Edge Location <------------------------------------------> EC2 Instances Must be Public
+
+
+2 ALB as an Origin:
+
+       - it must be public
+
+       - and then the backend EC2 instances can be private because there is private VPC connection between the application load balancer and our EC2 instances.
+
+       - We just need to make sure that the EC2 instances security group allows the security group of the load balancer.
+
+       - So therefore, the users will be accessing the edge locations and then the public IPs of the edge locations must be allowed in the security group of the ALB to make sure connectivity can be established.
+
+       
+                                              Allow Public IP of Edge Locations                     Allow Security Group of Load Balancer
+
+        users <-----------> Edge Location  <---------------------------------------------> ALB   <-------------------------------------------> EC2 Instances Can be Private
+
+                Edge Location Public IPs                                  Application Load Balancer Must be Public
+
+
+
+
+
+
 
 --------------------------------------- CloudFront Signed URL / Signed Cookies
 
