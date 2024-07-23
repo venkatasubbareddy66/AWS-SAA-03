@@ -1475,14 +1475,6 @@ aws s3 ls <bucket name> --no-sign-request --region <region-name>
 
 
 
-
-
-
-
-
-
-
-
 =================================== identity center =======================================
 
 eg :if someone want to access 3 aws accounts u no need to create iam user in 3 aws accounts , u jst go to I.C and create user name and give URL to the person he will able to login with 3 aws accounts with SSO(single sign one ) as they wants to login into which account with same credentils 
