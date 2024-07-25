@@ -7642,6 +7642,10 @@ if u want to give access for some time only then AWS it has "pre-signed URL" whi
 
 
 
+
+
+
+
 ================S3 transfer Acceleration============
 
 -- it is billable 

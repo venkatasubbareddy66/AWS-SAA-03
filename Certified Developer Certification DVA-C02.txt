@@ -440,7 +440,22 @@ Dynamic         --------------> CDN Layer CloudFront (Cache based on correct hea
 
 -- now go to distribution --> behaviour --> edit --> Restrict viewer access = yes --> save changes 
 
+-- go to cli and enter the command 
+
+-- store private key in the local 
+
+ aws cloudfront sign --url https://d2wvy12e9tvxs2.cloudfront.net/ec2.py --key-pair-id K3T4KL9S53KCPW --private-key file://demo-private-key.pem --date-less-than 2024-07-26
+   
+
+
+-- change with your values 
+
+
 -- it will get create one URL
+
+remove % in the link if u get , the paste remaining url and try
+
+
 
 
 
