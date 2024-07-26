@@ -453,14 +453,23 @@ Dynamic         --------------> CDN Layer CloudFront (Cache based on correct hea
 
 -- it will get create one URL
 
-remove % in the link if u get , the paste remaining url and try
+         - remove % in the link if u get , the paste remaining url in browser and try
+
+-- if u are getting from server then try 
+
+          curl "url"
 
 
 
 
 
 
-TYPE 2 
+
+
+
+
+
+TYPE 2 : it is also another way but not recommend 
 
 -- go to security credentials --> create cloudfront key pair --> download both public and private files 
 
@@ -533,6 +542,26 @@ EG :
 
 
 LAB : https://325b057e.isolation.zscaler.com/profile/1233fc6e-6618-4022-a03b-96afce7da312/zia-session/?controls_id=5363df57-072a-41ec-8342-91ef13f84e51&region=bom&tenant=462f064b6b51&user=a88c06b13d4badbc3b1628a94e955f23c843810a6a0110d09b7d0213d4fe17aa&original_url=https%3A%2F%2Faws.amazon.com%2Fblogs%2Fsecurity%2Fhow-to-enhance-the-security-of-sensitive-customer-data-by-using-amazon-cloudfront-field-level-encryption%2F&key=sh-1&hmac=dfa6e28bf1bc65f977e7e1b8fb8cd99b505583c03072c2c6e52c6e286b86f799
+
+
+
+
+
+
+
+------------------------------------------ CloudFront – Price Classes
+
+
+• You can reduce the number of edge locations for cost reduction
+
+• Three price classes:
+
+       1. Price Class All: all regions – best performance
+
+       2. Price Class 200: most regions, but excludes the most expensive regions
+
+       3. Price Class 100: only the least expensive regions
+
 
 
 
@@ -640,7 +669,7 @@ Dockerfile -------(Build)----------------> Docker Image ------------(Run)-------
                  - Then you can pull back these images from these repositories and then you would run them.
 
 
--- Docker Container : And when you run a Docker image , it becomes a Docker container, which runs your code hat you had built from your Docker build.
+-- Docker Container : And when you run a Docker image , it becomes a Docker container, which runs your code  you had built from your Docker build.
 
 
 --- That is the whole process with Docker.
@@ -944,7 +973,7 @@ IMP NOTE :
 
 -- cluster --> service --> democluster --> update service
 
--- put desired = 3 1 per AZ , now we have two more tasks being provisioned and they are provisioned on the Fargate engine.
+-- put desired = 3   1 per AZ , now we have two more tasks being provisioned and they are provisioned on the Fargate engine.
 
 -- So that means that behind the scenes, AWS is going to provision automatically the resource that it needs to launch these tasks.
 

@@ -7644,6 +7644,35 @@ if u want to give access for some time only then AWS it has "pre-signed URL" whi
 
 
 
+-- if u want to generate Pre-signed url through cli
+
+          aws s3 presign s3://hfgvgdgs/ec2.py --expires-in 604800 --region ap-south-1 --endpoint-url https://s3.ap-south-1.amazonaws.com
+
+
+
+-- if u want to create with python
+
+
+
+import boto3 
+
+
+def lambda_handler(event, context):
+    url = boto3.client('s3').generate_presigned_url(
+    ClientMethod='get_object',
+    Params={'Bucket': 'hfgvgdgs', 'Key': 'ec2.py'},
+    ExpiresIn = 3600)
+    
+    
+    print("the url is " + url)
+
+
+
+
+
+
+
+
 
 
 ================S3 transfer Acceleration============
