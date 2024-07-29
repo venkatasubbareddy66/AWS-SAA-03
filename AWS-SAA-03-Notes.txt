@@ -7648,6 +7648,10 @@ if u want to give access for some time only then AWS it has "pre-signed URL" whi
 
           aws s3 presign s3://hfgvgdgs/ec2.py --expires-in 604800 --region ap-south-1 --endpoint-url https://s3.ap-south-1.amazonaws.com
 
+                                               or 
+
+          aws s3 presign s3://hfgvgdgs/ec2.py --expires-in 3600                                               
+
 
 
 -- if u want to create with python
@@ -7665,6 +7669,23 @@ def lambda_handler(event, context):
     
     
     print("the url is " + url)
+
+
+
+
+
+
+-- Downloading the File
+
+         curl -o "output-file-name" "presigned-url"
+
+
+
+-- Customizing File Name and Location
+
+         curl -o "/path/to/destination/file-name.extension" "presigned-url"
+
+          - Ensure that the directory exists before executing the command.
 
 
 
