@@ -1133,7 +1133,7 @@ Explanation :
 
     - so, each ECS task from within the EC2 instance, is going to be accessible from a different port on the host,the EC2 instance.
 
-    - therefore, if you define an application load balancer , then you may say, well, it is difficult for the ALB to connect to the ECS test because the port is changing.
+    - therefore, if you define an application load balancer , then you may say, well, it is difficult for the ALB to connect to the ECS task because the port is changing.
 
     - But the ALB when linked to an ECS service knows how to find the right port, thanks to the Dynamic Host Port Mapping feature.
 
