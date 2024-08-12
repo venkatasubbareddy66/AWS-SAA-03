@@ -1144,6 +1144,11 @@ NOTE : but it does not work with a classic load balancer because it is older gen
 
 
 
+Question : You have a containerized application stored as Docker images in an ECR repository, that you want to run on an ECS cluster. You're trying to launch two copies of the same Docker container on the same EC2 container instance. The first container successfully starts, but the second container doesn't. You have checked that there's enough CPU and RAM on the EC2 container instance. What is the problem here?
+
+ANS : The host port defined in the task definition
+
+
 
 
 
@@ -1299,7 +1304,7 @@ The following are common use cases for bind mounts.
 
 • Binpack
 
-    • Tasks are placed on the least available amount of CPU and Memory
+    • Tasks are placed on the least available amount of CPU or Memory
 
     • Minimizes the number of EC2 instances in use (cost savings)
 
@@ -1713,6 +1718,141 @@ sudo curl -Lo /usr/local/bin/copilot https://github.com/aws/copilot-cli/releases
 
 
 
+===================================== Deploy an Application to Amazon ECS With EC2 | Docker | ECR | Fargate | Load balancer | AWS Project ===================
+
+
+
+
+Step 1 : 
+
+- Create one EC2 Instance and connect into it and install Docker on instance 
+
+- sudo su
+
+- yum update -y 
+
+- curl -fsSL https://get.docker.com -o get-docker.sh
+
+- yum install docker -y
+
+- docker --version
+
+- systemctl start docker
+
+- systemctl status docker
+
+
+
+
+Step 2 : 
+
+
+- I would like to create a directory for iur project so,
+
+       mkdir <name of ur folder>
+
+- cd <folder that u have created>
+
+- create one Dockerfile 
+
+     vim Dockerfile
+
+
+- Add content in Dockerfile
+
+# Use the official CentOS 7 base image
+FROM centos:centos7
+
+# Install the Apache HTTP server package from the CentOS repository
+RUN yum install httpd -y
+
+# Copy the index.html file from the Docker build context to the default Apache document root directory in the container
+COPY index.html /var/www/html/
+
+# Specify the command to run when the container starts, which starts the Apache HTTP server in the foreground
+CMD ["/usr/sbin/httpd","-D","FOREGROUND"]
+
+# Expose port 80 to allow incoming HTTP traffic to the container
+EXPOSE 80
+
+
+
+- now create one index.html file 
+
+
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Application Deployment to Amazon ECS</title>
+    <style>
+      body {
+        background-color: seaGreen;
+        margin: 0;
+        padding: 0;
+      }
+      .navbar {
+        background-color: white;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        height: 50px;
+        padding: 0 20px;
+      }
+      .navbar button {
+        border: none;
+        background-color: white;
+        color: orange;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        outline: none;
+        padding: 10px 20px;
+        margin-right: 10px;
+        border-radius: 20px;
+        transition: all 0.3s ease;
+      }
+      .navbar button:hover {
+        background-color: seaGreen;
+        color: white;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="navbar">
+      <button>Home</button>
+      <button>Services</button>
+      <button>About Us</button>
+      <button>DevOps Courses</button>
+    </div>
+    <h1>WEB APPLICATION DEPLOYMENT TO ECS </h1>
+    <p>Feels good learning Containerization with Docker and Deployment to Amazon ECS</p>
+  </body>
+</html>
+
+
+
+
+- now build docker image 
+
+      docker build -t project-image .              # project = u can give any name here 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ================================================= AWS Elastic Beanstalk ===============================================
 
 
@@ -1797,7 +1937,7 @@ Developer problems on AWS
 
  -- because they're going to pull messages from the SQS queue to process them.
 
- • Scale based on the number of SQS messages
+ • Scale based on the number of SQS messages , more SQS messages more ec2 instances
 
  • Can push messages to SQS queue from anotherWeb ServerTier
 
@@ -1878,6 +2018,8 @@ NOTE : use the above method to create environment , in the new console there mig
 
 
 ---------------------------------------- Beanstalk Deployment Options for Updates
+
+
 
 1 • All at once (deploy all in one go) – fastest, but instances aren’t available to serve traffic for a bit (downtime)
 
@@ -2012,6 +2154,14 @@ EG :
 -- it's going to sort of merge the ASG with a temporary ASG. So it's going to move all the temporary ASG instances to the current ASG.
 
 -- So now, in the current ASG, we have six instances, And when all of this is done and the temporary ASG is empty, then we have the current ASG that will terminate all the v1 applications, while the v2 applications are still there. And then, finally, the temporary ASG will just be removed.
+
+
+
+
+
+Q: A company hosting their website on AWS Elastic Beanstalk. They want a methodology to continuously release new application versions with the ability to roll back very quickly in case if there're any issues. Also, the application must be running at full capacity while releasing new versions. Which Elastic Beanstalk deployment option do you recommend?
+
+ANS : immutable , In this mode, a full set of new instances running the new version of the application in a separate Auto Scaling Group is launched. To roll back quickly, this mode terminates the ASG holding the new application version, while the current one is untouched and already running at full capacity.
 
 
 
@@ -2242,11 +2392,11 @@ REF : https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/using-features.depl
 
 • To migrate:
 
-1. create a new environment with the same configuration except LB (can’t clone) -- u can't use clone 'coz it uses same configuration.
+    1. create a new environment with the same configuration except LB (can’t clone) -- u can't use clone 'coz it uses same configuration.
 
-2. deploy your application onto the new environment
+    2. deploy your application onto the new environment
 
-3. perform a CNAME swap or Route 53 update -- to shift traffic
+    3. perform a CNAME swap or Route 53 update -- to shift traffic
 
 
 
@@ -2259,7 +2409,8 @@ REF : https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/using-features.depl
 • The best for prod is to separately create an RDS database and provide our EB application with the connection string (for example using an environment variable.)
 
 
--------- Elastic Beanstalk Migration: Decouple RDS
+
+-------- Elastic Beanstalk Migration: Decouple RDS (How would we Decouple RDS if it's already in our Beannstock stack?)
 
 1. Create a snapshot of RDS DB (as a safeguard)
 
@@ -8158,6 +8309,14 @@ Outputs:
   LoadBalancerUrl:
     Description: The URL of the ALB
     Value: !GetAtt ScorekeepLoadBalancer.DNSName
+
+
+
+
+Question : You have a Classic ECS cluster that you want to enable IAM roles for your ECS tasks so that they can make API requests to AWS services. Which ECS configuration option should you enable in /etc/ecs/ecs.config?
+
+
+ANS : ECS_ENABLE_TASK_IAM_ROLE
 
 
 

@@ -5767,6 +5767,9 @@ EXP : Amazon EC2 Auto Scaling attempts to distribute instances evenly between th
 
  sudo amazon-linux-extras install epel -y 
 
+
+ - if it is not working go to 2nd command directly
+
 -- once avove command is successfully installed , then enter this command
 
   sudo yum install stress -y
@@ -6393,6 +6396,10 @@ sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-c
 -- if it is running it is success
 
 -- now go to CLoudwatch and --> all metrics --> CW Agent --> give instacne id and check logs of memory
+
+
+
+
 
 
 
