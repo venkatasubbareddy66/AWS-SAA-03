@@ -1238,7 +1238,7 @@ so in policy generator :
 
 -- copy this file to the s3 bucket 
          
-         aws s3 cp <file name> s3://< bucket name u want to upload>          ---> if u want to upload file from local to s3 
+         aws s3 cp <file name> s3://< bucket name> u want to upload>          ---> if u want to upload file from local to s3 
 
         aws s3 cp demo.txt s3://cross-bucket-access-demo-for-account-a
 

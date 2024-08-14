@@ -3165,7 +3165,7 @@ Outputs:
 
 
 
--------------------------------------------------------------------- CloudFormation – Intrinsic Functions
+-------------------------------------------------------------------- CloudFormation – Intrinsic Functions (built-in functions)
 
 
 mk = must know 
@@ -4032,6 +4032,13 @@ EG :
 -- u have 2 options to delete non-empty s3 bucket using cloudformation
 
 
+
+
+
+IMP : if you are getting error while uploading the yaml file thorugh the local system , then try to upload in the s3 bucket copy the https://.... url of object and paste in the CF console
+
+
+
 Option -1 
 
 
@@ -4289,7 +4296,7 @@ Activate the Extension:
     - Go to AWS Console > CloudFormation
     - On the left menu select ‘Public extensions’.
     - Choose ‘Third party’ under the publisher.
-    - Search for ‘AwsCommunity::S3::DeleteBucketContents’ and select it.
+    - Search for ‘AwsCommunity::S3::DeleteBucketContents’ and select it click on activate.
     - Under the execution role, provide the ARN of the role created above.
     - Click ‘Activate’.
 
@@ -4365,7 +4372,7 @@ SQS, SNS & Kinesis
 
      1) Synchronous communications  (application to application) 
 
-     2) Asynchronous / Event based  (applicahon to queue to application)
+     2) Asynchronous / Event based  (application to queue to application)
 
 
 • Synchronous between applications can be problematic if there are sudden spikes of traffic
