@@ -4450,7 +4450,7 @@ SQS, SNS & Kinesis
 
 -- So, messages that are up to 256 kilobytes are sent into SQS by producers. how does this happen?
 
--- Well, the producers will send the messages to SQS using an SDK, software development kits. And the API to send a message to SQS is called SendMessage.
+-- Well, the producers will send the messages to SQS using an SDK, software development kits. And the API to send a message to SQS is called SendMessage API.
 
 • Produced to SQS using the SDK (SendMessage API)
 
@@ -4794,15 +4794,27 @@ IMP to know
 
 -------------- LAB to observe Visibility Timeout 
 
--- create one std queue
+-- create one std queue, open duplicate tab for this same queue
 
--- open 2 windows , in 1st window send some message and go to 2nd window try to refresh ,
+-- open 2 windows , in 1st window send some message and go to 2nd window try to refresh and poll for message  ,
 
 -- in 2nd window u can't get any messages 'coz it is in visibility timeout period , after 30 sec it will visible to U
 
 -- the more u poll , the receive count will increase for same message 
 
 --  u can also change visibility time , but default is better 
+
+
+
+
+
+Question : You have an SQS Queue where each consumer polls 10 messages at a time and finishes processing them in 1 minute. After a while, you noticed that the same SQS messages are received by different consumers resulting in your messages being processed more than once. What should you do to resolve this issue?
+
+ANS : increase Visibility Timeout
+
+EXP : SQS Visibility Timeout is a period of time during which Amazon SQS prevents other consumers from receiving and processing the message again. In Visibility Timeout, a message is hidden only after it is consumed from the queue. Increasing the Visibility Timeout gives more time to the consumer to process the message and prevent duplicate reading of the message. (default: 30 sec., min.: 0 sec., max.: 12 hours)
+
+
 
 
 
@@ -4942,7 +4954,7 @@ Producer--------------------(Send messages)-----> SQS queue ----------(Poll mess
 
 --------important thing that you need to understand the difference is in short polling Amazon SQS sends the response right away even if the query found is no message 
 
-------- long pooling Amazon SQS asked you sends and empty response only if the polling wait time expires and that is why we use long polling if we want to save API call costs.
+------- long polling Amazon SQS asked you sends and empty response only if the polling wait time expires and that is why we use long polling if we want to save API call costs.
 
 
 
@@ -5163,33 +5175,33 @@ IMP to know
 
 1  Message Order
 
--- Standard queues provide best-effort ordering which ensures that messages are generally delivered in the same order as they are sent. Occasionally (because of the highly-distributed architecture that allows high throughput), more than one copy of a message might be delivered out of order.
+    -- Standard queues provide best-effort ordering which ensures that messages are generally delivered in the same order as they are sent. Occasionally (because of the highly-distributed architecture that allows high throughput), more than one copy of a message might be delivered out of order.
 
--- FIFO queues offer first-in-first-out delivery and exactly-once processing: the order in which messages are sent and received is strictly preserved.
+    -- FIFO queues offer first-in-first-out delivery and exactly-once processing: the order in which messages are sent and received is strictly preserved.
 
 2  Delivery
 
--- Standard queues guarantee that a message is delivered at least once and duplicates can be introduced into the queue.
+    -- Standard queues guarantee that a message is delivered at least once and duplicates can be introduced into the queue.
 
--- FIFO queues ensure a message is delivered exactly once and remains available until a consumer processes and deletes it; duplicates are not introduced into the queue.
+    -- FIFO queues ensure a message is delivered exactly once and remains available until a consumer processes and deletes it; duplicates are not introduced into the queue.
 
 3  Transactions Per Second (TPS)
 
--- Standard queues allow nearly-unlimited number of transactions per second.
+    -- Standard queues allow nearly-unlimited number of transactions per second.
 
--- FIFO queues allow to process up to 3000 messages per second per API action.
+    -- FIFO queues allow to process up to 3000 messages per second per API action.
 
 4  Regions
 
--- Standard queues are available in all the regions.
+    -- Standard queues are available in all the regions.
 
--- FIFO queues are currently available in limited regions only.
+    -- FIFO queues are currently available in limited regions only.
 
 5  AWS Services Supported
 
--- Standard Queues are supported by all AWS services.
+    -- Standard Queues are supported by all AWS services.
 
--- FIFO Queues are currently not supported by all AWS services like: CloudWatch Events, S3 Event Notifications, SNS Topic Subscriptions, Auto Scaling Lifecycle Hooks, AWS IoT Rule Actions, AWS Lambda Dead Letter Queues.
+    -- FIFO Queues are currently not supported by all AWS services like: CloudWatch Events, S3 Event Notifications, SNS Topic Subscriptions, Auto Scaling Lifecycle Hooks, AWS IoT Rule Actions, AWS Lambda Dead Letter Queues.
 
 
 
@@ -5469,15 +5481,15 @@ CloudWatch Alarms / AWS Budgets / Lambda / DynamoDB / S3 Bucket (Events) / Auto 
 
 
 
----RECORD : So a record, at its fundamental, is made of two things, it's made of a partition key and it is made of the data blob, or the value that is up to one megabytes.
+--- RECORD : So a record, at its fundamental, is made of two things, it's made of a partition key and it is made of the data blob, or the value that is up to 1MB.
 
-    - So the partition key will define and help determine in which shard will the record go to.       
+        - So the partition key will define and help determine in which shard will the record go to.       
 
-    - And the data blob is the value itself. (Up to 1 MB)
+        - And the data blob is the value itself. (Up to 1 MB)
 
-    - So when you have the producers sending data to Kinesis Data Streams, they can send data at a rate of one megabytes per second, or a thousand messages per second, per shard.
- 
-    - So if you have six shards, you get six megabytes per second, or 6,000 messages per second, overall,
+        - So when you have the producers sending data to Kinesis Data Streams, they can send data at a rate of one megabytes per second, or a thousand messages per second, per shard.
+    
+        - So if you have six shards, you get six megabytes per second, or 6,000 messages per second, overall,
 
 
 
@@ -5675,7 +5687,7 @@ IMP to Know :
 
 
 
-(look picture at pdf for better understanding )
+(look picture in pdf for better understanding )
 
 
 
@@ -5706,7 +5718,7 @@ IMP to Know :
 
 -- So in this case we get two megabytes per second, per consumer, per shard. So it's not across all consumers it's per consumer, per shard.
 
--- So that means that the Consumer Application A will use a new API code called Subscribe to Shard and this will make the shard, send the data push the data into our Consumer Application A at the rate of two megabytes per second.
+-- So that means that the Consumer Application A will use a new API code called SubscribeToShard() and this will make the shard, send the data push the data into our Consumer Application A at the rate of two megabytes per second.
 
 -- If the second Consumer Application B issues another subscribed to shard then this Consumer Application B as well. Will get the data pushed by the shard into the Consumer Application at the rate of two megabytes per second.
 
@@ -5968,6 +5980,7 @@ IMP : it will expire after 5 min ,  If u get timeout error like this , do this a
      • 6 shards = max. 6 KCL instances
 
 
+
 IMP : When using Kinesis Client Library, each shard is to be read-only by one KCL instance. So, if you have 10 shards, then the maximum KCL instances you can have is 10.
 
 
@@ -6221,7 +6234,7 @@ look at picture in pdf for better understanding
 
 
 
---------------------------------------------------------------  Kinesis Data Firehose 
+--------------------------------------------------------------  Kinesis Data Firehose Hands on
 
 
 -- create KDF ---> source = KDS --> destinations = s3 --> select KDS ARN ---> buffer interval = 60 sec for demo --> create bucket and choose that bucket as destination
@@ -6342,7 +6355,7 @@ look at picture in pdf for better understanding
 
 • How should you send that data into Kinesis?
 
-• Answer : send using a “Par tition Key” value of the “truck_id”
+• Answer : send using a “Partition Key” value of the “truck_id”
 
 --  the value of that partition key is the truck ID. So the truck one will send it for the  partition key truck one and then truck two will send for partition key truck two .....
 
@@ -6460,7 +6473,7 @@ Explanation :
 
 SQS:                                                          SNS:                                         Kinesis
 
-• Consumer“pulldata”                                    • Pushdatatomany subscribers                           • Standard:pulldata (2 MB per shard)
+• Consumer“pulldata”                                    • Push data to many subscribers                        • Standard:pulldata (2 MB per shard)
 
 • Data is deleted after being consumed                  • Upto 12,500,000subscribers                           • Enhanced-fanout:pushdata (2 MB per shard per consumer)
 
@@ -21955,7 +21968,7 @@ s3://doc-example-bucket/table1/
 
 
 
----------------------------------------------------------- Amazon Managed Streaming forApache Kafka,(Amazon MSK)
+---------------------------------------------------------- Amazon Managed Streaming for Apache Kafka,(Amazon MSK)
 
 
 • Alternative to Amazon Kinesis , Kafka and Kinesis both allow you to stream data.
