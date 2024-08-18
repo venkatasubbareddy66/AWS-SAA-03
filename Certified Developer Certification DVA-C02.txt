@@ -5147,6 +5147,14 @@ for example , And we're grouping messages into three groups: A, B, and C.
 
 
 
+Question: You are running an SQS FIFO queue with 10 message groups (defined by MessageGroupID). What's the maximum number of consumers can consume simultaneously?
+
+ANS: 10
+
+EXP : You can have as many consumers as "MessageGroupID" for your SQS FIFO queues.
+
+
+
 
 
 --------------------------- LAB 
@@ -6619,12 +6627,12 @@ SQS:                                                          SNS:              
      1 Basic and 
      2 Detailed Moitoiring 
 
--- Basic is free nad it will tke every 5 min data
+-- Basic is free and it will take every 5 min data
 
 -- deatiled monitoiring : every 1 min data points , billable
 
 
--- u create alaram in CW 
+-- u can create alaram in CW 
 
 -- alarms can do actions like (terminate , reboot ,stop , recover ) 
 
@@ -6662,7 +6670,7 @@ ANS : Log Groups
 
       -- NameSpace has got a name , it can be anythng as long as it stays within the rule set 
 
-      -- All aws data goes to aws namesoace ---> AWS/Service
+      -- All aws data goes to aws namespace ---> AWS/Service
 
       -- Namespace contains related metric 
 
@@ -6672,7 +6680,7 @@ ANS : Log Groups
       Eg: cpu usage network IN/OUT 
 
 
-3  Data Point : let us say we have metric called CPU Utilization , everytime any server measures its utilixation and send it into cloudwatch that goes into the CPU utilization metrics and each one of those measures so everytime the server reports the cpu that measure is called "Data Point" 
+3  Data Point : let us say we have metric called CPU Utilization , everytime any server measures its utilization and send it into cloudwatch that goes into the CPU utilization metrics and each one of those measures so everytime the server reports the cpu that measure is called "Data Point" 
 
 
      --it has 2 components 
@@ -6685,7 +6693,7 @@ ANS : Log Groups
 Note : CPU utilization metric could contain data from many servers ,so how do we seperate data for this? so use " Dimesions"
 
 
-4  Dimensions : these are Name Value Pairs that seperate data point for different thngs or perspective withn the same metric 
+4  Dimensions : these are Name Value Pairs that seperate data point for different things or perspective withn the same metric 
 
 
       -- while sending data points to cloud watch ,AWS also send in , these two 
@@ -6702,6 +6710,8 @@ Note : CPU utilization metric could contain data from many servers ,so how do we
       A  OK --> Everything is working fine 
 
       B  ALARM --> Something bad has happened 
+
+      C insufficient Data ---> instance has stopped or not exists
 
 
 
@@ -7222,6 +7232,18 @@ sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-c
     • Length of time in seconds to evaluate the metric
 
     • High resolution custom metrics: 10 sec, 30 sec or multiples of 60 sec
+
+
+
+
+Question : A CloudWatch Alarm set on a High-Resolution Custom Metric can be triggered as often as ......................
+
+ANS : 10 sec
+
+EXP : If you set an alarm on a high-resolution metric, you can specify a high-resolution alarm with a period of 10 seconds or 30 seconds, or you can set a regular alarm with a period of any multiple of 60 seconds.
+
+
+
 
 
 
@@ -8488,7 +8510,7 @@ REF : https://docs.aws.amazon.com/xray/latest/devguide/xray-sdk-nodejs.html
 
 • Reservoir: 10
 
-• Rate: 10 (.1 if configured using a JSON document)
+• Rate: 0.10 (.1 if configured using a JSON document)
 
 • Service name: *
 
@@ -8850,7 +8872,7 @@ EPV : AWS CloudTrail cannot stream data to Amazon Kinesis. Amazon S3 buckets and
 
       • Amazon S3 object-level activity (ex: GetObject, DeleteObject, PutObject):as you can see, these can be happening a lot on an S3 bucket. so this is why they're not logged by default and u have the option can separate Read and Write Events
 
-      - So a Read Event will be a GetObject whereas a Right Event would be a DeleteObject or a PutObject.
+      - So a Read Event will be a GetObject whereas a wright Event would be a DeleteObject or a PutObject.
 
       - Another kind of event you can have in a CloudTrail are AWS Lambda function execution activities.
 
@@ -10199,7 +10221,7 @@ def lambda_handler(event, context):
 
 --  so, because my Lambda function is continuously pulling from SQS, then it should process this message.
 
--- open loga in cloudwatch , u will able to see the message in the cloudwatch records
+-- open logs in cloudwatch , u will able to see the message in the cloudwatch records
 
 -- now go to queue --> see u have 0 messages 'coz the messages has been processed by our lambda function.
 
@@ -10216,42 +10238,42 @@ def lambda_handler(event, context):
 
 
 
-EventBridge -------------(invoke)----------------> Lambda Funcxon
+EventBridge -------------(invoke)----------------> Lambda Function
 
 
 EVENT Object :
 
 
-• JSON-formatted document contains data for the function to process
+  • JSON-formatted document contains data for the function to process
 
-• Contains information from the invoking service (e.g., EventBridge, custom, ...)
+  • Contains information from the invoking service (e.g., EventBridge, custom, ...)
 
-• Lambda runtime converts the event to an object (e.g., dict type in Python)
+  • Lambda runtime converts the event to an object (e.g., dict type in Python)
 
-• Example: input arguments, invoking service arguments, ...
+  • Example: input arguments, invoking service arguments, ...
 
 
--- So let's take an example where your Lambda function is invoked, for example, by a EventBridge rule.
+  -- So let's take an example where your Lambda function is invoked, for example, by a EventBridge rule.
 
--- So what's going to happen is that EventBridge is going to create an event and that event is going to be passed to your Lambda function
+  -- So what's going to happen is that EventBridge is going to create an event and that event is going to be passed to your Lambda function
 
--- your Lambda function will receive that event, and it's called the event object.
+  -- your Lambda function will receive that event, and it's called the event object.
 
--- the event object includes a lot of detail around, well, the event itself. Where it was emitted from and the service itself will include a lot of data related to that event in the event.
+  -- the event object includes a lot of detail around, well, the event itself. Where it was emitted from and the service itself will include a lot of data related to that event in the event.
 
 
 Context Objects :
 
-• Provides methods and properties that provide information about the invocation, function, and runtime environment
+    • Provides methods and properties that provide information about the invocation, function, and runtime environment
 
-• Passed to your function by Lambda at runtime
+    • Passed to your function by Lambda at runtime
 
-• Example: aws_request_id, function_name, memory_limit_in_mb, ...
+    • Example: aws_request_id, function_name, memory_limit_in_mb, ...
 
 
--- this is more some metadata around your function, such as the request ID from AWS, your function name, the log group associated with your Lambda function, the memory limit, and so on.
+    -- this is more some metadata around your function, such as the request ID from AWS, your function name, the log group associated with your Lambda function, the memory limit, and so on.
 
--- So this event object and this context object are very different but very complementary.
+    -- So this event object and this context object are very different but very complementary.
 
 
 
@@ -10306,9 +10328,7 @@ def lambda_handler(event, context):
 • Note: AWS recommends you use destinations instead of DLQ now (but both can be used at the same time)
 
 
-• Event Source mapping: This is only used for when you have an event batch that gets discarded because we can't process it.
-
-So we can, instead, send that event batch into Amazon SQS or Amazon SNS,
+• Event Source mapping: This is only used for when you have an event batch that gets discarded because we can't process it. So we can, instead, send that event batch into Amazon SQS or Amazon SNS,
 
 IMP • Note: that if you have an Event Source mapping reading from SQS, you can set either a failed destination or you can set up a DLQ directly on your SQS Queue.
 

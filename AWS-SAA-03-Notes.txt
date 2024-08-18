@@ -851,7 +851,11 @@ IMP : to access the other accounts , by using ROLES u can access others account 
 -- explore allthings in IAM 
 
 
+
+
 ========================================================IAM Policies
+
+
 
 -- You can manage access in AWS by creating policies and attaching them to IAM identities (users, groups of users, or roles) or AWS resources.
 
@@ -1583,11 +1587,18 @@ like thi su can grant permissions  tp specific accounts
 
 
 
+
+
+
 ----------------------------- Resource Policies & aws:PrincipalOrgID
 
 • aws:PrincipalOrgID can be used in any resource policies to restrict access to accounts that are member of an AWS Organization
 
 -- it will deny the members from outside of an organization , it works for organization only to whom grant access or not to grant permissions with organization
+
+
+
+
 
 
 --------------------- IAM Roles vs Resource Based Policies
