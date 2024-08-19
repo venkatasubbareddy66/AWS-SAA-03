@@ -10337,7 +10337,7 @@ IMP • Note: that if you have an Event Source mapping reading from SQS, you can
 
 
 
------------------------------------------------------- Lambda – Destinations
+------------------------------------------------------ Lambda – Destinations Hands on
 
 
 -- for this demo , choose s3 event notificatin invoke funtion , 
@@ -10849,13 +10849,13 @@ IMP : So if you deploy a Lambda function in a private subnet, note that your Clo
  ------------------------------------------------------ Lambda in VPC Hands On
 
 
--- create one lambda function with py 3.8
+-- create one lambda function with py 3.8(use 3.11 now)
 
 -- create one sg for lambda without any inbound rules 
 
 --  go to configuration --> permissions --> add AWSLambdaENIManagementAccess to the IAM role 
 
--- So back into our Lambda function. Now let's go into the configuration and make sure that we can deploy this within our VPC
+-- So back into our Lambda function. Now let's go into the configuration and make sure that we can deploy this within our VPC and add subnets 
 
 -- because right now the Lambda function is within the AWS cloud and it has internet access but it doesn't have VPC access.
 
@@ -11138,7 +11138,7 @@ def lambda_handler(event, context):
         https://aws.amazon.com/blogs/aws/new-for-aws-lambda-use-any-programming-language-and-share-common-components/
 
 
---  go to layer in lambda function --> c.o layers --> add layer --> pythonSpicylayer ----> select latest version
+--  go to layer in lambda function --> c.o layers --> add layer --> pythonSciPy layer ----> select latest version
 
 -- copy code in website and paste in function 
 
@@ -11979,6 +11979,9 @@ def lambda_handler(event, context):
 -- So that means that X will be first equal to 10%. And so we'll have 90% on V1 and 10% on V2.
 
 -- finally, all the way up to 100% on V2 and 0% on V1.
+
+
+
 
 ------------- what strategies that CodeDeploy have?
 
