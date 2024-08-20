@@ -4,6 +4,25 @@ IMP NOTE : ALL the Topics have covered in the Solution architect Associate , her
 
 
 
+
+
+As per the recent update from the Amazon , they are going to shutdown some services , like 
+
+
+1 Cloudsearch
+2 Cloud9
+3 Simple DB
+4 forecast
+5 S3 Select
+6 DataPipeline
+7 CodeCommit
+
+
+
+
+
+
+
 =========================================================== CloudFront =========================================
 
 
@@ -12356,7 +12375,7 @@ Resources :
 
 
 
---------- • Option 1: Par tition Key (HASH)
+--------- • Option 1: Partition Key (HASH)
 
        • Partition key must be unique for each item 
 
@@ -12401,7 +12420,7 @@ Resources :
 
           7791a3d6          2233              20              win
           98377366          3421              40             lost
-           98377366         2123              33              win
+          98377366          2123              33              win
 
 
 -- “User_ID” for Partition Key and “Game_ID” for Sort Key  and    Score and Result = attributes
@@ -12430,7 +12449,7 @@ Resources :
 
 • “movie_id” has the highest cardinality so it’s a good candidate
 
-• “movie_language” doesn’t take many values and may be skewed towards English so it’s not a great choice for the Partition Key
+• “movie_language” doesn’t take many values and may be skewed(not accurate or exact) towards English so it’s not a great choice for the Partition Key
 
 
 
@@ -12581,7 +12600,7 @@ ANS : we need (120 / 60 ) * (2KB / 1KB)  = 4 WCU'S , We need to do a small compu
 ANS : 
 
 
--- we kanow the basic of 
+-- we know the basic of 
 
    -- For ECR , 1 RCU = 2 Reads per second of 4KB size
 
@@ -13212,8 +13231,8 @@ aws dynamodb delete-item \
           User_ID          Game_ID       Game_TS                            Score         Result
 
           7791a3d6          2233        “2021-03-15T17:43:08”               20              win
-          98377366          3421        “2021-06-20T19:02:32”               40             lost
-           98377366         2123         “2021-02-11T04:11:31”              33              win
+          98377366          3421        “2021-06-20T19:02:32”               40              lost
+          98377366          2123        “2021-02-11T04:11:31”               33               win
 
 
 
