@@ -13843,7 +13843,7 @@ Step 3 : Test
 
 -- add epoch time to the items u want 
 
--- now additional settings --> turn on TTL --> provide attribute name from table 
+-- now additional settings --> turn on TTL --> provide attribute name from table(Expireson) 
 
 -- after some time , it will delete the items 
 
@@ -14646,6 +14646,10 @@ Eg :
 
 
 
+-- All hands-on in these part are linked with one to one , so do not delete any resources until u finished the whole API Gateway 
+
+
+
 -- Build, Deploy and Manage APIs
 
 
@@ -14963,7 +14967,7 @@ def lambda_handler(event, context):
 
 -- So now we can go ahead and actually create a new resource.
 
--- api gateway --> ur api --> create resource --> houses 
+-- api gateway --> ur api --> create resource --> houses (u can give any name)
 
 -- go to lambda --> create function with py 3.11
 
@@ -15123,7 +15127,7 @@ V2 Client ------------------------------------------> API GAteway --------------
 
 -- create lambda fucntion with py 3.11 
 
--- What we're going to do is that we're going to create code for it, and author versions, version one, version two, et cetera. We're going to create aliases,
+-- What we're going to do is that we're going to create code for it, and other versions, version one, version two, et cetera. We're going to create aliases,
 
 
 
@@ -15292,7 +15296,7 @@ https://air12uoa3g.execute-api.ap-south-1.amazonaws.com/prod/stage-variables
 
 
 
----------------------------------------------------------- API Gateway –  Canary Deployment HAnds On
+---------------------------------------------------------- API Gateway –  Canary Deployment Hands On
 
 
 -- create resource (canary-demo) --> create method (GET ,lambda function , enable lambda proxy integration , lambdaARN:1) --> create method 

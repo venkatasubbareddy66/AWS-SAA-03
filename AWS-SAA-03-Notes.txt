@@ -10619,6 +10619,8 @@ ans : 20 RCU
 
 --------------------------------- DynamoDB – Stream Processing
 
+
+
 -- DynamoDB stream details = Capture item-level changes in your table, and push the changes to a DynamoDB stream. You then can access the change information through the DynamoDB Streams API.
 
 -- Use cases:
@@ -10627,6 +10629,10 @@ ans : 20 RCU
 • Insert into derivative tables
 • Implement cross-region replication
 • Invoke AWS Lambda on changes to your DynamoDB table
+
+
+
+
 
 --------------------------- LAB 
 
@@ -10649,6 +10655,8 @@ Uses For :
 -- Analytics purpose
 -- Cross Region replication
 -- Real time changes
+
+
 
 Step 1 : create DynamoDb table
 
