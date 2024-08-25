@@ -16523,7 +16523,7 @@ Build and Test :
 
 
 
-• Version control is the ability to understand the various changes that happened to the code over time (and possibly roll back)
+• "Version control" is the ability to understand the various changes that happened to the code over time (and possibly roll back)
 
     - So to have version control, that means that you can see what happened in the past, who committed some code, what changed, what was added was removed and so on, and then roll back.
 
@@ -16657,6 +16657,21 @@ GitHub
 - Hosting : Hosted by GitHub , GitHub Enterprise: self , hosted on your servers
 
 - UI : Fully Featured
+
+
+
+
+
+
+----------------------------------------------------- CodeCommit Shutdown 
+
+
+-- on 25 of July in 2024, AWS abruptly discontinued CodeCommit.
+
+-- That means that the new customers cannot use the service, and probably, you cannot use the service. And AWS is recommending now for you to migrate to an external Git solution, such as GitHub or GitLab, or anywhere where you have Git as a third-party-accessible provider.
+
+-- CodeCommit might still appear at the exam for now.
+
 
 
 
@@ -17128,7 +17143,7 @@ if congratulations is there in index.html it will succeed
 
 
 
------------------ Now how do we integrate this build project into our code deploy ?
+----------------- Now how do we integrate this build project into our code Pipeline?
 
 
 -- go to pipeline , i want test b/w source and deploy stage 
@@ -17139,7 +17154,7 @@ if congratulations is there in index.html it will succeed
 
 -- so now we have a new pipeline. And so we should be testing it, right?
 
--- to do test --> go to index.html and change congratulations tp some other words 'coz we want to know how this work for testing 
+-- to do test --> go to index.html and change congratulations text some other words 'coz we want to know how this work for testing 
 
 -- u will get error message in pipeline what exactly we think 
 
@@ -17178,7 +17193,12 @@ if congratulations is there in index.html it will succeed
 
 • Gradual deployment control (we can say one instance at a time or all at a time or HalfAtATime or blue/green.)
 
-• A file named appspec.yml defines how the deployment happens
+• A file named "appspec.yml" defines how the deployment happens
+
+
+Which Lifecycle Event hook should be used in the appspec.yml file to ensure the application is properly running after being deployed?
+
+ANS: ValidateService
 
 
 
@@ -17373,7 +17393,7 @@ if congratulations is there in index.html it will succeed
 u have create some files in it  and make it as ZIP and upload in s3 bucket
 
 
-appspec.yml
+1 appspec.yml
 
 
 version: 0.0
@@ -17395,7 +17415,7 @@ hooks:
       runas: root
 
 
-index.html - any index.html page 
+2 index.html - any index.html page 
 
 
 
