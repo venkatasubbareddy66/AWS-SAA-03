@@ -18595,7 +18595,7 @@ watch = false
 
 -- u have to follow some cmnds to do this DEMO 
 
-
+-- open cloudshell and follow below cmnds
 
 
 # 1. install the CDK
@@ -18616,6 +18616,7 @@ ls lib
 cd lib
 rm  cdk-app-stack.js
 touch cdk-app-stack.js
+sudo yum install nano
 nano cdl-app-stack.js (paste this content )
 
 
@@ -18790,6 +18791,7 @@ cdk synth
 
 
 # 6. deploy the CDK stack
+
 cdk deploy
 
      - So let's go into the S3 bucket right here, open it in a new tab, and then the DynamoDB table as well.
@@ -18799,15 +18801,11 @@ cdk deploy
      - upload any image , see in DynamoDB , u will see that what ever the image has it will have the data 'coz Lambda function detect labels in image using Amazon Rekognition
 
 # 7. empty the s3 bucket
+
 # 8. destroy the stack
 cdk destroy
 
 
-
-
--- open cloudshell and perform this cmnds 
-
--- 
 
 
 
