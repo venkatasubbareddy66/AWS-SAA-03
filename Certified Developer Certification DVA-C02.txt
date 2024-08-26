@@ -17821,7 +17821,7 @@ Taking your Serverless Development to the next level
 
 • All the configuration is YAML code
 
-• Generate complex CloudFormation from simple SAMYAML file
+• Generate complex CloudFormation from simple SAM YAML file
 
 • Supports anything from CloudFormation: Outputs, Mappings, Parameters, Resources...
 
@@ -17861,6 +17861,10 @@ Taking your Serverless Development to the next level
 
 
 • Package & Deploy:
+         
+         • Package & Deploy: sam deploy (optionally preceded by “sam package”)
+
+         • Quickly sync local changes to AWS Lambda (SAM Accelerate): sam sync --watch
 
          - 2 cmnds 
 
@@ -17906,6 +17910,383 @@ SAM Template                           transform                                
 -- we have a question? how can you run Lambda locally? 
 
 AMS : to run Lambda functions locally, you can use the SAM CLI
+
+
+
+
+----------------------------------------------------------------- SAM Accelerate (sam sync)
+
+
+• SAM Accelerate is a set of features to reduce latency while deploying resources to AWS
+
+• sam sync
+   
+    • Synchronizes your project declared in SAM templates to AWS
+
+    • Synchronizes code changes to AWS without updating infrastructure (uses service APIs & bypass CloudFormation)
+
+
+
+
+
+----------------------------------------------------------------- SAM Accelerate (sam sync) – Examples
+
+
+• sam sync (no options)
+
+       • Synchronize code and infrastructure
+
+• sam sync --code
+
+       • Synchronize code changes without updating infrastructure (bypass CloudFormation, update in seconds)
+
+• sam sync --code --resource AWS::Serverless::Function
+
+       • Synchronize only all Lambda functions and their dependencies
+
+• sam sync --code --resource-id HelloWorldLambdaFunction
+
+       • Synchronize only a specific resource by its ID
+
+
+• sam sync --watch
+
+       • Monitor for file changes and automatically synchronize when changes are detected
+
+       • If changes include configuration, it uses sam sync
+
+       • If changes are code only, it uses sam sync --code
+
+
+
+
+
+
+----------------------------------------------------------------- Installing the SAM CLI 
+
+
+-- https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html
+
+       - install ap per ur OS
+
+-- if you do not have any personal lap then , create one linux ec2 instacne and conenct it , now 
+
+       - curl -L "https://github.com/aws/aws-sam-cli/re..." -o "aws-sam-cli-linux-x86_64.zip"
+
+       - unzip aws-sam-cli-linux-x86_64.zip -d sam-installation
+
+       - sudo ./sam-installation/install
+
+       - sam --version
+
+
+
+
+
+----------------------------------------------------------------- First SAM Project 
+
+
+-- create one src folder 
+
+-- cd src , create one file like app.py
+
+-- vi app,py and paste the code 
+
+
+import json
+
+print('Loading function')
+
+
+def lambda_handler(event, context):
+   
+    return "Hello World"  # Echo back the first key value
+   
+
+-- come out of se=rc folder     cd ..
+
+
+
+
+-- https://github.com/amazon-archives/serverless-app-examples/blob/master/python/hello-world-python3/   
+ 
+       - go to this link and copy the codes for our application 
+
+
+-- now create one file like template.yaml and paste code there 
+
+
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: A starter AWS Lambda function.
+Resources:
+  helloworldpython3:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      CodeUri: src/
+      Description: A starter AWS Lambda function.
+      MemorySize: 128
+      Timeout: 10
+      
+
+
+
+
+-- Transform: 'AWS::Serverless-2016-10-31' 
+
+      - a transform is indicative that we are using a sam template, because the transform says "AWS Serverless 2016-10-31."
+
+
+
+-- now create one file commands.sh 
+
+-- vi commands.sh
+  
+
+  1
+      - The first thing I have to do is to go to commands and I will basically create an s3 bucket.
+
+      - run the cmnd
+
+      - aws s3 mb s3://subbu-dharmabucket
+
+      - if you r getting error , add s3 polices to the ec2 InstanceSecurityGroup
+
+      - the bucket has created 
+
+  2  
+
+      - we need to start uploading code and so the first thing you want to do is package our cloudformation 
+
+      - create one sample folder to store our output , mkdir gen
+
+      - aws cloudformation package  --s3-bucket subbu-dharmabucket --template-file template.yaml --output-template-file gen/template-generated.yaml
+
+      - run this command 
+
+      - 
+
+3  
+
+      - go n check in s3 bucket the file has uploaded 
+
+      - now run this cmnd
+
+            aws cloudformation deploy --template-file /home/ec2-user/gen/template-generated.yaml --stack-name <YOUR STACK NAME>
+
+            hello-SAM = <YOUR STACK NAME>
+
+      - give all required prermissions to create stack in CF
+
+      - it will create lambda function adn IAM Role 
+
+
+
+
+-- we've just shown how we could write code on our computer.
+
+-- How with two command lines only,
+
+
+
+
+
+
+
+
+-----------------------------------------------------------------  SAM API Gateway 
+
+
+
+
+source code link :  https://github.com/amazon-archives/serverless-app-examples/tree/master/python/microservice-http-endpoint-python3
+
+
+
+-- go to this link 
+
+-- open python file and copy the code 
+
+-- now in ur server create app1.py file and paste code in that file
+
+
+import boto3
+import json
+import os
+
+print('Loading function')
+
+def respond(err, res=None):
+    return {
+        'statusCode': '400' if err else '200',
+        'body': err.message if err else json.dumps(res),
+        'headers': {
+            'Content-Type': 'application/json',
+        },
+    }
+
+
+def lambda_handler(event, context):
+
+    print("Received event: " + json.dumps(event, indent=2))
+    return respond(None, res="hello world")
+
+
+
+
+
+-- now modify template.yaml file 
+
+
+
+
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: A starter AWS Lambda function.
+Resources:
+  helloworldpython3:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      CodeUri: src/
+      Description: A starter AWS Lambda function.
+      MemorySize: 128
+      Timeout: 10
+      Events:
+        HelloWorld:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /hello
+            Method: get
+
+   
+
+
+
+-- now run the cmnds 
+
+       - aws cloudformation package  --s3-bucket subbu-dharmabucket --template-file template.yaml --output-template-file gen/template-generated.yaml
+
+       - aws cloudformation deploy --template-file /home/ec2-user/gen/template-generated.yaml --stack-name hello-SAM --capabilities CAPABILITY_IAM
+
+       - AmazonAPIGatewayAdministrator , attach this permisiion to the instance
+
+       - we have a lot more resources being created. Remember before we only had two resources, and now we have lambda function permissions, IAM Role, API Gateway Stage, Deployment, and RestAPI.
+
+       - open apigateway in console n see api has created for you through SAM
+
+       -  go to stages in console --> prod --> invoke url and do test in browser url/hello
+
+
+
+
+
+
+-----------------------------------------------------------------  SAM DynamoDB
+
+
+-- now see how to add dynamoDB 
+
+-- modify template.yaml file 
+
+
+# SAM FILE
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: A starter AWS Lambda function.
+Resources:
+  helloworldpython3:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      CodeUri: src/
+      Description: A starter AWS Lambda function.
+      MemorySize: 128
+      Timeout: 10
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref Table
+          REGION_NAME: !Ref AWS::Region
+      Events:
+        HelloWorldSAMAPI:
+          Type: Api
+          Properties:
+            Path: /hello
+            Method: GET
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref Table  
+
+  Table:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      PrimaryKey:
+        Name: greeting
+        Type: String
+      ProvisionedThroughput:
+        ReadCapacityUnits: 2
+        WriteCapacityUnits: 2
+
+
+
+
+-- in app.py change the python code also litte bit
+
+
+import boto3
+import json
+import os
+
+print('Loading function')
+
+# create the client outside of the handler
+region_name = os.environ['REGION_NAME']
+dynamo = boto3.client('dynamodb', region_name=region_name)
+table_name = os.environ['TABLE_NAME']
+
+def respond(err, res=None):
+    return {
+        'statusCode': '400' if err else '200',
+        'body': err.message if err else json.dumps(res),
+        'headers': {
+            'Content-Type': 'application/json',
+        },
+    }
+
+
+def lambda_handler(event, context):
+    print("Received event: " + json.dumps(event, indent=2))
+    scan_result = dynamo.scan(TableName=table_name)
+    return respond(None, res=scan_result)
+
+
+
+
+
+
+-- run the commands now 
+
+       - aws cloudformation package  --s3-bucket subbu-dharmabucket --template-file template.yaml --output-template-file gen/template-generated.yaml
+
+       - aws cloudformation deploy --template-file /home/ec2-user/gen/template-generated.yaml --stack-name hello-SAM --capabilities CAPABILITY_IAM
+
+
+-- it will show you update in progress 
+
+-- once the update is done , check in console the DB table will get created 
+
+-- go n check in dynamoDB console the table has created 
+
+-- and also check lambda function the ENVIRONMENT_Variables are created automatically 
+
+-- now to test in apigateway console and also in browser with /hello
+
+
+
 
 
 
@@ -17964,7 +18345,7 @@ https://docs.aws.amazon.com/serverless- application- model/latest/developerguide
 
 • Pre and Post traffic hooks features to validate deployment (before the traffic shift starts and after it ends)
 
-• Easy & automated rollback using CloudWatch Alarms
+• Easy & automated rollback using "CloudWatch Alarms"
 
 
 
@@ -17991,7 +18372,6 @@ https://docs.aws.amazon.com/serverless- application- model/latest/developerguide
 • Hooks
 
       • Pre and post traffic shifting Lambda functions to test your deployment
-
 
 
 
@@ -18044,6 +18424,70 @@ https://docs.aws.amazon.com/serverless- application- model/latest/developerguide
 
         • S3, API Gateway, SNS, Kinesis, DynamoDB...
 
+
+
+
+
+
+
+----------------------------------------------------------------- SAM – Multiple Environments
+
+
+
+-- So SAM allows you as well to easily manage multiple environments within your development stack.
+
+-- So imagine that you're deploying sometimes your SAM templates into a dev environment and sometimes into a prod environment.
+
+-- So you as a developer, you have your SAM templates, but you're also going to create another file named "SAMconfig.toml".
+
+
+for dev 
+
+
+version = 0.1
+[default]
+[default.deploy]
+[dev.deploy.parameters]
+stack_name = "sam-app"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-x0ar5uayh9wp"
+s3_prefix = "sam-app"
+region = "eu-west-2"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+
+
+
+
+for prod
+
+
+version = 0.1
+[default]
+[default.deploy]
+[prod.deploy.parameters]
+stack_name = "sam-app"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-x0ar5uayh9wp"
+s3_prefix = "sam-app"
+region = "eu-west-2"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+
+
+
+
+[dev.sync.parameters]
+watch = true
+
+[prod.sync.parameters]
+watch = false
+
+
+
+-- We can also set the sync parameters the same way.
+
+-- So the reason why we do this is that once we have done this initial setup in your TOML file, then you can do "sam deploy", and then "--config-env dev".
+
+-- And automatically the SAM CLI is going to look into your "Samconfig.toml" file, is going to pick up the correct parameters and automatically deploy resources to the correct environment and the correct places.
 
 
 
