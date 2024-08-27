@@ -19082,7 +19082,7 @@ cdk destroy   - Destroy the Stack(s)
 
  -- step 5 --> name of userpool --> enable hosted UI  --> give domain name any thing eg demo-user-pool-cognito
 
- -- Initial app client --> public client name --> Allowed callback URL = localhost or anything like www.flipkart.comß
+ -- Initial app client --> public client name --> Allowed callback URL = localhost or anything like www.flipkart.com
 
  -- once u created usewr pool --> open user pool ,u can see users and groups 
 
