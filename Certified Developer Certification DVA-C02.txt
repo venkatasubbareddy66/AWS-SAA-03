@@ -3158,7 +3158,13 @@ Outputs:
 • Each condition can reference another condition, parameter value or mapping
 
 
+
+
+
+
 -------------------------- How to define a Condition
+
+
 
   Conditions:
      CreateprodResource: !Equals [!Ref EnvType, prod]
@@ -19604,6 +19610,9 @@ see fig
 -- AWS Step Functions is a low-code visual workflow service used to orchestrate AWS services, automate business processes, and build Serverless applications. It manages failures, retries, parallelization, service integrations, ...
 
 
+
+
+
 -------------------------------------- Step Function –Task States
 
 
@@ -19797,7 +19806,7 @@ export const handler = async (event) => {
 
 -- now do create funtion , u will see it will invoke lambda finction 
 
--- c.o confirm and do start execution , givr input as 
+-- c.o confirm and do start execution , give input as 
 
 
 
