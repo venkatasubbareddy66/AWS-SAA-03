@@ -11702,20 +11702,7 @@ aws cognito-identity get-credentials-for-identity --identity-id us-east-1:456a12
 
 
 
--- u will temporary credentials , eg 
-
-
-
-{
-    "IdentityId": "us-east-1:456a12f0-dd26-cbc6-4360-7a3c189b8725",
-    "Credentials": {
-        "AccessKeyId": "",
-        "SecretKey": "",
-        "SessionToken": ",
-        "Expiration": ""
-    }
-}
-
+-- u will temporary credentials 
 
 
 -- once u got temporary credentials
