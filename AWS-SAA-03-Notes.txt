@@ -11662,7 +11662,7 @@ email     ${user:email}    format = basic
 {
    "IdentityPoolId":"ap-south-1:9750241a-7acb-42b3-919d-54bac1f1fb44",
    "Logins": {
-       "cognito-idp.ap-south-1.amazonaws.com/ap-south-1_SH87tNLwB": "eyJraWQiOiJBSlltY3NMT1FYNityQlwvXC9WT3dtZEpvbG53SmZ1TW03VCtnVEh2M25BYXM9IiwiYWxnIjoiUlMyNTYifQ.eyJhdF9oYXNoIjoiRlBUaVhmQ05sMGxXTmRmVVV6VmhrQSIsInN1YiI6ImYxMzMwZGZhLTQwMTEtNzBhZS1mYmRiLTE3NDNjMDQ3NGE3NyIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJpc3MiOiJodHRwczpcL1wvY29nbml0by1pZHAuYXAtc291dGgtMS5hbWF6b25hd3MuY29tXC9hcC1zb3V0aC0xX1NIODd0Tkx3QiIsImNvZ25pdG86dXNlcm5hbWUiOiJzYXRoeWEiLCJvcmlnaW5fanRpIjoiYzQ1MDU5ZTYtZDMwZi00Y2QwLTgwYzUtYjFjYzkxYzg1MWM4IiwiYXVkIjoiNDJoaW5vYXY0ZjEyaHU2NW5rNXN1MzlxMW8iLCJldmVudF9pZCI6ImE1MDc3MGU1LTM1Y2ItNDM0OC1hNGMzLTE3MWVkY2I4NDA4ZiIsInRva2VuX3VzZSI6ImlkIiwiYXV0aF90aW1lIjoxNzI1MTEwMzMzLCJleHAiOjE3MjUxMTM5MzMsImlhdCI6MTcyNTExMDMzMywianRpIjoiNGE5YmNiYjItZmNlYy00NzRmLWEzNzYtM2ZiMzE5YzBjMmNjIiwiZW1haWwiOiJzYXRoeWFkaGFybWE2NjY2QGdtYWlsLmNvbSJ9.RH6ex2HDAyEb7E2jt6A5PbACpIMJBol6goXjO3Lk7xlp0NOnSlnoJaL-EAjQatIPJS5pNMA5BTJPDwmmHnvqNKMVZQOToorbG4Vcqy59eRq6dh19ZO_v6go8w-FU9Uw87UDPAm_9edHmkoUvNPOxf7G4Di73EGVOck2bfrFm684aJ4kVpArcaS0b_RNGp_QTqRmE8ki_IShSfKJYUlOyasaiA1_-yBSM4hsYImKvQ5tUJHN5cfqzNYvFhbBeMC_Ys6jn9Av69p3YWUVT7oqLU-WoQsetroMWmkBGWMssEzxvxLOD8Aq4HsYXl3dAcAoytG-GdUTBSRNUdFqw7B3-wQ"
+       "cognito-idp.ap-south-1.amazonaws.com/ap-south-1_SH87tNLwB": ""
     }
 }
 
@@ -11709,9 +11709,9 @@ aws cognito-identity get-credentials-for-identity --identity-id us-east-1:456a12
 {
     "IdentityId": "us-east-1:456a12f0-dd26-cbc6-4360-7a3c189b8725",
     "Credentials": {
-        "AccessKeyId": "ASIAUK2QS6DOR7YNRKUZ",
-        "SecretKey": "3XruylVyo6+LkIp5GNT/NQ8qAaU0KYjTDfP7VUhd",
-        "SessionToken": "IQoJb3JpZ2luX2VjEHUaCXVzLWVhc3QtMSJHMEUCIQCO0il6dRp3gpbn2Ql8ybWpSlFQ2/nE5vc/y+SCn/9ABQIgTWrM6q2ll7fONIungd/Rn95/p1XwA4p+zXA6GFM1xckqnQUIjv//////////ARAAGgwyOTgxMzIzNjk2MjkiDJK6LVu7hE5kLd5YNyrxBJVQhL9tPEYGGRh7dGxSm6+mShgRMUwEKGYDYp6BsK8sYzfjFtO9ChnyLjlM4wW0lYmt6ljgMlMJSd2U7gPYM56/nrtTKF0nnn95p9JnjeofR+SxASQipxe+lgTxJZB0uWjO5m5p6Dsl1LPor5B9kuAmw5/Q4R/AVhnW59TzhgNi4qjDcnEyBslikGCvQyE3VDQ+REG8kQMqlArcJC2Vf1RgIZZXUKXrZJDSB1WDQwnUGoRZLdPcmTJlfysEZEPND8qmjagrrPyKOg85l5WJlbwSkqmx+om98J3BKXtcx6RxSAhaYNaVtLgwBb5KLwO6t8iGfuu04UOguCxOQUhldhIWYvkgIgGSE0f2yByKtghvl4STnZ4D4gYn74N0SHxKIimzUqDI/BHwjyn4x6YVdw26DhlFoTwsqIEQG3aiL0N/1KC0FLctNC6Ids91prrW/Y5mqucG2kmEIt8DsE3lXKjzgoS8uCm4Kd6tJFV6SFv3OHhKirMvdsPe23kef0xP85VHQrGf3vu6C6s29OgYquH5dgzW7BRKH+Ohhq/EPkMO7oVeQoa4D+q1Z2/P5TeQnyrkEdmrwzPdhLBqGE41BOTdLevWeBhNgVQ6SGwAgkeIAI12IYD3Ssm7L16WjI3XjjUI3/h9BUItXLwZ8KaJ0QXzt66u4jwmWHoCZumDTW+u349y9mX+2QPFtX/F/gYuoLsFmeIyFb+y8GZz+1xqTmM5jaHpjZTeEjM4fGbTlDJ8dXnXdZDfdIRUugL/W9oBN45G/wWsy7Sa3lYp6hOUA9ajJq0mjArV5u71M8aLgsu4Mtb9G807HH+dRtCV8XgkWo4whcvRtgY6hQLO7XPwku7t8efKZejyEenQBveoCyhoO+RnGglTWhcBoUnKY5Zrhu74O1rmXQ0dozkqwgH4bEARIiw/28eTNbziqocR+Zq91yZpamDwERBpaqs7FpdCEhNlps3WjohDcuEkHWBnwwnO/uY9LyxI7Fuxx3VwuEDHvILscfAXG1i1Ys+HuZYQx2KeuwfI6bHYzyFKHPDZsMkIkUwXMa789tm/+n77M/JAzOBCwvpZTQZ/MGpmw0ezf74pbUM9RFPooidNx8csOFWoEkODfwNVfM49W7ZprIoWeVQl1uFkGUAyK4gwd70gQmit9NA9zJJrF3D+Wd6U2SDUCV06QlaxVLaY+7gyvT8=",
+        "AccessKeyId": "",
+        "SecretKey": "",
+        "SessionToken": ",
         "Expiration": "2024-09-01T14:00:53+00:00"
     }
 }
