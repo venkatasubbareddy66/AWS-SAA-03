@@ -11519,17 +11519,223 @@ email     ${user:email}    format = basic
 ---------------------- Cognito Identity Pools(Federated Identity) which gives temporary access to AWS resources  LAB 
 
 
+-- use identity as cognito userpools
+
 -- go to identity pools in cognito 
 
 -- create identity --> Authenticated access --> amzn cognito user pool --> create new role ( give any name for ur role )--> user pool details --> Role settings = Use default authenticated role --> Claim mapping = Use default mappings --> name of ur identity pool --> create 
 
 -- make sure u have not blocked pop up for ur browsers
 
--- now once token is generated , u can copy the token and do decode it in JWT website 
+-- go to role created and add s3 full accesss for the demo purpose
 
--- not gettig 
+-- u can add these policies if u get any error later ( only add when u get error)
 
-do in personal lap
+
+1 . cognito policy = name of policy 
+
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": [
+                "s3:*",
+                "cognito-identity:GetCredentialsForIdentity"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+
+
+
+
+2 cognito-s3-permissions (optional coz we have added s3 full access in above step )
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": "s3:ListAllMyBuckets",
+            "Resource": "*"
+        }
+    ]
+}
+
+
+
+
+-- Trust Relationship 
+
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "",
+            "Effect": "Allow",
+            "Principal": {
+                "Federated": "cognito-identity.amazonaws.com"
+            },
+            "Action": [
+                "sts:AssumeRoleWithWebIdentity",
+                "sts:TagSession"
+            ],
+            "Condition": {
+                "StringEquals": {
+                    "cognito-identity.amazonaws.com:aud": "<IdentityPoolId>"
+                },
+                "ForAnyValue:StringLike": {
+                    "cognito-identity.amazonaws.com:amr": "authenticated"
+                }
+            }
+        }
+    ]
+}
+
+
+
+
+
+-- now go to userpool ---> client information ---> edit --> 
+
+-- OAuth grant types 
+  
+      - Authorization code grant
+      -  - Implicit grant
+
+-- OpenID Connect scopes
+
+      - aws.cognito.signin.user.admin
+
+      - email
+      - openid
+      - phone
+      - profile
+
+-- now go to postman and add the following info 
+
+-- do not add anyurl in the url tab just leave as blank with GET method
+
+
+     - type         = Oauth 2.o
+     - Token Name   = AccessToken
+     - Callback URL = www.amazon.com
+     - Auth URL      = https://browser-pool.auth.ap-south-1.amazoncognito.com/oauth2/authorize
+     - Access Token URL = https://browser-pool.auth.ap-south-1.amazoncognito.com/oauth2/token
+     - Client ID        = get from userpool appclient id
+     - Client Secret    =  get from userpool appclient id
+     - Scope            =  openid profile
+     - Refresh Token URL  = u will get from userpool (Token signing key URL)
+
+
+
+ -- add headers :
+
+              Key                 Value
+           CONTENT-TYPE            application/x-amz-json-1.1
+           X-AMZ-TARGET            com.amazonaws.cognito.identity.model.AWSCognitoIdentityService.GetId
+
+-- https://browser-pool.auth.ap-south-1.amazoncognito.com - this is domain name of ur userpool 
+
+-- u have to add  /oauth2/authorize( Auth URL ) and /oauth2/token (Access Token URL)
+
+-- click on "get new access token " and login using credentials u will get tokens 
+
+-- copy id_token and store it some where 
+
+-- copy access token and go to online jwt token decode in google and paste and check the info
+
+-- go to postman and type = Post and give identity url in the url section eg : https://cognito-identity.ap-south-1.amazonaws.com/  (based on region u can change)
+
+-- add headers like above step 
+
+-- now go to body --> raw --> Text
+
+
+
+
+{
+   "IdentityPoolId":"ap-south-1:9750241a-7acb-42b3-919d-54bac1f1fb44",
+   "Logins": {
+       "cognito-idp.ap-south-1.amazonaws.com/ap-south-1_SH87tNLwB": "eyJraWQiOiJBSlltY3NMT1FYNityQlwvXC9WT3dtZEpvbG53SmZ1TW03VCtnVEh2M25BYXM9IiwiYWxnIjoiUlMyNTYifQ.eyJhdF9oYXNoIjoiRlBUaVhmQ05sMGxXTmRmVVV6VmhrQSIsInN1YiI6ImYxMzMwZGZhLTQwMTEtNzBhZS1mYmRiLTE3NDNjMDQ3NGE3NyIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJpc3MiOiJodHRwczpcL1wvY29nbml0by1pZHAuYXAtc291dGgtMS5hbWF6b25hd3MuY29tXC9hcC1zb3V0aC0xX1NIODd0Tkx3QiIsImNvZ25pdG86dXNlcm5hbWUiOiJzYXRoeWEiLCJvcmlnaW5fanRpIjoiYzQ1MDU5ZTYtZDMwZi00Y2QwLTgwYzUtYjFjYzkxYzg1MWM4IiwiYXVkIjoiNDJoaW5vYXY0ZjEyaHU2NW5rNXN1MzlxMW8iLCJldmVudF9pZCI6ImE1MDc3MGU1LTM1Y2ItNDM0OC1hNGMzLTE3MWVkY2I4NDA4ZiIsInRva2VuX3VzZSI6ImlkIiwiYXV0aF90aW1lIjoxNzI1MTEwMzMzLCJleHAiOjE3MjUxMTM5MzMsImlhdCI6MTcyNTExMDMzMywianRpIjoiNGE5YmNiYjItZmNlYy00NzRmLWEzNzYtM2ZiMzE5YzBjMmNjIiwiZW1haWwiOiJzYXRoeWFkaGFybWE2NjY2QGdtYWlsLmNvbSJ9.RH6ex2HDAyEb7E2jt6A5PbACpIMJBol6goXjO3Lk7xlp0NOnSlnoJaL-EAjQatIPJS5pNMA5BTJPDwmmHnvqNKMVZQOToorbG4Vcqy59eRq6dh19ZO_v6go8w-FU9Uw87UDPAm_9edHmkoUvNPOxf7G4Di73EGVOck2bfrFm684aJ4kVpArcaS0b_RNGp_QTqRmE8ki_IShSfKJYUlOyasaiA1_-yBSM4hsYImKvQ5tUJHN5cfqzNYvFhbBeMC_Ys6jn9Av69p3YWUVT7oqLU-WoQsetroMWmkBGWMssEzxvxLOD8Aq4HsYXl3dAcAoytG-GdUTBSRNUdFqw7B3-wQ"
+    }
+}
+
+
+
+
+-- IdentityPoolId - u will get from identity pools
+
+-- cognito-idp.ap-south-1.amazonaws.com  ( replace ur region)
+
+-- /ap-south-1_SH87tNLwB -- u will get this from Identity pools --> UserAccess --> Identity provider 
+
+-- click on post , the identityId will create and also do check in console also (identity pools --> identity browser )
+
+-- once u do all correct u will get one o/p like this 
+
+
+{
+    "IdentityId": "ap-south-1:456a12f0-dda6-cf0a-f6fa-705b538d8a59"
+}
+
+
+
+-- go to aws cli and use below cmnds
+
+-- replace the values below cmnd (https://repost.aws/knowledge-center/cognito-identity-pool-grant-user-access)
+
+         aws cognito-identity get-credentials-for-identity --identity-id region:abcdef --logins cognito-idp.example_region.amazonaws.com/example_cognito_user_pool_id = example_cognito_user_id_token
+
+
+-- eg it will look like this 
+
+
+
+
+aws cognito-identity get-credentials-for-identity --identity-id us-east-1:456a12f0-dd26-cbc6-4360-7a3c189b8725 --logins cognito-idp.us-east-1.amazonaws.com/us-east-1_dh67H1QNF=eyJraWQiOiJrY3pmTTkwd0ZYd3JGUG0weWtqNTdUaVRuTnJ1Z3R1NmpiMm9NRTBvN2FjPSIsImFsZyI6IlJTMjU2In0.eyJhdF9oYXNoIjoiRFJoLVNneWtRQ1BuaURxa0IwZlA1dyIsInN1YiI6ImE0ZDhmNGE4LTkwNTEtNzAxNy04ZDljLTU1NGEzMGM2M2JhNiIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJpc3MiOiJodHRwczpcL1wvY29nbml0by1pZHAudXMtZWFzdC0xLmFtYXpvbmF3cy5jb21cL3VzLWVhc3QtMV9kaDY3SDFRTkYiLCJjb2duaXRvOnVzZXJuYW1lIjoic2F0aHlhIiwib3JpZ2luX2p0aSI6IjRlY2I2NjZjLTUwNWQtNDZkYS1iZWQ3LWM4MDQ5Mzk3YWJkMyIsImF1ZCI6Imsya2pzMmppZWUxMXY2aGRwMG9iOXRxazEiLCJldmVudF9pZCI6IjdiMzg3ODVjLWExNmYtNDIzMS1hODU5LTI3YjM4OTk1Y2NmZiIsInRva2VuX3VzZSI6ImlkIiwiYXV0aF90aW1lIjoxNzI1MTk1MTk5LCJleHAiOjE3MjUxOTg3OTksImlhdCI6MTcyNTE5NTE5OSwianRpIjoiMTI0MjkwYzAtNmM4OS00NTMyLTgwNTgtYWJkYTIyMTY3ZGUxIiwiZW1haWwiOiJzYXRoeWFkaGFybWE2NjY2QGdtYWlsLmNvbSJ9.JZS1u5Q0JxS0cECF9Djla5rNEN4dY4U6mVWXpaRomdpXgykfkZ0AtoO9WZLsXl37yLACRMNK0HQJyB4QahMWVgHoWfwtPCz6QkwRFKBVMbPOytxaXs0xyuNEMJh1-KP64JeC-anG8i3zCJTLWh9ziCTad4hBgkfopyAovQ5bGgHKDo7lpENGObpoq-eNSpU4etKClcAVPGdjcZS50N61sCjP7Nc1iuV98d9CbP2ViZNadbatHxv8yc9I7mmwBFrYbX8xefI4uNKz5im_AvsbUnXjFEk_tyoDtB-VgogXPcFnYOVffDKx2xz7szq0HRfqshLPWA1lN5Q5l0sxHclaKg
+
+
+
+-- u will temporary credentials , eg 
+
+
+
+{
+    "IdentityId": "us-east-1:456a12f0-dd26-cbc6-4360-7a3c189b8725",
+    "Credentials": {
+        "AccessKeyId": "ASIAUK2QS6DOR7YNRKUZ",
+        "SecretKey": "3XruylVyo6+LkIp5GNT/NQ8qAaU0KYjTDfP7VUhd",
+        "SessionToken": "IQoJb3JpZ2luX2VjEHUaCXVzLWVhc3QtMSJHMEUCIQCO0il6dRp3gpbn2Ql8ybWpSlFQ2/nE5vc/y+SCn/9ABQIgTWrM6q2ll7fONIungd/Rn95/p1XwA4p+zXA6GFM1xckqnQUIjv//////////ARAAGgwyOTgxMzIzNjk2MjkiDJK6LVu7hE5kLd5YNyrxBJVQhL9tPEYGGRh7dGxSm6+mShgRMUwEKGYDYp6BsK8sYzfjFtO9ChnyLjlM4wW0lYmt6ljgMlMJSd2U7gPYM56/nrtTKF0nnn95p9JnjeofR+SxASQipxe+lgTxJZB0uWjO5m5p6Dsl1LPor5B9kuAmw5/Q4R/AVhnW59TzhgNi4qjDcnEyBslikGCvQyE3VDQ+REG8kQMqlArcJC2Vf1RgIZZXUKXrZJDSB1WDQwnUGoRZLdPcmTJlfysEZEPND8qmjagrrPyKOg85l5WJlbwSkqmx+om98J3BKXtcx6RxSAhaYNaVtLgwBb5KLwO6t8iGfuu04UOguCxOQUhldhIWYvkgIgGSE0f2yByKtghvl4STnZ4D4gYn74N0SHxKIimzUqDI/BHwjyn4x6YVdw26DhlFoTwsqIEQG3aiL0N/1KC0FLctNC6Ids91prrW/Y5mqucG2kmEIt8DsE3lXKjzgoS8uCm4Kd6tJFV6SFv3OHhKirMvdsPe23kef0xP85VHQrGf3vu6C6s29OgYquH5dgzW7BRKH+Ohhq/EPkMO7oVeQoa4D+q1Z2/P5TeQnyrkEdmrwzPdhLBqGE41BOTdLevWeBhNgVQ6SGwAgkeIAI12IYD3Ssm7L16WjI3XjjUI3/h9BUItXLwZ8KaJ0QXzt66u4jwmWHoCZumDTW+u349y9mX+2QPFtX/F/gYuoLsFmeIyFb+y8GZz+1xqTmM5jaHpjZTeEjM4fGbTlDJ8dXnXdZDfdIRUugL/W9oBN45G/wWsy7Sa3lYp6hOUA9ajJq0mjArV5u71M8aLgsu4Mtb9G807HH+dRtCV8XgkWo4whcvRtgY6hQLO7XPwku7t8efKZejyEenQBveoCyhoO+RnGglTWhcBoUnKY5Zrhu74O1rmXQ0dozkqwgH4bEARIiw/28eTNbziqocR+Zq91yZpamDwERBpaqs7FpdCEhNlps3WjohDcuEkHWBnwwnO/uY9LyxI7Fuxx3VwuEDHvILscfAXG1i1Ys+HuZYQx2KeuwfI6bHYzyFKHPDZsMkIkUwXMa789tm/+n77M/JAzOBCwvpZTQZ/MGpmw0ezf74pbUM9RFPooidNx8csOFWoEkODfwNVfM49W7ZprIoWeVQl1uFkGUAyK4gwd70gQmit9NA9zJJrF3D+Wd6U2SDUCV06QlaxVLaY+7gyvT8=",
+        "Expiration": "2024-09-01T14:00:53+00:00"
+    }
+}
+
+
+
+-- once u got temporary credentials
+
+-- go to postman --> method = GET --> type = aws signature 
+
+-- in the URL section 
+
+         https://cf-templates-12zxw0rmzpafi-us-east-1.s3.us-east-1.amazonaws.com/
+
+
+-- by using this url u can retrieve buckets in the specific region 
+
+ -- s3 endpoint will change according to region 
+
+ --  cf-templates-12zxw0rmzpafi-us-east-1    = bucket name present in us-east-1 region    
+
+ --  give credentials and service name is s3 and once u enter u will get buckets and it's objects , u can also leverage permissions (limited to guests)
+
+
 
 
 
