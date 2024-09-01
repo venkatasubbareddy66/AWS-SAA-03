@@ -11712,7 +11712,7 @@ aws cognito-identity get-credentials-for-identity --identity-id us-east-1:456a12
         "AccessKeyId": "",
         "SecretKey": "",
         "SessionToken": ",
-        "Expiration": "2024-09-01T14:00:53+00:00"
+        "Expiration": ""
     }
 }
 
