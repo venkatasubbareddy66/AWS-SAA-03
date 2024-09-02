@@ -13551,7 +13551,7 @@ OK                    =  log-status
 
 • Can be used for analytics on usage patterns, or malicious behavior
 
-• Quer y VPC flow logs using Athena on S3 or CloudWatch Logs Insights
+• Query VPC flow logs using Athena on S3 or CloudWatch Logs Insights
 
 
 

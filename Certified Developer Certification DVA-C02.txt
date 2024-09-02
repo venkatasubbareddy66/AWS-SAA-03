@@ -20484,7 +20484,7 @@ Build(run tests while the app is being built) -----------> Test (E2E) (run tests
 ----------------------------------------------------- Advanced IAM - Authorization Model Evaluation of Policies, simplified
 
 
-1. If there’s an explicit DENY in ut policy , end decision and DENY
+1. If there’s an explicit DENY in ur policy , end decision and DENY
 
 2. If there’s an ALLOW, end decision with ALLOW
 
@@ -20865,7 +20865,7 @@ ANS : Well, because we're sending data over a network and sometimes a public net
 
 • Easy way to control access to your data
 
-• Able to audit KMS Key usage using CloudTrail
+• Able to audit KMS Key usage using CloudTrail ( IMP)
 
 • Seamlessly integrated into most AWS services (EBS, S3, RDS, SSM...)
 
@@ -21005,7 +21005,7 @@ ANS : Well, because we're sending data over a network and sometimes a public net
 
 2. Attach a KMS Key Policy to authorize cross-account access
 
-3. Share the encr ypted snapshot with the target accounts.
+3. Share the encrypted snapshot with the target accounts.
 
 4. (in target) Create a copy of the Snapshot, encrypt it with a CMK in your account
 
@@ -21028,7 +21028,7 @@ ANS : Well, because we're sending data over a network and sometimes a public net
 
 -- open cloudshell create one folder like kms 
 
--- cd kms --> create onefile "ExampleSecretFile.txt" and enter some secrets 
+-- cd kms --> create onefile "ExampleSecretFile.txt" and enter some secrets in that file , eg: supersecret
 
 -- u have to cmnds 
 
@@ -21208,7 +21208,7 @@ https://docs.aws.amazon.com/encryption-sdk/latest/developer-guide/crypto-cli-ins
                      --output output/
 
 
-- now do ls and if u go to output folder u will get hello.txt.encrypted file 
+- now do ls and if u go to output folder u will get hello.txt.encrypted file , if output folder is not present then create mkdir output
 
 - do cat hello.txt.encrypted 
 
@@ -22427,6 +22427,8 @@ Step 1 : create s3 bucket and insert some .csv data
 
 --   create one folder inside bucket and go to google and search for sample .csv files downlaod and upload in the s3 bucket 
 
+
+
 Step 2 : Glue
 
 -- open glue in console
@@ -22440,6 +22442,8 @@ Step 2 : Glue
 -- once u done with the running part , a table will added to the database , table name is same as the folder name of s3 that u have uploaded 
 
 --  if ur data is not match , then u can also do edit ur schema 
+
+
 
 
 step 3 : Athena
