@@ -2742,6 +2742,9 @@ Own License)
 - Dedicated Hosts enable you to use your existing server-bound software licenses like Windows Server and address corporate compliance and regulatory requirements.
 
 
+
+
+
                    5  EC2 dedicated instances 
 
 • Instances run on hardware that’s dedicated to you
@@ -2765,6 +2768,16 @@ EPV : A health-care solutions company wants to run their applications on single-
 Which of the following is the MOST cost-effective way of isolating their Amazon Elastic Compute Cloud (Amazon EC2)instances to a single tenant?
 
 ANS : dedicated instances 
+
+
+
+
+- Explantion b/w EC2 dedicated instances  vs EC2 dedicated Hosts
+
+https://stackoverflow.com/questions/64309679/aws-dedicated-host-vs-dedicated-instance-why-the-first-is-more-expensive-than
+
+
+
 
 
 
@@ -7316,6 +7329,7 @@ Ans : Enable S3 Versioning in order to have object versions, so that “deleted 
 
 ----------------------------- Amazon S3 Analytics – Storage Class Analysis
 
+
 -- Help you decide when to transition objects to the right storage class
 
 -- Recommendations for Standard and Standard IA
@@ -7327,6 +7341,8 @@ Ans : Enable S3 Versioning in order to have object versions, so that “deleted 
 -- 24 to 48 hours to start seeing data analysis
 
 --  S3 bucket --> Storage Class Analysis --> .csv report 
+
+
 
 
 ================================= S3 Glacier Vault Lock =================
@@ -7516,6 +7532,8 @@ VERY IMP for EPV :
 
 - we have 3 types 
 
+
+
 ------ A  SSE-S3 (aws Managed Key) -- default common encryption method we use ,
 
 - it is used Algorith called AES-256 (advanced Encryption Standard)
@@ -7533,6 +7551,8 @@ explanation : Server-side encryption is the encryption of data at its destinatio
 -- When you use Server-Side Encryption with Amazon S3-Managed Keys (SSE-S3), each object is encrypted with a unique key. As an additional safeguard, it encrypts the key itself with a master key that it regularly rotates.
 
 
+
+
 ------ B SSE-KMS ( AWS KMS KEY)
 
 - KMS advantages: user control + audit key usage using CloudTrail
@@ -7542,6 +7562,7 @@ explanation : Server-side encryption is the encryption of data at its destinatio
 - Must set header "x-amz-server-side-encryption": "aws:kms"
 
 explanation : All Amazon S3 buckets have encryption configured by default, and all new objects that are uploaded to an S3 bucket are automatically encrypted at rest. Server-side encryption with Amazon S3 managed keys (SSE-S3) is the default encryption configuration for every bucket in Amazon S3. To use a different type of encryption, you can either specify the type of server-side encryption to use in your S3 PUT requests, or you can set the default encryption configuration in the destination bucket.
+
 
 ---- SSE-KMS Limitation
 
@@ -7554,6 +7575,8 @@ explanation : All Amazon S3 buckets have encryption configured by default, and a
 -- Count towards the KMS quota per second (5500, 10000, 30000 req/s based on region)
 
 -- You can request a quota increase using the Service Quotas Console
+
+
 
 
 ------- c SSE-C (Customer provided Keys) 
@@ -12305,6 +12328,7 @@ http://subbbu.com -- > it reach R53--> Hosted zone (subbu.com) --> records(subbu
 -- You can’t set the TTL 
 
 
+
 ----------- Route 53 – Alias Records Targets
 
 -- Elastic Load Balancers
@@ -12316,6 +12340,8 @@ http://subbbu.com -- > it reach R53--> Hosted zone (subbu.com) --> records(subbu
 -- Global Accelerator accelerator
 -- Route 53 record in the same hosted zone Elastic Load Balancer
 
+
+
 ----- You cannot set an ALIAS record for an EC2 DNS name
 
 ANS : You actually can create a CNAME (or even A) record without an Elastic IP. But every time your EC2 instance is restarted and so moved to another host system the IP address (and your external hostname) of your instance will change.
@@ -12324,6 +12350,8 @@ ANS : You actually can create a CNAME (or even A) record without an Elastic IP. 
 -- But as DNS is not very fast in distributing changes (even with a low TTL you can't make sure every resolver handles the TTL correctly) you don't want to do such things most of the times. 
 -- This is why AWS provides the Elastic IP - so your IP address which is in the DNS record never changes but the routing behind this IP address is changed by AWS if you reassign it to another instance (or you reboot your host). 
 -- This routing change is only inside the AWS data centers and so it is quite fast (within a few seconds) and your instance is reachable again for all users.
+
+
 
 
 4 CNAME Record : URL to URL : 
@@ -12355,6 +12383,8 @@ URL to URL
 
 
 
+
+
 EPV : A startup has created a new web application for users to complete a risk assessment survey for COVID-19 symptoms via a self-administered questionnaire. The startup has purchased the domain covid19survey.com using Amazon Route 53. The web development team would like to create Amazon Route 53 record so that all traffic for covid19survey.com is routed to www.covid19survey.com.As a solutions architect, which of the following is the MOST cost-effective solution that you would recommend to the web development team?
 
 ANS : Create an alias record for covid19survey.com that routes traffic to www.covid19survey.com
@@ -12364,6 +12394,8 @@ EXP :
 -- You can create an alias record at the top node of a DNS namespace, also known as the zone apex, however, you cannot create a CNAME record for the top node of the DNS namespace. 
 
 -- So, if you register the DNS name covid19survey.com, the zone apex is covid19survey.com. You can't create a CNAME record for covid19survey.com, but you can create an alias record for covid19survey.com that routes traffic to www.covid19survey.com.
+
+
 
 
 IMP NOTE : 
