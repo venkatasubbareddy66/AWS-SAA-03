@@ -5648,6 +5648,8 @@ Amazon EC2 Auto Scaling supports the following types of dynamic scaling policies
 • Dynamic Scaling
 
     • Target Tracking Scaling
+
+
          • Simple to set-up
          • Example: I want the average ASG CPU to stay at around 40%
 
@@ -5671,6 +5673,7 @@ Amazon EC2 Auto Scaling supports the following types of dynamic scaling policies
 
 
     • Simple / Step Scaling
+    
          • When a CloudWatch alarm is triggered (example CPU > 70%), then add 2 units
          • When a CloudWatch alarm is triggered (example CPU < 30%), then remove 1
 
