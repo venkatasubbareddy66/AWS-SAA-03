@@ -212,6 +212,30 @@ EC2
 -- it doesn't support auto-Scaling
 
 
+
+
+
+
+EPV : A company runs its flagship application on a fleet of Amazon EC2 instances. After misplacing a couple of private keys from the SSH key pairs, they have decided to re-use their SSH key pairs for the different instances across AWS Regions.
+
+As a Developer Associate, which of the following would you recommend to address this use-case
+
+ANS: Generate a public SSH key from a private SSH key. Then, import the key into each of your AWS Regions
+
+Here is the correct way of reusing SSH keys in your AWS Regions:
+
+    -  Generate a public SSH key (.pub) file from the private SSH key (.pem) file.
+
+    -  Set the AWS Region you wish to import to.
+
+    -  Import the public SSH key into the new Region.
+
+
+
+
+
+
+
 ===========================AWS - Storage S3,EBS=======================
 
 -- in olden days 
@@ -243,6 +267,9 @@ we have Floppy -- 2MB
 -- it also provided "static host website"
 
 -- s3 is global and buckets are regional
+
+
+
 
 --------------------------------- EBS
 
@@ -287,6 +314,10 @@ we have Floppy -- 2MB
 -- u can't delete the volm while it is attach, so deattach first 
 
 -- ec2 instace and EBS is should be in same A.Z 
+
+
+
+
 
 ====================================EFS=====================
 
@@ -2855,6 +2886,34 @@ IMP to KNOW : You can use Dedicated Hosts and Dedicated instances to launch Amaz
 Suitable for short-term, uninterrupted workloads that needs to be in a "specific AZ"
 
 
+
+
+
+EXP : A media publishing company is using Amazon EC2 instances for running their business-critical applications. Their IT team is looking at reserving capacity apart from savings plans for the critical instances.
+
+      As a Developer Associate, which of the following reserved instance types you would select to provide capacity reservations?
+
+ANS : Zonal Reserved Instances
+
+EXP : When you purchase a Reserved Instance for a specific Availability Zone, it's referred to as a Zonal Reserved Instance. Zonal Reserved Instances provide capacity reservations as well as discounts.
+
+- A zonal Reserved Instance provides a capacity reservation in the specified Availability Zone. Capacity Reservations enable you to reserve capacity for your Amazon EC2 instances in a specific Availability Zone for any duration. This gives you the ability to create and manage Capacity Reservations independently from the billing discounts offered by Savings Plans or regional Reserved Instances.
+
+- Regional reserved nstance cannot provide capacity reservation
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Which purchasing option is right for me? 
 
 
@@ -2949,6 +3008,8 @@ Which purchasing option is right for me?
 
 --------Types of EBS Volumes
 
+
+
 - General Purpose (gp2,gp3) - SSD = general purpose
 
 -- gp2 is backed by solid-state drives (SSDs) and is suitable for a broad range of transactional workloads, including dev/test environments, low-latency interactive applications, and boot volumes. It supports max IOPS/Volume of 16,000.
@@ -2962,14 +3023,33 @@ Which purchasing option is right for me?
 
 
 
+
+EPV : A pharmaceutical company runs their database workloads on Provisioned IOPS SSD (io1) volumes.
+
+As a Developer Associate, which of the following options would you identify as an INVALID configuration for io1 EBS volume types?
+
+
+ANS : 200 GiB size volume with 15000 IOPS
+
+
+EXP : This is an invalid configuration. The maximum ratio of provisioned IOPS to requested volume size (in GiB) is 50:1. So, for a 200 GiB volume size, max IOPS possible is 200*50 = 10000 IOPS.
+
+- Provisioned IOPS SSD (io1) volumes allow you to specify a consistent IOPS rate when you create the volume, and Amazon EBS delivers the provisioned performance 99.9 percent of the time. An io1 volume can range in size from 4 GiB to 16 TiB. The maximum ratio of provisioned IOPS to the requested volume size (in GiB) is 50:1. For example, a 100 GiB volume can be provisioned with up to 5,000 IOPS.
+
+
+
+
+
+
+
 - Throughtput(st1) - HDD = frequntly access data with cheaper price
 
--- st1 is backed by hard disk drives (HDDs) and is ideal for frequently accessed, throughput-intensive workloads with large datasets and large I/O sizes, such as MapReduce, Kafka, log processing, data warehouse, and ETL workloads. It supports max IOPS/Volume of 500.
+    -- st1 is backed by hard disk drives (HDDs) and is ideal for frequently accessed, throughput-intensive workloads with large datasets and large I/O sizes, such as MapReduce, Kafka, log processing, data warehouse, and ETL workloads. It supports max IOPS/Volume of 500.
 
 
 - cold(sc1)- HDD = not frequently access data with cheaper price
 
- -- sc1 is backed by hard disk drives (HDDs). It is ideal for less frequently accessed workloads with large, cold datasets. It supports max IOPS/Volume of 250.
+    -- sc1 is backed by hard disk drives (HDDs). It is ideal for less frequently accessed workloads with large, cold datasets. It supports max IOPS/Volume of 250.
 
 
 - Magnetic(standard)-HDD = Previous generation
@@ -2980,7 +3060,7 @@ Which purchasing option is right for me?
 
 • When in doubt always consult the AWS documentation – it’s good!
 
-• Only gp2/gp3 and io1/io2 Block Express can be used as boot volumes
+• Only gp2/gp3 and io1/io2 Block Express can be used as root volumes
 
 
 ---------------------------- Detailed explanation of Volumes
@@ -13473,6 +13553,7 @@ aws s3 mb s3://vpc-bucket19876 --region ap-south-1
 • Captures network information from AWS managed interfaces too: ELB, RDS, ElastiCache, Redshift,WorkSpaces, NATGW,Transit Gateway...
 
 • Helps to monitor & troubleshoot connectivity issues. Example: 
+
    • Subnets to internet
    • Subnets to subnets
    • Internet to subnets

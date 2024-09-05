@@ -12808,6 +12808,34 @@ ANS : We can do 2 Eventually Consistent reads per seconds for items of 4 KB with
 
 
 
+EPV : A development team is working on an AWS Lambda function that accesses DynamoDB. The Lambda function must do an upsert, that is, it must retrieve an item and update some of its attributes or create the item if it does not exist.
+
+Which of the following represents the solution with MINIMUM IAM permissions that can be used for the Lambda function to achieve this functionality?
+
+
+ANS : dynamodb:UpdateItem, dynamodb:GetItem
+
+
+EXP : 
+
+- With Amazon DynamoDB transactions, you can group multiple actions together and submit them as a single all-or-nothing TransactWriteItems or TransactGetItems operation.
+
+- You can use AWS Identity and Access Management (IAM) to restrict the actions that transactional operations can perform in Amazon DynamoDB. Permissions for Put, Update, Delete, and Get actions are governed by the permissions used for the underlying PutItem, UpdateItem, DeleteItem, and GetItem operations.
+
+- For the ConditionCheck action, you can use the dynamodb:ConditionCheck permission in IAM policies.
+
+- UpdateItem action of DynamoDB APIs, edits an existing item's attributes or adds a new item to the table if it does not already exist. You can put, delete, or add attribute values. You can also perform a conditional update on an existing item (insert a new attribute name-value pair if it doesn't exist, or replace an existing name-value pair if it has certain expected attribute values).
+
+
+
+
+
+
+
+
+
+
+
 --------------------------- DynamoDB – Reading Data
 
 
