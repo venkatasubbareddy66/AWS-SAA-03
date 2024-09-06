@@ -403,6 +403,37 @@ Dynamic         --------------> CDN Layer CloudFront (Cache based on correct hea
 
 
 
+
+EPV : A developer is defining the signers that can create signed URLs for their Amazon CloudFront distributions. Which of the following statements should the developer consider while defining the signers? (Select two)
+
+ANS : 
+
+     1. When you create a signer, the public key is with CloudFront and private key is used to sign a portion of URL 
+
+     EXP : 
+     
+          - Each signer that you use to create CloudFront signed URLs or signed cookies must have a public–private key pair. The signer uses its private key to sign the URL or cookies, and CloudFront uses the public key to verify the signature.
+
+          - When you create signed URLs or signed cookies, you use the private key from the signer’s key pair to sign a portion of the URL or the cookie. When someone requests a restricted file, CloudFront compares the signature in the URL or cookie with the unsigned URL or cookie, to verify that it hasn’t been tampered with. CloudFront also verifies that the URL or cookie is valid, meaning, for example, that the expiration date and time haven’t passed.
+
+
+     2. When you use the root user to manage CloudFront key pairs, you can only have up to two active CloudFront key pairs per AWS account
+
+     EXP :
+
+          - When you use the root user to manage CloudFront key pairs, you can only have up to two active CloudFront key pairs per AWS account.
+
+          - Whereas, with CloudFront key groups, you can associate a higher number of public keys with your CloudFront distribution, giving you more flexibility in how you use and manage the public keys. By default, you can associate up to four key groups with a single distribution, and you can have up to five public keys in a key group.
+
+
+
+
+
+
+
+
+
+
 ---------------------------------------------------------------- LAB Demo 
 
 ------------ Type 1 
@@ -907,6 +938,8 @@ IMP NOTE :
 
 
 ---------------------------------------------- LAB for ECS 
+
+
 
 -- open ECS , give name for ur cluster
 
@@ -2890,10 +2923,10 @@ Parameters:
 
    • Type:
        
-       • String
-       • Number
-       • CommaDelimitedList
-       • List<Number>
+       • String – A literal string
+       • Number – An integer or float
+       • CommaDelimitedList – An array of literal strings that are separated by commas
+       • List<Number> – An array of integers or floats
        • AWS-Specific Parameter (to help catch invalid values – match against existing values in the AWS account)
        • List<AWS-Specific Parameter>
        • SSM Parameter (get parameter value from SSM Parameter store)
@@ -2905,6 +2938,15 @@ Parameters:
        • AllowedValues (array)
        • AllowedPattern (regex)
        • NoEcho (Boolean)
+       • AWS::EC2::KeyPair::KeyName – An Amazon EC2 key pair name
+       • AWS::EC2::SecurityGroup::Id – A security group ID
+       • AWS::EC2::Subnet::Id – A subnet ID
+       • AWS::EC2::VPC::Id – A VPC ID
+       • List<AWS::EC2::SecurityGroup::Id> – An array of security group IDs
+       • List<AWS::EC2::Subnet::Id> – An array of subnet IDs
+
+     
+
 
 
 -- So you don't have to remember all of those, but what you need remember is that the parameters are not just strings. You can have constraints and validation, allowing you to make sure they are safe to use.
@@ -19621,7 +19663,7 @@ see fig
 
 
 
------------------------------------------------------------------ Cognito User Pools vs Identity Pools
+----------------------------------------------------------------- Cognito User Pools vs Identity Pools vs Cognito Sync
 
 
 
@@ -19650,6 +19692,34 @@ see fig
 
 
 • CUP + CIP = authentication + authorization    
+
+
+
+
+-- Cognito Sync
+
+       - Amazon Cognito Sync is an AWS service and client library that enables cross-device syncing of application-related user data.
+
+       - You can use it to synchronize user profile data across mobile devices and the web without requiring your own backend. 
+
+       - The client libraries cache data locally so your app can read and write data regardless of device connectivity status
+
+       - When the device is online, you can synchronize data, and if you set up push sync, notify other devices immediately that an update is available.
+
+
+
+
+
+
+
+
+EPV : A university has created a student portal that is accessible through a smartphone app and web application. The smartphone app is available in both Android and IOS and the web application works on most major browsers. Students will be able to do group study online and create forum questions. All changes made via smartphone devices should be available even when offline and should synchronize with other devices.
+
+
+ANS : Cognito Sync
+
+
+EXP : see above 
 
 
 
@@ -21185,6 +21255,34 @@ certutil -decode .\ExampleFileDecrypted.base64 .\ExampleFileDecrypted.txt
 
 
 • For the exam: anything over 4 KB of data that needs to be encrypted must use the Envelope Encryption == GenerateDataKey API
+
+
+
+
+
+
+
+EPV : You have launched several AWS Lambda functions written in Java. A new requirement was given that over 1MB of data should be passed to the functions and should be encrypted and decrypted at runtime.
+
+Which of the following methods is suitable to address the given use-case?
+
+
+ANS : Use Envelope Encryption and reference the data as file within the code
+
+EXP : 
+
+    - While AWS KMS does support sending data up to 4 KB to be encrypted directly, envelope encryption can offer significant performance benefits.
+
+    - When you encrypt data directly with AWS KMS it must be transferred over the network.
+
+    - Envelope encryption reduces the network load since only the request and delivery of the much smaller data key go over the network. 
+
+    - The data key is used locally in your application or encrypting AWS service, avoiding the need to send the entire block of data to AWS KMS and suffer network latency.
+
+    - AWS Lambda environment variables can have a maximum size of 4 KB. Additionally, the direct 'Encrypt' API of KMS also has an upper limit of 4 KB for the data payload. 
+
+    -  To encrypt 1 MB, you need to use the Encryption SDK and pack the encrypted file with the lambda function.
+
 
 
 

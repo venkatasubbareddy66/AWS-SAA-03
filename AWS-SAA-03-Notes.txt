@@ -1048,6 +1048,57 @@ EXP : The given policy denies all EC2 specification actions on all resources whe
 ======================================= Real time use case Demo ========================
 
 
+
+EPV : The development team at a HealthCare company has deployed EC2 instances in AWS Account A. These instances need to access patient data with Personally Identifiable Information (PII) on multiple S3 buckets in another AWS Account B.
+
+As a Developer Associate, which of the following solutions would you recommend for the given use-case?
+
+ANS : Create an IAM role with S3 access in Account B and set Account A as a trusted entity. Create another role (instance profile) in Account A and attach it to the EC2 instances in Account A and add an inline policy to this role to assume the role from Account B
+
+EXP : 
+
+    - You can give EC2 instances in one account ("account A") permissions to assume a role from another account ("account B") to access resources such as S3 buckets. You need to create an IAM role in Account B and set Account A as a trusted entity. Then attach a policy to this IAM role such that it delegates access to Amazon S3 like so -
+
+                  {
+                  "Version": "2012-10-17",
+                  "Statement": [
+                      {
+                          "Effect": "Allow",
+                          "Action": "s3:*",
+                          "Resource": [
+                              "arn:aws:s3:::awsexamplebucket1",
+                              "arn:aws:s3:::awsexamplebucket1/*",
+                              "arn:aws:s3:::awsexamplebucket2",
+                              "arn:aws:s3:::awsexamplebucket2/*"
+                          ]
+                      }
+                  ]
+              }
+
+      - Then you can create another role (instance profile) in Account A and attach it to the EC2 instances in Account A and add an inline policy to this role to assume the role from Account B like so -
+
+
+
+              {
+                  "Version": "2012-10-17",
+                  "Statement": [
+                      {
+                          "Effect": "Allow",
+                          "Action": "sts:AssumeRole",
+                          "Resource": "arn:aws:iam::AccountB_ID:role/ROLENAME"
+                      }
+                  ]
+              }
+ 
+
+
+
+
+
+
+
+
+
 ------------------ if u want to access the s3 bucket from another account , so in account A u have ec2 and Account B u have S3 Bucket so how to access the S3 Bucket 
 
 DEMO : using STS Assume Role 
@@ -12905,6 +12956,9 @@ Route with Route Tables
 
 -------------------------------------  Internet Gateway : it provide internet to the VPC , creat IG and attach to VPC
 
+
+
+
 • Allows resources (e.g., EC2 instances) in a VPC connect to the Internet
 
 • It scales horizontally and is highly available and redundant
@@ -12920,6 +12974,7 @@ Route with Route Tables
 -- An Internet Gateway is a horizontally scaled, redundant, and highly available VPC component that allows communication between your VPC and the internet.
 
 -- An Internet Gateway serves two purposes: 
+
    1 to provide a target in your VPC route tables for internet-routable traffic and 
    2 to perform network address translation (NAT) for instances that have been assigned public IPv4 addresses.
 
@@ -12941,6 +12996,11 @@ EXP : The network access control list (network ACL) that is associated with the 
 
 EXP : A route table contains a set of rules, called routes, that are used to determine where network traffic from your subnet or gateway is directed. The route table in the instance’s subnet should have a route defined to the Internet Gateway.
 
+
+
+
+
+
 ---------------------------------------------------------- Bastion Hosts
 
 • We can use a Bastion Host to SSH into our private EC2 instances
@@ -12950,6 +13010,8 @@ EXP : A route table contains a set of rules, called routes, that are used to det
 • Bastion Host security group must allow inbound from the internet on port 22 from restricted CIDR, for example the public CIDR of your corporation
 
 • Security Group of the EC2 Instances must allow the Security Group of the Bastion Host, or the private IP of the Bastion host
+
+
 
 
 ---------------------------------------- NAT Instance (outdated, but still at the exam)
@@ -12965,6 +13027,8 @@ EXP : A route table contains a set of rules, called routes, that are used to det
 • Must have Elastic IP attached to it
 
 • RouteTables must be configured to route traffic from private subnets to the NAT Instance
+
+
 
 ----------- NAT Instance – Comments
 
@@ -13098,6 +13162,8 @@ eg : ssh -i "terraform-key.pem" ec2-user@192.168.2.31
 
 
 ---------------------- NAT Gateway with High Availability
+
+
 
 • NAT Gateway is resilient within a single Availability Zone
 
