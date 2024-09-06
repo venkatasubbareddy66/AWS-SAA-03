@@ -10382,7 +10382,7 @@ user = save_user(17, {"name": "Nate Dogg"})
 
 -- Cluster = Collection of Shards
 
--- Shard = Cllection of Nodes/Server
+-- Shard = Collection of Nodes/Server
 
 -- Each Shard has 6 nodes = 1 Primary Node , 5 Replica Node
 
