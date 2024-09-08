@@ -4152,6 +4152,8 @@ EXP : PostgreSQL port = 5432  HTTP port = 80  HTTPS port = 443
 
 • One NACL per subnet, new subnets are assigned the Default NACL
 
+
+
 IMP ------------ • You define NACL Rules:
 
 • Rules have a number (1-32766), higher precedence with a lower number
@@ -7805,6 +7807,8 @@ To protect data in transit, AWS encourages customers to leverage a multi-level a
 -- Generate pre-signed URLs using the S3 Console, AWS CLI or SDK
 
 -- URL Expiration
+
+
 • S3 Console – 1 min up to 720 mins (12 hours)
 • AWS CLI – configure expiration with --expires-in parameter in seconds (default 3600 secs, max. 604800 secs ~ 168 hours)
 
@@ -8729,11 +8733,32 @@ services/
 
 ========================================= MFA with CLI
 
+
+
 • To use MFA with the CLI, you must create a temporary session
 
 • To do so, you must run the STS GetSessionToken API call
 
 • aws sts get-session-token --serial-number arn-of-the-mfa-device --token-code code-from-token --duration-seconds 3600
+
+
+
+
+
+---------------------------------- some cmnds for AWS CLI
+
+
+- aws ec2 monitor-instances --instance-ids i-1234567890abcdef0 
+
+         - This enables detailed monitoring for a running instance.
+
+
+- aws ec2 run-instances --image-id ami-09092360 --monitoring Enabled=true
+
+         - This syntax is used to enable detailed monitoring when launching an instance from AWS CLI.
+
+        
+
 
 
 
@@ -9913,6 +9938,35 @@ EXP :
 -- No SSH available except on RDS Custom
 
 -- Audit Logs can be enabled and sent to CloudWatch Logs for longer retention
+
+
+
+
+
+
+EPV : The Development team at a media company is working on securing their databases.
+
+Which of the following AWS database engines can be configured with IAM Database Authentication? (Select two)
+
+ANS : RDS MySQL and RDS PostGreSQL 
+
+EXP :
+
+      - You can authenticate to your DB instance using AWS Identity and Access Management (IAM) database authentication. With this authentication method, you don't need to use a password when you connect to a DB instance. Instead, you use an authentication token.
+
+      - An authentication token is a unique string of characters that Amazon RDS generates on request. Each token has a lifetime of 15 minutes. You don't need to store user credentials in the database, because authentication is managed externally using IAM.
+
+      - RDS MySQL - IAM database authentication works with MySQL and PostgreSQL engines for Aurora as well as MySQL, MariaDB and RDS PostgreSQL engines for RDS.
+
+      - RDS PostGreSQL - IAM database authentication works with MySQL and PostgreSQL engines for Aurora as well as MySQL, MariaDB and RDS PostgreSQL engines for RDS.
+
+
+
+
+
+
+
+
 
 
 

@@ -2425,6 +2425,42 @@ REF : https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/using-features.depl
 
 
 
+
+
+
+EPV : Your application is deployed automatically using AWS Elastic Beanstalk. Your YAML configuration files are stored in the folder .ebextensions and new files are added or updated often. The DevOps team does not want to re-deploy the application every time there are configuration changes, instead, they would rather manage configuration externally, securely, and have it load dynamically into the application at runtime.
+
+ANS : Use SSM Parameter Store
+
+EXP :
+
+     - AWS Systems Manager Parameter Store provides secure, hierarchical storage for configuration data management and secrets management. 
+
+     - You can store data such as passwords, database strings, and license codes as parameter values.
+
+     - For the given use-case, as the DevOps team does not want to re-deploy the application every time there are configuration changes, so they can use the SSM Parameter Store to store the configuration externally.
+
+
+
+
+
+-- S3 offers the same benefit as the SSM Parameter Store where there are no servers to manage. 
+
+-- With S3 you have to set encryption and choose other security options and there are more chances of misconfiguring security if you share your S3 bucket with other objects
+
+-- You would have to create a custom setup to come close to the parameter store. Use Parameter Store and let AWS handle the rest.
+
+
+
+
+
+
+
+
+
+
+
+
 ------------------------------------------------------- Elastic Beanstalk Under the Hood
 
 
@@ -17398,6 +17434,27 @@ ANS: ValidateService
 
 
 
+EPV : You have a workflow process that pulls code from AWS CodeCommit and deploys to EC2 instances associated with tag group ProdBuilders. You would like to configure the instances to archive no more than two application revisions to conserve disk space.
+
+ANS : CodeDeploy Agent
+
+EXP : 
+
+     - The CodeDeploy agent is a software package that, when installed and configured on an instance, makes it possible for that instance to be used in CodeDeploy deployments. 
+
+     - The CodeDeploy agent archives revisions and log files on instances. The CodeDeploy agent cleans up these artifacts to conserve disk space. 
+
+     - You can use the :max_revisions: option in the agent configuration file to specify the number of application revisions to the archive by entering any positive integer. 
+
+     - CodeDeploy also archives the log files for those revisions. All others are deleted, except for the log file of the last successful deployment.
+
+
+
+
+
+
+
+
 ----------------------------------------------------------------- CodeDeploy – Lambda Platform
 
 
@@ -17978,6 +18035,22 @@ Taking your Serverless Development to the next level
 
          • aws cloudformation deploy / sam deploy
  
+
+
+
+
+
+
+EPV : Your company is in the process of building a DevOps culture and is moving all of its on-premise resources to the cloud using serverless architectures and automated deployments. You have created a CloudFormation template in YAML that uses an AWS Lambda function to pull HTML files from GitHub and place them into an Amazon Simple Storage Service (S3) bucket that you specify.
+
+Which of the following AWS CLI commands can you use to upload AWS Lambda functions and AWS CloudFormation templates to AWS?
+
+ANS : 
+
+
+
+
+
 
 
 
@@ -21282,6 +21355,41 @@ EXP :
     - AWS Lambda environment variables can have a maximum size of 4 KB. Additionally, the direct 'Encrypt' API of KMS also has an upper limit of 4 KB for the data payload. 
 
     -  To encrypt 1 MB, you need to use the Encryption SDK and pack the encrypted file with the lambda function.
+
+
+
+
+
+
+
+
+EPV : The development team at a company wants to encrypt a 111 GB object using AWS KMS. Which of the following represents the best solution?
+
+ANS : Make a GenerateDataKey API call that returns a plaintext key and an encrypted copy of a data key. Use a plaintext key to encrypt the data
+
+EXP : 
+
+     - GenerateDataKey API, generates a unique symmetric data key for client-side encryption. This operation returns a plaintext copy of the data key and a copy that is encrypted under a customer master key (CMK) that you specify.
+
+     - You can use the plaintext key to encrypt your data outside of AWS KMS and store the encrypted data key with the encrypted data.
+
+     - GenerateDataKey returns a unique data key for each request. The bytes in the plaintext key are not related to the caller or the CMK.
+
+     To encrypt data outside of AWS KMS:
+
+             - Use the GenerateDataKey operation to get a data key.
+
+             - Use the plaintext data key (in the Plaintext field of the response) to encrypt your data outside of AWS KMS. Then erase the plaintext data key from memory.
+
+             - Store the encrypted data key (in the CiphertextBlob field of the response) with the encrypted data.
+
+
+      To decrypt data outside of AWS KMS:
+
+             - Use the Decrypt operation to decrypt the encrypted data key. The operation returns a plaintext copy of the data key.
+
+             - Use the plaintext data key to decrypt data outside of AWS KMS, then erase the plaintext data key from memory.       
+
 
 
 
