@@ -4550,6 +4550,38 @@ SQS, SNS & Kinesis
 
 
 
+
+
+
+
+EPV : An Amazon Simple Queue Service (SQS) has to be configured between two AWS accounts for shared access to the queue. AWS account A has the SQS queue in its account and AWS account B has to be given access to this queue.
+
+Which of the following options need to be combined to allow this cross-account access? (Select three)
+
+
+ANS : 1 The account A administrator creates an IAM role and attaches a permissions policy
+
+      2 The account A administrator attaches a trust policy to the role that identifies account B as the principal who can assume the role
+
+      3 The account B administrator delegates the permission to assume the role to any users in account B
+
+
+EXP : 
+
+     - To grant cross-account permissions, you need to attach an identity-based permissions policy to an IAM role. For example, the AWS account A administrator can create a role to grant cross-account permissions to AWS account B as follows:
+
+     1 The account A administrator creates an IAM role and attaches a permissions policy—that grants permissions on resources in account A—to the role.
+
+     2 The account A administrator attaches a trust policy to the role that identifies account B as the principal who can assume the role.
+
+     3 The account B administrator delegates the permission to assume the role to any users in account B. This allows users in account B to create or access queues in account A.
+
+
+
+
+
+
+
 --------------------------------------- Amazon SQS – Standard Queue
 
 
@@ -4874,6 +4906,26 @@ Account 444455556666 (SQS Queue (queue1))---------------(poll for messages)-----
 
 
 
+
+
+
+
+EPV : A user has an IAM policy as well as an Amazon SQS policy that apply to his account. The IAM policy grants his account permission for the ReceiveMessage action on example_queue, whereas the Amazon SQS policy gives his account permission for the SendMessage action on the same queue.
+
+Considering the permissions above, which of the following options are correct? (Select two)
+
+
+ANS : 1 The user can send a ReceiveMessage request to example_queue, the IAM policy allows this action
+
+      2 If you add a policy that denies the user access to all actions for the queue, the policy will override the other two policies and the user will not have access to example_queue
+
+
+
+EXP :
+
+     https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-using-identity-based-policies.html
+
+     https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-using-identity-based-policies.html
 
 
 
@@ -5237,7 +5289,7 @@ IMP :
 
       • Content-based deduplication: will do a SHA-256 hash of the message body , And if the same message body is encountered twice, the same hash will be the same twice. And so therefore, the second message will be refused.
 
-      • Explicitly provide a Message Deduplication ID directly while sending a message. And if the same deduplication ID is encountered twice then the message will be gone.
+      • Explicitly provide a MessageDeduplication ID directly while sending a message. And if the same deduplication ID is encountered twice then the message will be gone.
 
 
 
@@ -14145,6 +14197,41 @@ aws dynamodb scan --table-name UserPosts --max-items 1 --starting-token eyJFeGNs
 
 
 
+EPV : You would like to paginate the results of an S3 List to show 100 results per page to your users and minimize the number of API calls that you will use.
+
+Which CLI options should you use? (Select two)
+
+ANS : 
+
+      --max-items
+
+      --starting-token
+
+
+
+EXP : 
+
+     - For commands that can return a large list of items, the AWS Command Line Interface (AWS CLI) has three options to control the number of items included in the output when the AWS CLI calls a service's API to populate the list.
+
+     -  --page-size
+
+        --max-items
+
+        --starting-token
+
+     - By default, the AWS CLI uses a page size of 1000 and retrieves all available items.
+
+     -  For example, if you run aws s3api list-objects on an Amazon S3 bucket that contains 3,500 objects, the AWS CLI makes four calls to Amazon S3, handling the service-specific pagination logic for you in the background and returning all 3,500 objects in the final output.
+
+     - Here's an example: aws s3api list-objects --bucket my-bucket --max-items 100 --starting-token eyJNYXJrZXIiOiBudWxsLCAiYm90b190cnVuY2F0ZV9hbW91bnQiOiAxfQ==
+
+
+
+
+
+
+
+
 ---------------------------------------------------------- DynamoDB Transactions
 
 
@@ -17347,6 +17434,32 @@ ANS: ValidateService
 
 
 
+EPV : What is the run order of the hooks for in-place deployments using CodeDeploy?
+
+ANS : Application Stop -> Before Install -> Application Start -> ValidateService
+
+EXP :
+
+     - https://docs.aws.amazon.com/codedeploy/latest/userguide/reference-appspec-file-structure-hooks.html
+
+
+
+
+
+
+EPV : A communication platform serves millions of customers and deploys features in a production environment on AWS via CodeDeploy. You are reviewing scripts for the deployment process located in the AppSpec file.
+
+Which of the following options lists the correct order of lifecycle events?
+
+
+ANS : DownloadBundle => BeforeInstall => ApplicationStart => ValidateService
+
+EXP : https://docs.aws.amazon.com/codedeploy/latest/userguide/reference-appspec-file-structure-hooks.html#reference-appspec-file-structure-hooks-run-order
+
+
+
+
+
 ----------------------------------------------------------------- CodeDeploy – EC2/On-premises Platform
 
 
@@ -18045,7 +18158,13 @@ EPV : Your company is in the process of building a DevOps culture and is moving 
 
 Which of the following AWS CLI commands can you use to upload AWS Lambda functions and AWS CloudFormation templates to AWS?
 
-ANS : 
+ANS : cloudformation package and cloudformation deploy
+
+EXP : 
+
+      - The cloudformation package command packages the local artifacts (local paths) that your AWS CloudFormation template references. The command will upload local artifacts, such as your source code for your AWS Lambda function.
+
+      - The cloudformation deploy command deploys the specified AWS CloudFormation template by creating and then executing a changeset.
 
 
 
@@ -22371,7 +22490,7 @@ syntax : ‘{{resolve:service-name:reference-key}}’
 
          • create-log-group: if the log group doesn’t exist yet
 
-
+         - describe-log-groups : You can use the describe-log-groups command to find whether a log group already has a CMK associated with it.
 
 
 

@@ -4204,6 +4204,49 @@ NOTE : in SG , it is stateful , no need to give inbound and outbound rules , eve
 
 
 
+-- When you create a custom Network ACL and associate it with a subnet, by default, this custom Network ACL denies all inbound and outbound traffic until you add rules. 
+
+-- A network ACL has separate inbound and outbound rules, and each rule can either allow or deny traffic.
+
+-- Network ACLs are stateless, which means that responses to allowed inbound traffic are subject to the rules for outbound traffic (and vice versa).
+
+-- The client that initiates the request chooses the ephemeral port range. The range varies depending on the client's operating system. Requests originating from Elastic Load Balancing use ports 1024-65535. List of ephemeral port ranges:
+
+      - Many Linux kernels (including the Amazon Linux kernel) use ports 32768-61000.
+
+      - Requests originating from Elastic Load Balancing use ports 1024-65535.
+
+      - Windows operating systems through Windows Server 2003 use ports 1025-5000.
+
+      - Windows Server 2008 and later versions use ports 49152-65535.
+
+      - A NAT gateway uses ports 1024-65535.
+
+      - AWS Lambda functions use ports 1024-65535.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ------------------------------------ Security Group vs. NACLs
 
@@ -7514,10 +7557,12 @@ ANS : Use Amazon S3 Glacier vault to store the sensitive archived data and then 
 -- Block an object version deletion for a specified amount of time
 
 -- Retention mode - Compliance:
+
      • Object versions can't be overwritten or deleted by any user, including the root user
      • Objects retention modes can't be changed, and retention periods can't be shortened
 
 -- Retention mode - Governance:
+
      • Most users can't overwrite or delete an object version or alter its lock settings
      • Some users have special permissions to change the retention or delete the object
 
@@ -9679,6 +9724,8 @@ workflow = Master Db instance --> snapshot is taken --> restore from the snapsho
 ------------------------------ Aurora High Availability and Read Scaling
 
 ----- 6 copies of your data across 3 AZ:
+
+
 - 4 copies out of 6 needed for writes
 - 3 copies out of 6 need for reads
 - Self healing with peer-to-peer replication
@@ -9691,6 +9738,10 @@ workflow = Master Db instance --> snapshot is taken --> restore from the snapsho
 -- Master + up to 15 Aurora Read Replicas serve reads
 
 -- Support for Cross Region Replication
+
+
+
+
 
 ------------------------  difference b/w Aurora read replicas and MySQL Replicas 
 
@@ -9735,6 +9786,8 @@ Features
 
 -------------------- Aurora DB Cluster
 
+
+
 -- client has WEP and REP 
 
 -- we have Writer endPoint (WEP), which is used  when ever the master fails ,still the client able to communicate and it is automatically redirected to right instance 
@@ -9742,6 +9795,9 @@ Features
 -- we have Reader endPoint (REP), it is difficult to connect which replica to the client , to avoid this confusion we have REP , it hs same features of WRP , it connects with load balancer and it connects automatically to all read replicas
 
 NOTE : Load balancing happens at the connections level , not the statement level
+
+
+
 
 -------------------  Features of Aurora
 
@@ -9756,9 +9812,14 @@ NOTE : Load balancing happens at the connections level , not the statement level
 - Backtrack: restore data at any point of time without using backups
 
 
+
+
 ------------------- Aurora Replicas - Auto Scaling
 
 -- whenever too many request for the read replicas , it has more CPU usage inuse , so here the automatic scaling will  happens in aurora and add more read replicas this will bring down CPU usage , this is replcia auto scaling 
+
+
+
 
 
 --------------------------------------------Aurora Serverless
@@ -9774,13 +9835,18 @@ NOTE : Load balancing happens at the connections level , not the statement level
 workflow = Client --> proxy Fleet(managed by Aurora) --> AMZN aurora ...  AMZN aurora .... 
 
 
+
+
+
 --------------------------------------------Global Aurora
 
 ----- Aurora Cross Region Read Replicas:
+
 - Useful for disaster recovery
 - Simple to put in place
 
 ------ Aurora Global Database (recommended):
+
 - 1 Primary Region (read / write)
 - Up to 5 secondary (read-only) regions, replication lag is less than 1 second
 - Up to 16 Read Replicas per secondary region
@@ -9833,12 +9899,16 @@ Aurora  : asynchronous
 -------- RDS Backups
 
 ---  Automated backups:
+
+
 - Daily full backup of the database (during the backup window)
 - Transaction logs are backed-up by RDS every 5 minutes
 - => ability to restore to any point in time (from oldest backup to 5 minutes ago)
 - 1 to 35 days of retention, set 0 to disable automated backups
 
 ---- Manual DB Snapshots
+
+
 - Manually triggered by the user
 - Retention of backup for as long as you want
 
@@ -10085,6 +10155,8 @@ AUrora and MYSql
 
 -------------------- it supports two Engines 
 
+
+
 1 Redis : permannent
 
 - it supports HA, failover and backups
@@ -10104,6 +10176,46 @@ AUrora and MYSql
 - Replication
 
 - Amazon ElastiCache for Redis is a great choice for real-time transactional and analytical processing use cases such as caching, chat/messaging, gaming leaderboards, geospatial, machine learning, media streaming, queues, real-time analytics, and session store.
+
+- In addition to strings, Redis supports lists, sets, sorted sets, hashes, bit arrays, and hyperlog logs.
+
+- Applications can use these more advanced data structures to support a variety of use cases. 
+
+- For example, you can use Redis Sorted Sets to easily implement a game leaderboard that keeps a list of players sorted by their rank.
+
+
+
+
+
+
+EPV : A development team is considering Amazon ElastiCache for Redis as its in-memory caching solution for its relational database.
+
+Which of the following options are correct while configuring ElastiCache? (Select two)
+
+
+ANS : 1 All the nodes in a Redis cluster must reside in the same region
+
+      2 While using Redis with cluster mode enabled, you cannot manually promote any of the replica nodes to primary
+
+
+
+
+EXP : 
+
+     - All the nodes in a Redis cluster (cluster mode enabled or cluster mode disabled) must reside in the same region.
+
+     - While using Redis with cluster mode enabled, you cannot manually promote any of the replica nodes to primary
+
+            - While using Redis with cluster mode enabled, there are some limitations:
+
+            - You cannot manually promote any of the replica nodes to primary.
+
+            - Multi-AZ is required.
+
+            - You can only change the structure of a cluster, the node type, and the number of nodes by restoring from a backup.
+
+
+
 
 
 
@@ -10247,6 +10359,8 @@ Geospatial support
 ------------------------------- Developer Strategies (Patterns for ElastiCache)  
 
 -- they are 3 types of strategies
+
+
 
 1  Lazy Loading : load the data , when it is necessary , all the read data is cached, data can become stale(old) in cache
 
@@ -10412,6 +10526,8 @@ user = save_user(17, {"name": "Nate Dogg"})
 
 
 ------------------------------------ Final words of wisdom
+
+
 
 • Lazy Loading / Cache aside is easy to implement and works for many situations as a foundation, especially on the read side
 
