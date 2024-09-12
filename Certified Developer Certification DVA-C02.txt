@@ -2109,7 +2109,7 @@ NOTE : use the above method to create environment , in the new console there mig
 
 3 • Rolling with additional batches: like rolling, but spins up new instances to move the batch (so that the old application is still available)
 
-4 • Immutable: spins up new instances in a new ASG, deploys version to these instances, and then swaps all the instances when everything is healthy
+4 • Immutable (slow deployment): spins up new instances in a new ASG, deploys version to these instances, and then swaps all the instances when everything is healthy
 
 5 • Blue Green: create a new environment and switch over when ready
 
@@ -2176,6 +2176,9 @@ Explanation for Deployment Options
 
 ---------------- 3 Elastic Beanstalk Deployment Rolling with additional batches
 
+
+
+
 -- so in this case, the application is not running under capacity, just like before.
 
 -- Before, at some point, we were only running two instances out of four. So that was below capacity.
@@ -2225,6 +2228,8 @@ EG :
 • Quick rollback in case of failures (just terminate new ASG)
 
 • Great for prod
+
+- It also has the additional advantage of a quick and safe roll back in case the deployment fails.
 
 
 EG : 
@@ -16120,10 +16125,10 @@ User                                               API Gateway                  
 
 • Count:The total number API requests in a given period.
 
-• IntegrationLatency: The time between when API Gateway relays a request to the backend and when it receives a response from the backend.
+• IntegrationLatency: The time between when API Gateway relays a request to the backend and when it receives a response from the backend. Unit in milliseconds
 
 
-• Latency: The time between when API Gateway receives a request from a client and when it returns a response to the client.
+• Latency: The time between when API Gateway receives a request from a client and when it returns a response to the client. Unit in milliseconds
 
          - The latency includes the integration latency and other API Gateway overhead(checking the authorization and authentication, checking the cache, doing some mapping templates, and so on.)
 
@@ -23097,3 +23102,55 @@ Amazon MSK
 
 
 
+
+
+
+
+
+
+============================================ IMP POINTS to point out the answer quickly 
+
+
+
+
+1 if the question says " Decrease the no.of connections" to DB ?
+
+ANS : Proxy RDS
+
+
+2 502 error for API gateway ?
+
+ANS : change format of lambda response api call
+
+
+3 for lambda function  , no canary deployment is there , it is only mechanism 
+
+ANS : weighted Alias
+
+
+4 "error for too many connections"
+
+Ans : Rds Proxy
+
+
+5 if u want to store secrets then go for 
+
+ANS : secrets manager 
+
+
+6 if it is sensitive data then 
+
+ANS : Parameter Store 
+
+
+7 lsi vs gsi (faster response)
+
+ANS : go for GSI 
+
+
+8 Audit trail of kms keys 
+
+ANS : sse-KMS
+
+
+9 

@@ -18663,7 +18663,7 @@ Ans: Import into Aws Certificate manager or upload it to AWS IAM
 IMP points to remember before answering to the questions 
 
 
-A in the question if it is mention "Least operational overhead" Means  the Services which has in-built feature to solve the issue which is mentioned in the question . "using ec2 is completely opposite to this statement"
+A in the question if it is mention "Least operational overhead" Means  the Services which has in-built feature to solve the issue which is mentioned in the question . 
 
 B if it is "Most Operationally efficient way" = they are talking about "either fully managed or serverless" services
   
