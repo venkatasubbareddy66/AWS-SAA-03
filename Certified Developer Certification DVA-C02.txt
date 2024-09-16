@@ -8653,7 +8653,7 @@ REF : https://docs.aws.amazon.com/xray/latest/devguide/xray-sdk-nodejs.html
 
 • Annotations: Key Value pairs used to index traces and use with filters
 
-   - So annotations is are extremely important in X-ray. If you want to be able to search your traces with new indexes.
+   - So annotations are extremely important in X-ray. If you want to be able to search your traces with new indexes.
 
 
 • Metadata: Key Value pairs, not indexed, not used for searching
@@ -19283,7 +19283,7 @@ cdk destroy   - Destroy the Stack(s)
 ----------------------------------------------------------------- CDK –Testing
 
 
-• To test CDK apps, use CDK Asser tions Module combined with popular test frameworks such as Jest (JavaScript) or Pytest (Python)
+• To test CDK apps, use CDK Assertions Module combined with popular test frameworks such as Jest (JavaScript) or Pytest (Python)
 
 • Verify we have specific resources, rules, conditions, parameters...
 
