@@ -18235,6 +18235,8 @@ AMS : to run Lambda functions locally, you can use the SAM CLI
 ----------------------------------------------------------------- SAM Accelerate (sam sync) – Examples
 
 
+- sam sync use this command to deploy incremental changes
+
 • sam sync (no options)
 
        • Synchronize code and infrastructure
