@@ -1287,7 +1287,7 @@ NOTE :  you should know that the role is defined at the task definition level, n
 • Environment Variable
 
     • Hardcoded – e.g., URLs
-    • SSM Parameter Store – sensitive variables (e.g., API keys, shared configs)
+    • SSM Parameter Store – sensitive variables (e.g., API keys, shared configs,access token)
     • Secrets Manager – sensitive variables (e.g., DB passwords)
 
 

@@ -9950,6 +9950,8 @@ Restoring MySQL Aurora cluster from S3
 
 -------------------------------Aurora Database Cloning
 
+
+
 -- Create a new Aurora DB Cluster from an existing one
 
 -- Faster than snapshot & restore
@@ -9968,7 +9970,7 @@ IMP : You cannot clone databases across AWS regions.
 
 -- After that, only copies can be created. However, each copy can also have up to 15 clones.
 
-
+-- Database cloning is only available for Aurora and not for RDS.
 
 
 
