@@ -10838,6 +10838,7 @@ IMP - Remember, CloudFront Functions high performance, high scale only for the v
 
 ------------------------- Lambda@Edge
 
+-- should be use in only us-east-1 region only
 
 -- Now Lambda@Edge is a bit more, so you can modify all of them.
 

@@ -4390,6 +4390,8 @@ EXP :
 
 ------------------------------- 2  Application Load Balancer : 2016
 
+
+
 - Application Load Balancer automatically distributes incoming application traffic across multiple targets, such as Amazon EC2 instances, containers, and AWS Lambda functions.
 
 - It can handle the varying load of your application traffic in a single Availability Zone or across multiple Availability Zones.
@@ -4420,7 +4422,57 @@ EXP :
 
 
 
--- -----------it has routing features 
+
+
+
+-------------------------- The load balancer generates an HTTP error
+
+
+- HTTP 400: Bad request
+
+- HTTP 401: Unauthorized
+
+- HTTP 403: Forbidden : You configured an AWS WAF web access control list (web ACL) to monitor requests to your Application Load Balancer and it blocked a request.
+
+- HTTP 405: Method not allowed : The client used the TRACE method, which is not supported by Application Load Balancers.
+
+- HTTP 408: Request timeout 
+
+- HTTP 414: URI too long : The request URL or query string parameters are too large.
+
+- HTTP 463 : The load balancer received an X-Forwarded-For request header with too many IP addresses. The upper limit for IP addresses is 30.
+
+- HTTP 464 : The load balancer received an incoming request protocol that is incompatible with the version config of the target group protocol.
+
+- HTTP 500: Internal server error
+
+- HTTP 501: Not implemented : The load balancer received a Transfer-Encoding header with an unsupported value. The supported values for Transfer-Encoding are chunked and identity. As an alternative, you can use the Content-Encoding header.
+
+- HTTP 502: Bad gateway
+
+- HTTP 503: Service unavailable : The target groups for the load balancer have no registered targets.
+
+- HTTP 504: Gateway timeout
+
+- HTTP 505: Version not supported
+
+- HTTP 507: Insufficient Storage : The redirect URL is too long.
+
+- HTTP 561: Unauthorized
+
+ 
+
+
+ref: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-troubleshooting.html#http-400-issues
+
+
+
+
+
+
+
+
+------------- it has routing features 
 
 
 -- in ALB we r creating rules , we have target groups , so according to the traffic the request will send to different target groups 
@@ -4450,6 +4502,8 @@ Tartget Groups for ALB
 
 
 ----------------------- Application Load Balancer + dynamic port mapping
+
+
 
 -- Application Load Balancer can automatically distribute incoming application traffic across multiple targets, such as Amazon EC2 instances, containers, IP addresses, and AWS Lambda functions. It can handle the varying load of your application traffic in a single Availability Zone or across multiple Availability Zones (AZs).
 
@@ -4537,6 +4591,8 @@ IMP NOTE : NLBs support HTTP, HTTPS and TCP health checks:
 -- HealthCheckProtocol :
 
 The protocol the load balancer uses when performing health checks on targets. The possible protocols are HTTP, HTTPS, and TCP. The default is the TCP protocol. If the target type is ALB, the supported health check protocols are HTTP and HTTPS.
+
+
 
 
 ------------------------------------- LAB for NLB 
@@ -4777,6 +4833,8 @@ IMP : You need to remember that Bastion Hosts are using the SSH protocol, which 
 
 ----------------------------------------- 4 Gateway Load Balancer ;2020
 
+
+
 - Choose a Gateway Load Balancer when you need to deploy and manage a fleet of third-party virtual appliances that support GENEVE. These appliances enable you to improve security, compliance, and policy controls.
 
 - works on layer 3
@@ -4786,6 +4844,8 @@ IMP : You need to remember that Bastion Hosts are using the SSH protocol, which 
 - f u want to set up any firewall,prevention system etc
 
 - it uses GENEVE protocol on 6081
+
+
 
 
 ======================Sticky Sessions (session Affinity)======================
@@ -4845,6 +4905,8 @@ B Appication cookie
 
 
 ==============================Cross Zone Load Balancing============================
+
+
 
 1 With Cross Zone Load Balancing : each load balancer distrubuted evenly across all registered instance evenly in all Az's
 
@@ -7765,11 +7827,15 @@ explanation : All Amazon S3 buckets have encryption configured by default, and a
 
 ------- c SSE-C (Customer provided Keys) 
 
+
+
 - Server-Side Encryption using keys fully managed by the customer outside of AWS
 
 - Amazon S3 does NOT store the encryption key you provide
 
 - HTTPS must be used
+
+- Amazon S3 will reject any requests made over HTTP when using SSE-C. For security considerations, AWS recommends that you consider any key you send erroneously using HTTP to be compromised.
 
 - Encryption key must provided in HTTP headers, for every HTTP request made
 
@@ -7806,6 +7872,8 @@ EXP :
 
 2 Client Side Encryption 
 
+
+
 -- Use client libraries such as Amazon S3 Client-Side Encryption Library
 
 -- Clients must encrypt data themselves before sending to Amazon S3
@@ -7818,6 +7886,8 @@ EXP :
 Client-side encryption is the act of encrypting your data locally to help ensure its security in transit and at rest. To encrypt your objects before you send them to Amazon S3, use the Amazon S3 Encryption Client. When your objects are encrypted in this manner, your objects aren't exposed to any third party, including AWS. Amazon S3 receives your objects already encrypted; Amazon S3 does not play a role in encrypting or decrypting your objects. You can use both the Amazon S3 Encryption Client and server-side encryption to encrypt your data. When you send encrypted objects to Amazon S3, Amazon S3 doesn't recognize the objects as being encrypted, it only detects typical objects.
 
 The Amazon S3 Encryption Client works as an intermediary between you and Amazon S3. After you instantiate the Amazon S3 Encryption Client, your objects are automatically encrypted and decrypted as part of your Amazon S3 PutObject and GetObject requests. Your objects are all encrypted with a unique data key. The Amazon S3 Encryption Client does not use or interact with bucket keys, even if you specify a KMS key as your wrapping key.
+
+
 
 
 3 In-transit Encryption 
