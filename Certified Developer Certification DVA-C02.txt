@@ -3248,6 +3248,7 @@ Outputs:
 
 -------------------------- CloudFormation – Outputs Cross-Stack Reference
 
+
 • We then create a second template that leverages that security group
 
 • For this, we use the Fn::ImportValue function
