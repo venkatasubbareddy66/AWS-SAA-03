@@ -18932,132 +18932,148 @@ EXP :
 
 
 
------------------------------------------------------------------ CDK Hands on 
+
+------------------------------------------------------- CDK Hands ON
 
 
--- u have to follow some cmnds to do this DEMO 
 
--- open cloudshell and follow below cmnds
+steps.sh 
 
 
 # 1. install the CDK
-sudo npm install -g aws-cdk-lib
+sudo npm install -g aws-cdk
 
 # directory name must be cdk-app/ to go with the rest of the tutorial, changing it will cause an error
 mkdir cdk-app
 cd cdk-app/
 
 # initialize the application
-cdk init app --language javascript
+cdk init --language javascript
+
 # verify it works correctly
 cdk ls
 
+# install the necessary packages
+npm install @aws-cdk/aws-s3 @aws-cdk/aws-iam @aws-cdk/aws-lambda @aws-cdk/aws-lambda-event-sources @aws-cdk/aws-dynamodb
+
+
 # 2. copy the content of cdk-app-stack.js into lib/cdk-app-stack.js
 
-ls lib 
-cd lib
-rm  cdk-app-stack.js
-touch cdk-app-stack.js
-sudo yum install nano
-nano cdl-app-stack.js (paste this content )
 
 
+# go to  lib folder
 
-const cdk = require("aws-cdk-lib");
+cd lib 
 
-const s3 = require("aws-cdk-lib/aws-s3");
-const iam = require("aws-cdk-lib/aws-iam");
-const lambda = require("aws-cdk-lib/aws-lambda");
-const lambdaEventSource = require("aws-cdk-lib/aws-lambda-event-sources");
-const dynamodb = require("aws-cdk-lib/aws-dynamodb");
+# create one file eg: nano cdk-app-stack.js  and uplaod this code 
+
+
+const cdk = require('aws-cdk-lib');
+const { Stack } = cdk;
+const s3 = require('aws-cdk-lib/aws-s3');
+const iam = require('aws-cdk-lib/aws-iam');
+const lambda = require('aws-cdk-lib/aws-lambda');
+const lambdaEventSource = require('aws-cdk-lib/aws-lambda-event-sources');
+const dynamodb = require('aws-cdk-lib/aws-dynamodb');
+const { Construct } = require('constructs');
 
 const imageBucket = "cdk-rekn-imagebucket";
 
-class CdkAppStack extends cdk.Stack {
-    /**
-     *
-     * @param {cdk.Construct} scope
-     * @param {string} id
-     * @param {cdk.StackProps=} props
-     */
-    constructor(scope, id, props) {
-        super(scope, id, props);
+class CdkAppStack extends Stack {
+  /**
+   *
+   * @param {Construct} scope
+   * @param {string} id
+   * @param {cdk.StackProps=} props
+   */
+  constructor(scope, id, props) {
+    super(scope, id, props);
 
-        // The code that defines your stack goes here
+    // The code that defines your stack goes here
 
-        // ========================================
-        // Bucket for storing images
-        // ========================================
-        const bucket = new s3.Bucket(this, imageBucket, {
-            removalPolicy: cdk.RemovalPolicy.DESTROY,
-        });
-        new cdk.CfnOutput(this, "Bucket", { value: bucket.bucketName });
+    // ========================================
+    // Bucket for storing images
+    // ========================================
+    const bucket = new s3.Bucket(this, imageBucket, {
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+    new cdk.CfnOutput(this, "Bucket", { value: bucket.bucketName });
 
-        // ========================================
-        // Role for AWS Lambda
-        // ========================================
-        const role = new iam.Role(this, "cdk-rekn-lambdarole", {
-            assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
-        });
-        role.addToPolicy(
-            new iam.PolicyStatement({
-                effect: iam.Effect.ALLOW,
-                actions: [
-                    "rekognition:*",
-                    "logs:CreateLogGroup",
-                    "logs:CreateLogStream",
-                    "logs:PutLogEvents",
-                ],
-                resources: ["*"],
-            })
-        );
+    // ========================================
+    // Role for AWS Lambda
+    // ========================================
+    const role = new iam.Role(this, "cdk-rekn-lambdarole", {
+      assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
+    });
+    role.addToPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "rekognition:*",
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+        ],
+        resources: ["*"],
+      })
+    );
 
-        // ========================================
-        // DynamoDB table for storing image labels
-        // ========================================
-        const table = new dynamodb.Table(this, "cdk-rekn-imagetable", {
-            partitionKey: { name: "Image", type: dynamodb.AttributeType.STRING },
-            removalPolicy: cdk.RemovalPolicy.DESTROY,
-        });
-        new cdk.CfnOutput(this, "Table", { value: table.tableName });
+    // ========================================
+    // DynamoDB table for storing image labels
+    // ========================================
+    const table = new dynamodb.Table(this, "cdk-rekn-imagetable", {
+      partitionKey: { name: "Image", type: dynamodb.AttributeType.STRING },
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+    new cdk.CfnOutput(this, "Table", { value: table.tableName });
 
-        // ========================================
-        // AWS Lambda function
-        // ========================================
-        const lambdaFn = new lambda.Function(this, "cdk-rekn-function", {
-            code: lambda.AssetCode.fromAsset("lambda"),
-            runtime: lambda.Runtime.PYTHON_3_9,
-            handler: "index.handler",
-            role: role,
-            environment: {
-                TABLE: table.tableName,
-                BUCKET: bucket.bucketName,
-            },
-        });
-        lambdaFn.addEventSource(
-            new lambdaEventSource.S3EventSource(bucket, {
-                events: [s3.EventType.OBJECT_CREATED],
-            })
-        );
+    // ========================================
+    // AWS Lambda function
+    // ========================================
+    const lambdaFn = new lambda.Function(this, "cdk-rekn-function", {
+      code: lambda.Code.fromAsset("lambda"),
+      runtime: lambda.Runtime.PYTHON_3_8,
+      handler: "index.handler",
+      role: role,
+      environment: {
+        TABLE: table.tableName,
+        BUCKET: bucket.bucketName,
+      },
+    });
+    lambdaFn.addEventSource(
+      new lambdaEventSource.S3EventSource(bucket, {
+        events: [s3.EventType.OBJECT_CREATED],
+      })
+    );
 
-        bucket.grantReadWrite(lambdaFn);
-        table.grantFullAccess(lambdaFn);
-    }
+    bucket.grantReadWrite(lambdaFn);
+    table.grantFullAccess(lambdaFn);
+  }
 }
 
 module.exports = { CdkAppStack };
 
 
--- crtl and y and enter to exit 
+
+
+
+# go to cdk-app 
 
 cd ..
 
 
-# 3. setup the Lambda function
 
-mkdir lambda && cd lambda
-touch lambda.py
-nano lambda.py
+
+
+
+
+
+
+# 3. setup the Lambda function
+mkdir lambda && cd lambda && touch index.py
+
+
+nano index.py
 
 
 
@@ -19119,33 +19135,63 @@ def rekFunction(bucket, key):
 
 
 
--- cd ..
+
+# cd ..
 
 
 # 4. bootstrap the CDK application
 cdk bootstrap
-      
-      - this will create all the stuff for u , go n check in CF
+
+
+-- go to cloudformation and check it will create stack for you 
+
+
+
 
 
 # 5. (optional) synthesize as a CloudFormation template
 cdk synth
 
+   - this is going to generate the CF template for you 
+
+
+
 
 # 6. deploy the CDK stack
-
 cdk deploy
 
-     - So let's go into the S3 bucket right here, open it in a new tab, and then the DynamoDB table as well.
+   - choose y 
+    
+   - go to CF "CdkAppStack" is being deployed.
 
-     - So the idea is that whenever we upload a file into this S3 bucket, the Lambda function that get deployed will be run and then we will have some data in our DynamoDB table.
+   - check template in CF , 
 
-     - upload any image , see in DynamoDB , u will see that what ever the image has it will have the data 'coz Lambda function detect labels in image using Amazon Rekognition
+   - So this is why the CDK is so helpful sometimes you can just have very very complex CloudFormation templates being generated using a few lines of code.
+
+
+
+
+
+-- go to CdkAppStack --> Resources --> AWS::S3::Bucket --> to to s3 bucket and upload some images from google randoma images  into it 
+
+
+
+-- so what's going to happen is that now the Lambda function is being triggered.
+
+-- open dynamodb table created by CF --> explore items --> run 
+
+-- we can see that a lot of objects have been found by recognition.
+
+-- this entire application was deployed with just a little bit of code into a very complex CloudFormation template
+
+
 
 # 7. empty the s3 bucket
 
+
 # 8. destroy the stack
 cdk destroy
+
 
 
 
