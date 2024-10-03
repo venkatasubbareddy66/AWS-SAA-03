@@ -310,6 +310,11 @@
 
 
 
+https://aws.amazon.com/premiumsupport/knowledge-center/ec2-insufficient-capacity-errors/
+
+
+
+
 3
 
 
@@ -1315,6 +1320,371 @@ Example of issues
 
 
 
+======================================================== Amazon Machine Image (AMI) ========================================================
+
+
+
+
+
+
+---------------------------------------------- AMI Overview
+
+
+
+• AMI = Amazon Machine Image
+
+• AMI are a customization of an EC2 instance
+
+     • You add your own software, configuration, operating system, monitoring...
+
+     • Faster boot / configuration time because all your software is pre-packaged
+
+
+
+• AMI are built for a specific region (and can be copied across regions)
+
+• You can launch EC2 instances from:
+
+        • A Public AMI: AWS provided
+
+        • Your own AMI: you make and maintain them yourself
+
+        • An AWS Marketplace AMI: an AMI someone else made (and potentially sells)
+
+
+
+
+
+
+
+
+---------------------------------------------- AMI Process (from an EC2 instance)
+
+
+
+• Start an EC2 instance and customize it
+
+• Stop the instance (for data integrity)
+
+• Build an AMI – this will also create EBS snapshots
+
+• Launch instances from other AMIs
+
+
+
+
+US-EAST-1A  --------- Create AMI ------> Custom AMI -----------> Launch from AMI ------> US-EAST-1B
+
+
+
+
+
+
+---------------------------------------------- AMI No-Reboot Option
+
+
+
+• Enables you to create an AMI without shutting down your instance
+
+• By default, it’s not selected (AWS will shut down the instance before creating an AMI to maintain the file system integrity)
+
+
+
+
+1 With No-Reboot Disabled (default)
+
+
+    - if we want to initiate creating an AMI, the instance is first shut shutdown. Then after shutdown, the attached EBS volume will get a snapshot taken into an EBS snapshot.
+
+    - then the EBS snapshot will be converted into an AMI.
+
+
+
+2  With No-Reboot Enabled
+
+    - your EC2 instance that is currently running, will get a snapshot directly made onto its running attached EBS volume and then the image will be created.
+
+    - So the risk here is to not have a file system integrity.
+
+    - Also, any OS operating system buffer will not be flushed to the disc before the snapshot is created.
+
+
+
+
+
+
+
+---------------------------------------------- AWS Backup Plans to create AMI 
+
+
+
+-- you can create a backup plan and this allows you to create an AMI.
+
+• AWS Backup doesn't reboot the instances while taking EBS snapshots (no-reboot behavior)
+
+     - so by default, the only option actually is to have the no-reboot behavior.
+
+     - That means that when you use AWS backup on Amazon EC2, the AMIs will be created using the parameter no-reboots that the instances are not being interrupted while they're functioning.
+
+• This won't help you to create an AMI that guarantees file system integrity since you need to reboot the instance
+
+• To maintain integrity you need to provide the reboot parameter while taking images (EventBridge + Lambda + CreateImage API with reboot)
+
+    - you could create a schedule which will invoke the Lambda function once every week.
+
+    - The Lambda function will have its own code to create an AMI, with this time with the reboot option.
+
+    - In this case, then the Amazon EC2 will be rebooting and an AMI will be created.
+
+
+
+
+
+
+
+---------------------------------------------- EC2 Instance Migration between AZ
+
+
+-- if you wanted to migrate an EC2 instance from one AZ to another, well the way you would do it is using an AMI.
+
+-- So, in this example, we want to migrate our EC2 instance from us-east-1a to us-east-1b, 
+
+-- first we take an AMI from our EC2 instance and then restore that AMI into a new EC2 instance, in a different AZ
+
+
+
+
+
+
+
+---------------------------------------------- Cross-Account AMI Sharing
+
+
+• You can share an AMI with another AWS account
+
+• Sharing an AMI does not affect the ownership of the AMI
+
+-- you can share an AMI for in two cases.
+
+    • You can only share AMIs that have unencrypted volumes and volumes that are encrypted with a customer managed key
+
+    • If you share an AMI with encrypted volumes, you must also share any customer managed keys used to encrypt them.
+
+
+
+
+-- So, let's take an example, 
+
+   - We have account A and this is an unencrypted AMI in your source accounts and you're just going to share it with account B.
+
+   - And then the account B can launch directly an EC2 instance from that source AMI,
+
+   - Now, if you add KMS encryption we have the same use case, but this time your AMI is actually encrypted with your CMK-A
+
+   - you're going to share this AMI with your account B but also you're going to share the KMS key.
+
+   - And you're going to give permissions to the target accounts to describe the key to decrypt to re-encrypt and so on.
+
+   - this will allow the target accounts to launch your custom AMI, even though it was encrypted with a key from your accounts,
+
+
+
+
+
+
+
+---------------------------------------------- Cross-Account AMI Copy
+
+
+
+• If you copy an AMI that has been shared with your account, you are the owner of the target AMI in your account
+
+• The owner of the source AMI must grant you read permissions for the storage that backs the AMI (EBS Snapshot)
+
+• If the shared AMI has encrypted snapshots, the owner must share the key or keys with you as well
+
+• Can encrypt the AMI with your own CMK while copying
+
+
+
+
+
+
+---------------------------------------------- AMI Copy with KMS Encryption
+
+
+Cross-Region / Cross-Account Encrypted AMI Copy
+
+
+-- let's have a look if we have KMS encryption
+
+        - we are sharing the underlying EBS snapshot and we still give KMS key permissions to the target accounts, 
+
+        - And the target accounts can issue a copy command to, for example, re-encrypt the EBS snapshot by decrypting it using the CMK-A that was given access to and re-encrypt it with CMK-B and its own accounts
+
+        - which will give a custom AMI that will be owned by the target account B with its own encryption mechanism
+
+
+
+
+
+
+
+
+---------------------------------------------- EC2 Image Builder
+
+
+• Used to automate the creation ofVirtual Machines or container images
+
+• => Automate the creation, maintain, validate and test EC2 AMIs
+
+• Can be run on a schedule (weekly, whenever packages are updated, etc...)
+
+• Free service (only pay for the underlying resources)
+
+
+
+
+
+
+                    create      Build Components applied (customize software on instance)                               Test suite is run(is the AMI working, secure?)
+EC2 Image Builder -------->  Builder EC2 Instance ------------------------------------------> create ----> New AMI ----> Test EC2 Instance -------------------------------> AMI is distributed(can be multiple regions)
+
+
+
+EXP :
+
+-- So we have the EC2 Image Builder service and it is automatically, when it's going to run, it is going to create an EC2 instance called a Builder EC2 instance,
+
+-- that EC2 instance is going to build components and customize the software, for example, install Java, update the CLI, update the software system, maybe install firewalls, whatever you define to happen on that EC2 instance, maybe install your application.
+
+-- then once this is done, then an AMI is going to be created out of that EC2 instance, but all of this is obviously automated.
+
+-- Then the AMI is created, but we want to validate it.
+
+-- So EC2 Image Builder will automatically create a test EC2 instance from that AMI and going to run a bunch of tests that you are defining in advance.
+
+--  if you don't wanna run any tests, obviously you can just skip that test,
+
+-- but the test can be asking, is the AMI working, is it secure? Is my application running correctly? All these kinds of things.
+
+-- then once the AMI is tested, then the AMI is going to be distributed.
+
+-- So while EC2 Image Builder is Regional service, it is possible for you to take that AMI and distribute it to multiple regions, therefor allowing your application and your workflow to be truly global.
+
+
+
+
+-- Next, EC2 Image Builder can be run on a schedule. So you can define a weekly schedule
+
+-- or you can say you can run whenever packages are updated or you can run it manually, 
+
+
+
+
+
+
+
+---------------------------------------------- EC2 Image Builder Hands ON
+
+
+
+-- open ec2 image builder in console
+
+-- create pipeline --> Build schedule  = manual --> Choose recipe = create new --> Image type = AMI ---> give name and version --> Base image = Select managed images --> os = amazon linux --> Image origin = Quick start (Amazon-managed) --> Image name = Amazon Linux x86 --> \
+
+--> Components  = (So we can apply the build components that are pre-created by AWS,) select amazon-corretto-11-headless (you would have Java 11 being installed on your AMI,) --> click on 2 page on Right top select aws-cli-version-2-linux \
+
+--> Type = Default workflows --> Infrastructure configuration = Create a new infrastructure configuration --> create new role (aws service --> ec2 --> EC2InstanceProfileForImageBuilder, EC2InstanceProfileForImageBuilderECRContainerBuilds, and AmazonSSMManagedInstanceCore managed policy.-->role name = EC2InstanceProfileForImageBuilder-->create role) \
+
+--> IAM role = choose that we created just now --> AWS infrastructure --> Instance type = t2.micro --> nxt --> nxt --> create pipeline 
+
+
+
+-- open pipeline --> actions --> run pipeline --> click on the version like 1.0.0/1
+
+-- I'm going to wait until the build starts.
+
+-- check ec2 console , ec2 get created ,So this instance was created by EC2 Image Builder, and you can verify it by going into tags, 
+
+-- the whole Pipeline process will take 20-25 minutes t create 
+
+-- u can also click on the CW logs link and see how the behaviour is ...
+
+-- So if I go into my instances and refresh this, we can see that my builder instance has now been terminated,
+
+-- because we have built the AMI from it, and my test instance is now running.
+
+-- if I look at my test instance and scroll down, we can see that the AMI right here,
+
+-- the AMI is a new AMI that has been created. , and contains the timestamp of when it was created.
+
+-- So now the test instance is actually launched from this new AMI, and is being tested.
+
+-- check tags for the AMI 
+
+-- after 10-15 min Image status = testing it will come 
+
+-- now we can see that the AMI has been automatically created, and now it's in the test phase.
+
+-- after 20-25 min the Image status = distribution 
+
+-- the test instance will also get teminated once Image status = distribution  
+
+-- now got created my AMI and AMI is availabe
+
+-- now launch an instance --> select AMI create by the EC2 Image Builder --> without key pair --> create ec2 instance 
+
+-- connect to the ec2 instance --> Username = ec2-user(because we created a custom AMI, we need to tell AWS that we still want to use the ec2-user user which is coming from Amazon Linux 2.) 
+
+-- we can verify two things.
+
+        - aws --version  it will give 2nd version 
+
+        - java --version  , u will get this 
+
+            openjdk 11.0.24 2024-07-16 LTS
+            OpenJDK Runtime Environment Corretto-11.0.24.8.1 (build 11.0.24+8-LTS)
+            OpenJDK 64-Bit Server VM Corretto-11.0.24.8.1 (build 11.0.24+8-LTS, mixed mode)
+
+-- OpenJDK Runtime Environment Corretto-11.0.24.8.1 (build 11.0.24+8-LTS)     what exactly we want 
+
+-- delete ec2 , snapshot , AMI and pipeline 
+
+
+
+
+
+
+
+---------------------------------------------- AMI in Production
+
+
+
+• You can force users to only launch EC2 instances from pre-approved AMIs (AMIs tagged with specific tags) using IAM policies
+
+
+
+
+{
+...
+"Condition": {
+"StringEquals": { "ec2:ResourceTag/Environment": "Prod" }
+} }
+
+
+
+• Combine with AWS Config to find non- compliant EC2 instance (instances launched with non-approved AMIs)
+
+
+
+
+
+
+
+
+
+========================================================  Managing EC2 at Scale - Systems Manager (SSM) ========================================================
 
 
 

@@ -3820,6 +3820,8 @@ Since FSR was enabled for 2.5 hours (150 minutes) on 3 snapshots and in 2 AZs, y
 
 -- AMI can be shared from one a to another aws account
 
+
+
 --------------All public images are located in "market place"
 
 -- GOLDEN AMI : images are created automatically 
