@@ -1690,6 +1690,124 @@ EXP :
 
 
 
+---------------------------------------------- AWS Systems Manager Overview
+
+
+• Helps you manage your EC2 and On-Premises systems at scale
+
+• Get operational insights about the state of your infrastructure
+
+• Easily detect problems
+
+• Patching automation for enhanced compliance
+
+• Works for both Windows and Linux OS
+
+• Integrated with CloudWatch metrics / dashboards
+
+• Integrated with AWS Config
+
+• Free service
+
+
+
+
+
+----------------------------------------------  AWS Systems Manager Features
+
+
+
+• Resource Groups  -IMP 
+
+• Operations Management
+
+    • Explorer
+    • OpsCenter
+    • CloudWatch Dashboard 
+    • PHD
+    • Incident Manager
+
+
+• Shared Resources
+
+    • Documents  - IMP 
+
+
+• Change Management
+
+        • Change Manager
+        • Automation    - imp 
+        • Change Calendar
+        • Maintenance Windows - imp
+
+
+
+
+• Application Management
+
+
+        • Application Manager
+        • AppConfig
+        • Parameter Store - IMP 
+
+
+
+• Node Management
+
+
+        • Fleet Manager
+        • Compliance
+        • Inventory   - imp 
+        • Hybrid Activations 
+        • Session Manager   - imp 
+        • Run Command     - imp 
+        • State Manager      - imp 
+        • Patch Manager      - imp 
+        • Distributer
+
+
+
+
+
+
+
+---------------------------------------------- How Systems Manager works
+
+
+
+• We need to install the SSM agent onto the systems we control
+
+• Installed by default on Amazon Linux 2 AMI & some Ubuntu AMI
+
+• If an instance can’t be controlled with SSM, it’s probably an issue with the SSM agent!
+
+• Make sure the EC2 instances have a proper IAM role to allow SSM actions
+
+
+
+
+
+
+
+---------------------------------------------- AWS Tags
+
+
+• You can add text key-value pairs called Tags to many AWS resources
+
+• Commonly used in EC2
+
+• Free naming, common tags are Name, Environment,Team ...
+
+• They’re used for
+
+    • Resource grouping 
+    • Automation
+    • Cost allocation
+
+
+• Better to have too many tags than too few!
+
+-- So with these tags now what we can do, is that we can leverage them to create resource groups
 
 
 
@@ -1698,11 +1816,175 @@ EXP :
 
 
 
+---------------------------------------------- Resource Groups
+
+
+
+• Create, view or manage logical group of resources thanks to tags
+
+• Allows creation of logical groups of resources such as
+
+        • Applications
+        • Different layers of an application stack
+        • Production versus development environments
+
+
+• Regional service
+
+• Works with EC2, S3, DynamoDB, Lambda, etc...
+
+
+
+-- create 3 instance and give tags with proper naming convenient
+
+
+-- go to Resource Groups & Tag Editor in console --> Tags --> Grouping criteria --> Resource types = ec2::instace --> give tag and value (eg ; env = dev) --> it will gives all dev instances --> create group and give name 
+
+-- Now, the reason why we do these resource groups is that we wanna be able to operate SSM directly at the group level.
 
 
 
 
 
+
+
+---------------------------------------------- SSM – Documents
+
+
+
+• Documents can be in JSON or YAML
+
+• You define parameters
+
+• You define actions
+
+• Many documents already exist in AWS
+
+
+-- but also these documents can be applied to other SSM features such as state manager, patch manager, automation, and documents can even retrieve some data from the SSM parameter store to be able to give you some kind of modularity and dynamicity
+
+
+
+
+EG :
+
+---
+schemaVersion: '2.2'
+description: Sample YAML template to install Apache
+parameters: 
+  Message:
+    type: "String"
+    description: "Welcome Message"
+    default: "Hello World"
+mainSteps:
+- action: aws:runShellScript
+  name: configureApache
+  inputs:
+    runCommand:
+    - 'sudo yum update -y'
+    - 'sudo yum install -y httpd'
+    - 'sudo systemctl start httpd'
+    - 'sudo systemctl enable httpd'
+    - 'echo "{{Message}} from $(hostname -f)" > /var/www/html/index.html'
+
+
+
+
+
+---------------------------------------------- SSM – Run Command
+
+
+
+• Execute a document (= script) or just run a command 
+
+• Run command across multiple instances (using resource groups)
+
+• Rate Control / Error Control
+
+    - So imagine you're applying a command to 1,000 instances and it will take them down for a minute or two. 
+    
+    - Then you want to make sure you do this progressively, and that in case you have any errors, you are able to stop running the command in your fleets.
+
+
+• Integrated with IAM & CloudTrail
+
+• No need for SSH
+
+• Command Output can be shown in the Console, sent to S3 bucket or CloudWatch Logs
+
+• Send notifications to SNS about command statues (In progress, Success, Failed, ...)
+
+• Can be invoked using EventBridge
+
+
+
+
+
+
+---------------------------------------------- SSM – Run Command Hands ON 
+
+
+
+-- i wan to install Apache on my servers 
+
+-- go to system Manager --> documents --> create document --> command or session --> Target type = ec2 instance --> yaml (paste below code) -->  create document 
+
+
+
+
+
+---
+schemaVersion: '2.2'
+description: Sample YAML template to install Apache
+parameters: 
+  Message:
+    type: "String"
+    description: "Welcome Message"
+    default: "Hello World"
+mainSteps:
+- action: aws:runShellScript
+  name: configureApache
+  inputs:
+    runCommand:
+    - 'sudo yum update -y'
+    - 'sudo yum install -y httpd'
+    - 'sudo systemctl start httpd'
+    - 'sudo systemctl enable httpd'
+    - 'echo "{{Message}} from $(hostname -f)" > /var/www/html/index.html'
+
+
+
+
+-- So this document is now owned by me
+
+-- go to owned by me , u can find ur document 
+
+
+-- now go to Run Command --> Owner: Owned by me --> Target selection = choose as u want --> Timeout (seconds) = 600 --> Rate control = set as u want --> Output options = Enable CloudWatch logs , give name of log group--> Run 
+
+
+        - Timeout (seconds) : So if the commands don't finish within 600 seconds, so 10 minutes, then you should fail the command.
+
+        - Concurrency : So do we want to run the commands on 50 targets at a time or maybe one target at a time, so one by one Or maybe percentage, 
+
+        - error threshold : So that means just after one error, you know, on the first error, then this will stop the entire task,so maybe you're saying that as long as 5% of my instances don't error out, this is fine, please keep on going, but if you go above this 5% of error threshold, then stop running the command.
+
+
+-- if you want to run through the AWS CLI , at last coloumn it will generate the cmnd to run , paste in cloudshell it will run 
+
+-- select instance --> view output to see the o/P
+
+-- copy ip of ec2 and check in browser u will able to see the o/p 
+
+
+
+
+IMP 
+
+
+-- here we are able to run a command across three EC2 Instances, but remember, these EC2 Instances do not have the SSH port open, 
+
+-- So what happens is that the SSM agent did run the commands for us, which is super helpful because we don't compromise on security.
 
 
 
