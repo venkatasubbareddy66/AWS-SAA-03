@@ -1894,6 +1894,11 @@ mainSteps:
 ---------------------------------------------- SSM – Run Command
 
 
+IMP : make sure u have the IAM Role that has "AmazonSSMManagedInstanceCore" Policy , attach this role to all instance that you want to run ur document 
+
+-- do not open 22 port on SG , ssm will take care of this 
+
+
 
 • Execute a document (= script) or just run a command 
 
