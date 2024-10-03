@@ -5290,6 +5290,9 @@ when to use ?
 
 ===================ec2 Hibernation==============================
 
+
+
+
 --  Amazon has introduced a new EC2 Hibernation feature which when enabled the Hibernation it saves the contents from the instance's memory that is RAM to your Amazon EBS root volume.
 
 -- in genreal whenevr we do 
@@ -5311,34 +5314,34 @@ Eg : in our daily life u can do some work in ur personal computer and do shut-do
 
 -- Here is the pre-requisites for using the hibernation feature:
 
-1 EC2 hibernate instance root volumes must have encryption enabled to ensure the security of the content stored at EBS.
+      1 EC2 hibernate instance root volumes must have encryption enabled to ensure the security of the content stored at EBS.
 
-2 Hibernation is not supported with all of Instance types but it is supported with following instance types: C3, C4, C5, M3, M4, M5, R3, R4, R5, and T2.
+      2 Hibernation is not supported with all of Instance types but it is supported with following instance types: C3, C4, C5, M3, M4, M5, R3, R4, R5, and T2.
 
-3 Instance RAM size should be less than 150GB
+      3 Instance RAM size should be less than 150GB
 
-4 AMIs supported: Amazon Linux 2 AMI, Amazon Linux AMI, Ubuntu, and Windows
+      4 AMIs supported: Amazon Linux 2 AMI, Amazon Linux AMI, Ubuntu, and Windows
 
-5 EC2 instance hibernate must be backed by EBS volumes, instance stores aren’t supported.
+      5 EC2 instance hibernate must be backed by EBS volumes, instance stores aren’t supported.
 
-6 Available for the On-demand , Reserved instance and Spot instance
+      6 Available for the On-demand , Reserved instance and Spot instance
 
 -- 
 
 
 -- Limitations on the EC2 instances enabled for hibernation
 
-1 You cannot increase/decrease the size of hibernated instance.
+    1 You cannot increase/decrease the size of hibernated instance.
 
-2 Cannot enable snapshot or AMIs from instance in hibernation state.
+    2 Cannot enable snapshot or AMIs from instance in hibernation state.
 
-3 You can’t enable hibernation after launch.
+    3 You can’t enable hibernation after launch.
 
-4 If an EC2 instance is enabled for auto-scaling group or used by Amazon ECS, then you cannot hibernate that instance.
+    4 If an EC2 instance is enabled for auto-scaling group or used by Amazon ECS, then you cannot hibernate that instance.
 
-5 An EC2 instance cannot be kept hibernated for a period of more than 60 days. To keep the instance for longer than 60 days, you must start the hibernated instance, stop the instance, and start it.
+    5 An EC2 instance cannot be kept hibernated for a period of more than 60 days. To keep the instance for longer than 60 days, you must start the hibernated instance, stop the instance, and start it.
 
-6 To hibernate an instance that was launched using your own AMI, you must first configure your AMI to support hibernation.
+    6 To hibernate an instance that was launched using your own AMI, you must first configure your AMI to support hibernation.
 
 
 -------------------LAB-----------------------
@@ -5359,15 +5362,14 @@ Eg : in our daily life u can do some work in ur personal computer and do shut-do
 
 --  do same with the instance B , when u do for the instance B , it will show the time from 0 , coz it is not hibernated 
 
+
+
 Use Cases : 
 
 -- Long-running processing 
 
 -- saving the RAM state
 -- Services that take time to initiliaze 
-
-
-
 
 
 -- termination protection 

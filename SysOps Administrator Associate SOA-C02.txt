@@ -1,0 +1,1349 @@
+
+
+
+
+
+======================================================== Amazon EC2 for SysOps ========================================================
+
+
+
+
+
+----------------------------------------------- EC2 Changing InstanceType
+
+
+
+
+-- t2.micro ----> t2.small
+
+• This only works for EBS backed instances
+
+     - create t2.micro and create some files in it and change instance type the file will be there coz it is EBS Backed instance
+
+• Stop the instance
+
+• Instance Settings => Change InstanceType 
+
+• Start Instance     
+
+
+
+
+
+----------------------------------------------- Enhanced Networking
+
+
+
+-- So it is a way for you to get better networking performance for your EC2 instances.
+
+
+• EC2 Enhanced Networking (SR-IOV)
+
+        • Higher bandwidth, higher PPS (packet per second), lower latency
+
+        • Option 1: Elastic Network Adapter (ENA) up to 100 Gbps
+
+        • Option 2: Intel 82599 VF up to 10 Gbps – LEGACY
+
+        • Works for newer generation EC2 Instances
+
+
+
+• Elastic Fabric Adapter (EFA)
+
+
+        • Improved ENA for HPC, only works for Linux
+
+        • Great for inter-node communications, tightly coupled workloads
+
+        • Leverages Message Passing Interface (MPI) standard
+
+        • Bypasses the underlying Linux OS to provide low-latency, reliable transport
+
+
+
+
+
+
+
+
+----------------------------------------------- Placement Groups
+
+
+
+• Sometimes you want control over the EC2 Instance placement strategy
+
+• That strategy can be defined using placement groups
+
+     - So we don't get direct interaction with the hardware of AWS, but we let AWS know how we would like our EC2 instance to be placed compared to one another.
+
+
+• When you create a placement group, you specify one of the following strategies for the group:
+
+    • Cluster — clusters instances into a low-latency group in a single Availability Zone (This is going to give you high performance but high risk.)
+
+    • Spread — spreads instances across underlying hardware (max 7 instances per group per AZ) – critical applications
+
+    • Partition—spreads instances across many different partitions (which rely on different sets of racks) within an AZ. Scales to 100s of EC2 instances per group (Hadoop, Cassandra, Kafka)
+
+
+
+
+
+
+----------------------------------------------- Placement Groups Cluster(Same AZ)
+
+
+
+• Pros: Great network (10 Gbps bandwidth between instances with Enhanced Networking enabled - recommended)
+
+• Cons: If the AZ fails, all instances fails at the same time
+
+• Use case:
+
+     • Big Data job that needs to complete fast
+
+     • Application that needs extremely low latency and high network throughput
+
+
+
+
+
+----------------------------------------------- Placement Groups Spread
+
+
+
+-- so in this case, when we ask for spread placement group, all the EC2 instances are going to be located on different hardware.
+
+• Pros:
+
+        • Can span across Availability Zones (AZ)
+
+        • Reduced risk is simultaneous failure
+
+        • EC2 Instances are on different physical hardware
+
+
+• Cons:
+
+        • Limited to 7 instances per AZ per placement group
+
+
+• Use case:
+        • Application that needs to maximize high availability
+
+        • Critical Applications where each instance must be isolated from failure from each other
+
+
+
+
+
+
+
+
+----------------------------------------------- Placements Groups Partition
+
+
+
+
+-- for the partition placement group, we can have instances spread across partitions in multiple availability-zones.
+
+-- So why do we use a partition placement group?
+
+        - Well, each partition represents a rack in AWS. And so by having many partitions, you're making sure that your instances are distributed across many hardware racks, 
+        
+        - and so therefore, they're safe from a rack failure from one another.
+
+• Up to 7 partitions per AZ
+
+• Can span across multiple AZs in the same region
+
+• Up to 100s of EC2 instances
+
+• The instances in a partition do not share racks with the instances in the other partitions
+
+• A partition failure can affect many EC2 but won’t affect other partitions
+
+• EC2 instances get access to the partition information as metadata
+
+• Use cases: HDFS, HBase, Cassandra, Kafka
+
+
+
+
+
+
+----------------------------------------------- Shutdown Behavior of your EC2 instances.
+
+
+
+
+1 Shutdown Behavior
+
+
+
+-- So the question is, how should the instance react when the shutdown is done from within the operating system?
+
+
+• Shutdown Behavior: How should the instance react when shutdown is done using the OS?  not within the console, but within the OS.
+
+        • Stop (default) : That means that if you stop the operating system, then the EC2 instance will stop as well.
+
+        • Terminate 
+
+             - That means that if you have an EC2 instance running and you initiate a shutdown command from within,then two options.
+
+             1 you stop your EC2 instance, which is what we've seen so far.
+
+             2 terminate the instance.That means that it will be gone.
+
+
+
+• This is not applicable when shutting down from AWS console.
+ 
+       - So, if you stop the instance by doing right-click, stop instance, it's not going to terminate it.
+
+       - It's only when you initiate the shutdown from within the EC2 instance.
+
+
+• CLI Attribute:  InstanceInitiatedShutdownBehavior       
+
+
+
+
+
+
+2 Termination Protection
+
+
+• Enable termination protection:
+
+    - To protect against accidental termination in AWS Console or CLI
+
+
+
+• Exam Tip:
+
+        • We have an instance where shutdown behavior = terminate and enable terminate protection is ticked
+
+        • We shutdown the instance from the OS, what will happen ?
+
+        ANS: • The instance will still be terminated! , coz you haven't been doing this from the console, but you've done this from within the OS.
+
+
+
+
+
+
+
+
+----------------------------------------------- Shutdown Behavior of your EC2 instances Hands ON
+
+
+
+
+-- create an ec2 --> Advanced details --> Shutdown behavior = Terminate --> Termination protection = Enabled --> launch instance 
+
+        - even though we have enabled termination protection when we shut down from within the instance, then the instance itself is going to terminate,
+
+
+-- try to delete the ec2 u can't coz we have enabled termination protection.
+
+-- therefore, what you can do is that you could change from the instance setting the termination protection to disable it.
+
+-- then the instance can be terminated using the console or an API code.
+
+-- But, we don't want to disable it, So we want to keep it enabled.
+
+-- even though we have the termination protection currently enabled on this instance, we can still terminate it by shutting it down
+
+-- to do so, connect to instance and type 
+
+        sudo shutdown 
+
+--  So this says an operating system type of shutdown. Okay, it happens from within the operating system of your instance.       
+
+-- wait for some time the ec2 instance will get terminated 
+
+
+
+
+
+
+
+
+----------------------------------------------- EC2 Launch Troubleshooting
+
+
+1
+
+• # InstanceLimitExceeded: if you get this error, it means that you have reached your limit of max number of vCPUs per region
+
+
+• On-Demand instance limits are set on a per-region basis
+
+• Example: If you run on-demand (A, C, D, H, I, M, R,T, Z) instance types you’ll have 64 vCPUs (default)
+
+• Resolution: Either launch the instance in a different region or request AWS to increase your limit of the region
+
+• NOTE: vCPU-based limits only apply to running On-Demand instances and Spot instances
+
+
+
+
+2 
+
+
+• # InsufficientInstanceCapacity : if you get this error, it means AWS does not have that enough On-Demand capacity in the particular AZ where the instance is launched.
+
+-- This is not a problem on you, this is a problem for AWS.
+
+• Resolution :
+
+     • Wait for few mins before requesting again. in case there is more capacity added to that particular AZ.
+
+     • If requesting more than 1 requests, break down the requests. If you need 5 instances, rather than a single request of 5, request one by one.
+
+     • If urgent, submit a request for a different instance type now, which can be resized later.
+
+     • Also, can request the EC2 instance in a different AZ
+
+
+
+3
+
+
+• # InstanceTerminates Immediately (goes from pending to terminated)
+
+        • You've reached your EBS volume limit.
+
+        • An EBS snapshot is corrupt.
+
+        • The root EBS volume is encrypted and you do not have permissions to access the KMS key for decryption.
+
+        • The instance store-backed AMI that you used to launch the instance is missing a required part (an image.part.xx file).
+
+
+
+• To find the exact reason, check out the EC2 console of AWS - instances - Description tab, note the reason next to the State transition reason label.
+
+
+
+
+
+
+
+
+
+
+----------------------------------------------- EC2 SSH troubleshooting
+
+
+
+• Make sure the private key (pem file) on your linux machine has 400 permissions, else you will get “Unprotected private key file” error
+
+• Make sure the username for the OS is given correctly when logging via SSH, else you will get “Host key not found”, “Permission denied”, or “Connection closed by [instance] port 22” error
+
+• Possible reasons for “Connection timed out” to EC2 instance via SSH:
+
+        • SG is not configured correctly
+
+        • NACL is not configured correctly
+
+        • Check the route table for the subnet (routes traffic destined outside VPC to IGW)
+
+        • Instance doesn’t have a public IPv4
+
+        • CPU load of the instance is high
+
+
+
+
+
+
+-----------------------------------------------  SSH vs. EC2 Instance Connect (check in course)
+
+
+
+Connect using SSH
+
+
+
+Inbound Rules:
+
+Type Protocol Port  Source
+SSH   TCP      22  1.2.3.4/32
+
+
+-- allow only one user 
+
+
+
+
+
+
+
+
+
+
+-----------------------------EC2 Instances Purchasing Options
+
+
+• On-Demand Instances – short workload, predictable pricing, pay by second
+
+• Reserved (1 & 3 years)
+   • Reserved Instances – long workloads
+   • Convertible Reserved Instances – long workloads with flexible instances
+
+• Savings Plans (1 & 3 years) –commitment to an amount of usage, long workload
+
+• Spot Instances – short workloads, cheap, can lose instances (less reliable)
+
+• Dedicated Hosts – book an entire physical server, control instance placement
+
+• Dedicated Instances – no other customers will share your hardware
+
+• Capacity Reservations – reserve capacity in a specific AZ for any duration
+
+
+
+              1  ON-Demand instances: pay as u go 
+
+-fixed price , pay per hour 
+- no upfront payments
+- no predictable
+- no long-term commitment
+- short term committment
+
+• Pay for what you use:
+   • Linux or Windows - billing per second, after the first minute
+   • All other operating systems - billing per hour
+
+• Has the highest cost but no upfront payment
+
+• Recommended for short-term and un-interrupted workloads, where you can't predict how the application will behave
+
+
+             2  Reserved instances 
+
+- Long term commitent 
+- 1 or 3 years
+- upfront payments(full , partial)
+- 75% discount approx
+
+------- we have 3 types of RI
+
+a   Standard RI : where u get 75% discount
+
+b   convertible RI : to change the capacity of the instance 66% discount 
+    • Can change the EC2 instance type, instance family, OS, scope and tenancy
+
+    
+c   Schedule RI :  reserve it for short term like fraction of day , week, or month
+
+
+• Up to 72% discount compared to On-demand
+
+• You reserve a specific instance attributes (Instance Type, Region,Tenancy, OS)
+
+• Reservation Period – 1 year (+discount) or 3 years (+++discount)
+
+• Payment Options – No Upfront (+), Partial Upfront (++), All Upfront (+++)
+
+• Reserved Instance’s Scope – Regional or Zonal (reserve capacity in an AZ)
+
+• Recommended for steady-state usage applications (think database)
+
+• You can buy and sell in the Reserved Instance Marketplace
+
+
+
+
+            3 Spot Instances: 
+
+• Can get a discount of up to 90% compared to On-demand
+
+• Instances that you can “lose” at any point of time if your max price is less than the current spot price
+
+• The MOST cost-efficient instances in AWS
+
+• Useful for workloads that are resilient to failure
+  • Batch jobs
+  • Data analysis
+  • Image processing
+  • Any distributed workloads
+  • Workloads with a flexible start and end time
+
+• Not suitable for critical jobs or databases
+  
+- Biding 
+- huge capacity for cheaper price
+- 90% discount
+
+
+-- Spot blocks allow you to request Amazon EC2 Spot instances for 1 to 6 hours at a time to avoid being interrupted
+
+   EXP : Spot blocks are designed not to be interrupted and will run continuously for the duration you select (1 to 6 hours), independent of the Spot market price.
+
+   -- In rare situations, Spot blocks may be interrupted due to Amazon Web Services' capacity needs. In these cases, AWS will provide a two-minute warning before it terminates your instance and you will not be charged for the affected instance(s).
+
+
+-- Spot Instances with a defined duration (also known as Spot blocks) are designed not to be interrupted and will run continuously for the duration you select. 
+
+-- This makes them ideal for jobs that take a finite time to complete, such as batch processing, encoding and rendering, modeling and analysis, and continuous integration.
+
+-- Running our load on a Spot Instance with Spot Block sounds like the perfect use case, as we can block the spot instance for 1 hour, run the script there, and then the instance will be terminated.
+
+
+
+
+
+some point to know about sopt instances : 
+
+1  If a spot request is persistent, then it is opened again after your Spot Instance is interrupted
+
+EXP : -- A Spot Instance request is either one-time or persistent. If the spot request is persistent, the request is opened again after your Spot Instance is interrupted. 
+
+      --  If the request is persistent and you stop your Spot Instance, the request only opens after you start your Spot Instance.
+
+2  Spot Fleets can maintain target capacity by launching replacement instances after Spot Instances in the fleet are terminated
+
+EXP : -- The Spot Fleet selects the Spot capacity pools that meet your needs and launches Spot Instances to meet the target capacity for the fleet. By default, Spot Fleets are set to maintain target capacity by launching replacement instances after Spot Instances in the fleet are terminated.
+
+      -- You can submit a Spot Fleet as a one-time request, which does not persist after the instances have been terminated. You can include On-Demand Instance requests in a Spot Fleet request.
+
+3  When you cancel an active spot request, it does not terminate the associated instance
+
+EXP : -- If your Spot Instance request is active and has an associated running Spot Instance, or your Spot Instance request is disabled and has an associated stopped Spot Instance, canceling the request does not terminate the instance; 
+
+      -- you must terminate the running Spot Instance manually. Moreover, to cancel a persistent Spot request and terminate its Spot Instances, you must cancel the Spot request first and then terminate the Spot Instances.
+
+
+
+
+
+                4 Dedicated Host
+
+• A physical server with EC2 instance capacity fully dedicated to your use
+
+• Allows you address compliance requirements and use your existing server- bound software licenses (per-socket, per-core, pe—VM software licenses)
+
+• Purchasing Options:
+   • On-demand – pay per second for active Dedicated Host
+   • Reserved - 1 or 3 years (No Upfront, Partial Upfront,All Upfront)
+
+• The most expensive option
+
+• Useful for software that have complicated licensing model (BYOL – Bring Your
+Own License)
+
+• Or for companies that have strong regulatory or compliance needs
+
+-- With a Dedicated Host, you have visibility and control over how instances are placed on the server. This option is costlier than the Dedicated Instance
+
+
+- if u need a physical machine with VM's for this model 
+
+- privaacy
+
+- high security
+
+- Dedicated Hosts enable you to use your existing server-bound software licenses like Windows Server and address corporate compliance and regulatory requirements.
+
+
+
+
+
+                   5  EC2 dedicated instances 
+
+• Instances run on hardware that’s dedicated to you
+
+• May share hardware with other instances in same account
+
+• No control over instance placement (can move hardware after Stop / Start)
+
+-  Dedicated instances are Amazon EC2 instances that run in a VPC on hardware that's dedicated to a single customer. 
+
+- Your dedicated instances are physically isolated at the host hardware level from instances that belong to other AWS accounts. 
+
+- Dedicated instances may share hardware with other instances from the same AWS account that are not dedicated instances. 
+
+- Dedicated instances cannot be used for existing server-bound software licenses.
+
+
+
+EPV : A health-care solutions company wants to run their applications on single-tenant hardware to meet regulatory guidelines.
+
+Which of the following is the MOST cost-effective way of isolating their Amazon Elastic Compute Cloud (Amazon EC2)instances to a single tenant?
+
+ANS : dedicated instances 
+
+
+
+
+- Explantion b/w EC2 dedicated instances  vs EC2 dedicated Hosts
+
+https://stackoverflow.com/questions/64309679/aws-dedicated-host-vs-dedicated-instance-why-the-first-is-more-expensive-than
+
+
+
+
+
+
+                   6  savings plans 
+
+- Savings Plans are a flexible pricing model that offer low prices on EC2, Fargate and Lambda usage, in exchange for a commitment to a consistent amount of usage (measured in $/hour) for a 1 or 3 year term. 
+
+- Savings Plans provide you the flexibility to use the compute option that best suits your needs and automatically save money, all without having to perform exchanges or modifications. When you sign up for a Savings Plan, you will be charged the discounted Savings Plans price for your usage up to your commitment.
+
+- Savings Plans allow you to easily reduce your bill by making a commitment to compute usage (e.g. $10/hour) instead of making commitments to specific instance configurations or compute services.
+
+- Amazon Web Services offers two types of Savings Plans - Compute Savings Plans and EC2 Instance Savings Plans.
+
+1 Flexible
+
+-- Compute Savings Plans provide the most flexibility and help to reduce your costs by up to 66%. These plans automatically apply to:
+
+   - EC2 instance usage regardless of instance family, size, Availability Zone, Region, OS, or tenancy
+   - Fargate usage
+   - Lambda usage for Duration, Provisioned Concurrency, and Provisioned Duration
+
+   EG : For example, with Compute Savings Plans, you can change from C4 to M5 instances,, shift a workload from EU (Ireland) to EU (London), or move a workload from EC2 to Fargate or Lambda at any time and automatically continue to pay the Savings Plans price.
+
+
+
+2 Significant Discounts
+
+  - EC2 Instance Savings Plans provide the lowest prices, offering savings up to 72% in exchange for commitment to usage of individual instance families in a region (e.g. M5 usage in N. Virginia). 
+
+  - This automatically reduces your cost on the selected instance family in that region regardless of AZ, size, OS or tenancy. 
+
+  -  EC2 Instance Savings Plans give you the flexibility to change your usage between instances within a family in that region.
+
+  EG : For example, you can move from c5.xlarge running Windows to c5.2xlarge running Linux and automatically benefit from the Savings Plan prices.
+
+
+• Get a discount based on long-term usage (up to 72% - same as RIs)
+
+• Commit to a certain type of usage ($10/hour for 1 or 3 years)
+
+• Usage beyond EC2 Savings Plans is billed at the On-Demand price
+
+• Locked to a specific instance family & AWS region (e.g., M5 in us-east-1)
+
+• Flexible across:
+   • Instance Size (e.g., m5.xlarge, m5.2xlarge)
+   • OS (e.g., Linux, Windows)
+   • Tenancy (Host, Dedicated, Default)
+
+- it has same as RI but difernet starategy
+
+
+
+IMP to KNOW : You can use Dedicated Hosts and Dedicated instances to launch Amazon EC2 instances on physical servers that are dedicated for your use.
+
+-- An important difference between a Dedicated Host and a Dedicated instance is that a Dedicated Host gives you additional visibility and control over how instances are placed on a physical server, and you can consistently deploy your instances to the same physical server over time.
+
+-- As a result, Dedicated Hosts enable you to use your existing server-bound software licenses and address corporate compliance and regulatory requirements.
+
+
+
+
+                   7  EC2 Capacity Reservations
+
+• Reserve On-Demand instances capacity in a specific AZ for any duration
+
+• You always have access to EC2 capacity when you need it
+
+• No time commitment (create/cancel anytime), no billing discounts
+
+• Combine with Regional Reserved Instances and Savings Plans to benefit from billing discounts
+
+• You’re charged at On-Demand rate whether you run instances or not
+
+Suitable for short-term, uninterrupted workloads that needs to be in a "specific AZ"
+
+
+
+
+
+EXP : A media publishing company is using Amazon EC2 instances for running their business-critical applications. Their IT team is looking at reserving capacity apart from savings plans for the critical instances.
+
+      As a Developer Associate, which of the following reserved instance types you would select to provide capacity reservations?
+
+ANS : Zonal Reserved Instances
+
+EXP : When you purchase a Reserved Instance for a specific Availability Zone, it's referred to as a Zonal Reserved Instance. Zonal Reserved Instances provide capacity reservations as well as discounts.
+
+- A zonal Reserved Instance provides a capacity reservation in the specified Availability Zone. Capacity Reservations enable you to reserve capacity for your Amazon EC2 instances in a specific Availability Zone for any duration. This gives you the ability to create and manage Capacity Reservations independently from the billing discounts offered by Savings Plans or regional Reserved Instances.
+
+- Regional reserved nstance cannot provide capacity reservation
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Which purchasing option is right for me? 
+
+
+• On demand: coming and staying in resort whenever we like, we pay the full price
+
+• Reserved: like planning ahead and if we plan to stay for a long time, we may get a good discount.
+
+• Savings Plans: pay a certain amount per hour for certain period and stay in any room type (e.g., King, Suite, Sea View, ...)
+
+• Spot instances: the hotel allows people to bid for the empty rooms and the highest bidder keeps the rooms.You can get kicked out at any time
+
+• Dedicated Hosts: We book an entire building of the resort
+
+• Capacity Reservations: you book a room for a period with full price even you don’t stay in it
+
+
+
+
+
+
+
+---------------------------------------------- EC2 Spot Instance Requests and Spot Fleets
+
+
+
+
+• Can get a discount of up to 90% compared to On-demand
+
+
+• Define max spot price and get the instance while current spot price < max
+
+
+        • The hourly spot price varies based on offer and capacity
+
+        • If the current spot price > your max price you can choose to stop or terminate your instance with a 2 minutes grace period.
+
+        - if one day the spot price goes below your max price, then you can restart your instance and continue where you left it off
+
+
+• Other strategy: Spot Block
+        
+        - if you don't want your spot instance to be reclaimed by AWS, it use a spot block.
+
+        • “block” spot instance during a specified time frame (1 to 6 hours) without interruptions
+
+        • In rare situations, the instance may be reclaimed
+
+IMP :   Spot Block are no longer availabe to new AWS customers since July 2021 , and won't be supported afer Dec 2022
+
+
+
+• Used for batch jobs, data analysis, or workloads that are resilient to failures.
+
+• Not great for critical jobs or databases
+
+
+
+
+
+
+
+---------------------------------------------- How to terminate Spot Instances?
+
+
+
+-- So, we have to first understand how a spot request works. And so for this, let's consider a spot request.
+
+-- So, with the spot request, you are defining how many instances you want, your maximum price you're going to pay,the launch specification, so the AMI and so on,
+
+-- then the request type.
+
+        - it's very important to understand there's two types of requests.
+
+        - You can do a one-time request for spot instances
+
+        - or a persistent request for spot instances.
+
+        - So, if it's a "one-time" request, as soon as your spot request is fulfilled, your instances are going to be launched and then your spot request will go away because it was a one-time request type.
+
+        - But if it's a "persistent request" type, that means that we want this number of instances to be valid as long as the spot request is valid from to valid until.
+
+            - so, that means that if somehow your instances do get stopped or interrupted based on the spot price, then your spot request will go back into action.
+
+            - And when things can be validated, we'll restart spot instances for you.    
+
+            - So if somehow you stop a spot instance in persistent mode and your spot request is still active, your spot request automatically will be smart enough to restart a launch and instance for you.
+
+
+-- You can only cancel Spot Instance requests that are open, active, or disabled.
+
+-- Cancelling a Spot Request does not terminate instances You must first cancel a Spot Request, and then terminate the associated Spot Instances
+
+    - Because if you were to terminate the spot instances first, remember it goes back into the spot request and the spot request says, "Okay, you wanted six instances "but I can see you have zero right now. "I'm going to launch six instances for you."
+
+
+
+
+
+
+
+
+-------------------------- Spot Fleets
+
+• Spot Fleets = set of Spot Instances + (optional) On-Demand Instances
+
+• The Spot Fleet will try to meet the target capacity with price constraints
+
+   • Define possible launch pools: instance type (m5.large), OS, Availability Zone
+   • Can have multiple launch pools, so that the fleet can choose
+   • Spot Fleet stops launching instances when reaching capacity or max cost
+
+• Strategies to allocate Spot Instances:
+
+   • lowestPrice: from the pool with the lowest price (cost optimization, short workload)
+   • diversified: distributed across all pools (great for availability, long workloads)
+   • capacityOptimized: pool with the optimal capacity for the number of instances
+   • priceCapacityOptimized (recommended): pools with highest capacity available, then select the pool with the lowest price (best choice for most workloads)
+
+• Spot Fleets allow us to automatically request Spot Instances with the lowest price
+
+
+
+
+
+
+
+---------------------------------------------- Burstable Instances (T2/T3)
+
+
+
+• AWS has the concept of burstable instances (T2/T3 machines)
+
+• Burst means that overall, the instance has OK CPU performance.
+
+• When the machine needs to process something unexpected (a spike in load for example), it can burst, and CPU can be VERY good.
+
+• If the machine bursts, it utilizes “burst credits”
+
+• If all the credits are gone, the CPU becomes BAD
+
+• If the machine stops bursting, credits are accumulated over time
+
+• Burstable instances can be amazing to handle unexpected traffic and getting the insurance that it will be handled correctly
+
+• If your instance consistently runs low on credit, you need to move to a different kind of non-burstable instance
+
+
+
+
+
+
+
+---------------------------------------------- What happens when credit are exhausted? 
+
+
+
+• Experiment: run a CPU stress command (to peak at 100%)
+
+• After the credits are exhausted, the measured CPU utilization drops
+
+
+
+
+
+---------------------------------------------- T2/T3 Unlimited
+
+
+• It is possible to have an “unlimited burst credit balance”
+
+• You pay extra money if you go over your credit balance, but you don’t lose in performance
+
+• If average CPU usage over a 24-hour period exceeds the baseline, the instance is billed for additional usage per vCPU/hour
+
+• Be careful, costs could go high if you’re not monitoring the CPU health of your instances
+
+
+
+
+
+-- ec2 console --> launch ec2 --> advanced options ---> credit specification (std and unlimited)--> 
+
+
+
+
+
+
+
+
+---------------------------------------------- Elastic IPs
+
+
+
+• When you stop and then start an EC2 instance, it changes its public IP
+
+• If you need to have a fixed public IP, you need an Elastic IP
+
+• An Elastic IP is a public IPv4 you own as long as you don’t delete it
+
+• You can attach it to one instance at a time
+
+• You can remap it across instances
+
+• You don’t pay for the Elastic IP if it’s attached to a server
+
+• You pay for the Elastic IP if it’s not attached to a server
+
+• With an Elastic IP address, you can mask the failure of an instance or software by rapidly remapping the address to another instance in your account.
+
+• You can only have 5 Elastic IP in your account (you can ask AWS to increase that).
+
+• How you can avoid using Elastic IP:
+
+        • Always think if other alternatives are available to you
+
+        • You could use a random public IP and register a DNS name to it
+
+        • Or use a Load Balancer with a static hostname
+
+
+
+
+
+
+---------------------------------------------- CloudWatch Metrics for EC2
+
+
+• AWS Provided metrics (AWS pushes them):
+
+        • Basic Monitoring (default): metrics are collected at a 5 minute internal
+
+        • Detailed Monitoring (paid): metrics are collected at a 1 minute interval
+
+        • Includes CPU, Network, Disk and Status Check Metrics
+
+
+• Custom metric (yours to push):
+
+        • Basic Resolution: 1 minute resolution
+
+        • High Resolution: all the way to 1 second resolution
+
+        • Include RAM, application level metrics
+
+        • Make sure the IAM permissions on the EC2 instance role are correct !
+
+
+
+
+
+ ---------------------------------------------- EC2 included metrics
+
+
+
+ • CPU: CPU Utilization + Credit Usage / Balance
+
+ • Network: Network In / Out
+
+ • Status Check:
+
+        • Instance status = check the EC2 VM
+        • System status = check the underlying hardware
+        • Attached EBS status = check attached EBS volumes       
+
+
+• Disk: Read / Write for Ops / Bytes (only for instance store)
+
+
+• RAM is NOT included in the AWS EC2 metrics
+
+
+
+
+
+----------------------------------------------  Unified CloudWatch Agent
+
+
+• For virtual servers (EC2 instances, on-premises servers, ...)
+
+• Collect additional system-level metrics such as RAM, processes, used disk space, etc.
+
+• Collect logs to send to CloudWatch Logs
+
+        • No logs from inside your EC2 instance will be sent to CloudWatch Logs without using an agent
+
+• Centralized configuration using SSM Parameter Store
+
+• Make sure IAM permissions are correct
+
+
+IMP 
+
+• Default namespace for metrics collected by the Unified CloudWatch agent is CWAgent (can be configured/changed)
+
+
+
+
+
+
+
+----------------------------------------------  Unified CloudWatch Agent – procstat Plugin
+
+
+• Collect metrics and monitor system utilization of individual processes
+
+• Supports both Linux and Windows servers
+
+• Example: amount of time the process uses CPU, amount of memory the process uses, ...
+
+• Select which processes to monitor by
+
+        • pid_file: name of process identification number (PID) files they create
+        • exe: process name that match string you specify (RegEx)
+        • pattern: command lines used to start the processes (RegEx)
+
+
+• Metrics collected by procstat plugin begins with “procstat” prefix (e.g., procstat_cpu_time, procstat_cpu_usage, ...)
+
+
+
+
+
+https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-Agent-procstat-process-metrics.html
+
+
+
+
+---------------------------------------------- Status Checks
+
+
+• Automated checks to identify hardware and software issues
+
+• System Status Checks
+
+        • Monitors problems with AWS systems(software/hardware issues on the physical host, loss of system power, ...)
+
+        • Check Personal Health Dashboard for any scheduled critical maintenance by AWS to your instance’s host
+
+        • Resolution:stop and start the instance(instancemigratedtoa new host)
+
+
+• Instance Status Checks
+
+        • Monitors software/network configuration of your instance (invalid network configuration, exhausted memory, ...)
+
+        • Resolution:reboot the instance or change instance configuration
+
+
+• Attached EBS Status Checks
+
+        • Monitors EBS volumes attached to your instance (reachable & complete I/O Operations)
+
+        • Resolution:reboot the instance or replace affected EBS volumes
+
+
+
+But there is a way for you to automate the recovery
+
+
+
+
+
+
+
+
+---------------------------------------------- Status Checks - CW Metrics & Recovery
+
+
+
+• CloudWatch Metrics (1 minute interval)
+
+        • StatusCheckFailed_System
+        • StatusCheckFailed_Instance
+        • StatusCheckFailed_AttachedEBS
+        • StatusCheckFailed (for any)
+
+
+• Option 1: CloudWatch Alarm to recover your EC2 instance.
+
+        • Recover EC2 instance with the same private/publicIP,EIP, metadata, and Placement Group
+
+        • Send notifications using SNS
+
+
+• Option 2: Auto Scaling Group
+
+
+        • Set min/max/desired 1 to recover an instance but won't keep the same private and elastic IP
+
+        - What will happen is that in case there is a issue with your EC2 instance, it will be terminated by your auto scaling group, and therefore because we have a min, max and desire to one, a new EC2 instance will be launched within your same auto scaling group.
+
+        - So in this case, you don't have the same EBS volumes, you don't have the same private IP, you don't have the same elastic IP, but at least your instance is back up and running.
+
+
+
+
+
+
+
+---------------------------------------------- Status Checks HAnds ON
+
+
+-- create one ec2 instance 
+
+-- go to status check tab --> actions --> create an alarm for status check --> Alarm notification = select SNS topic --> enable Alarm action = recover --> Type of data to sample = StatusCheckFailed:System -->create an alarm
+
+-- go to cloudwatch and wait for some time it will turn to OK state or 
+
+     - aws cloudwatch set-alarm-state --alarm-name "awsec2-i-0e842938fa0f9c6d8-GreaterThanOrEqualToThreshold-StatusCheckFailed_System" --state-reason "Testing" --state-value ALARM
+
+-- run aboce cmnd and check in history of CW alarm
+
+-- so it'll take a bit of time to be recovered entirely,
+
+
+
+
+ 
+
+
+
+
+
+
+---------------------------------------------- EC2 Instance Status Checks - MUST KNOW
+
+
+
+1 SYSTEM status checks
+
+
+-- System status checks monitor the AWS systems on which your instance runs
+
+- Problem with the underlying host. Example: 
+
+        - Loss of network connectivity
+
+        - Loss of system power
+
+        - Software issues on the physical host
+
+        - Hardware issues on the physical host that impact network reachability
+
+        - Either wait for AWS to fix the host, OR
+
+        - Move the EC2 instance to a new host = STOP & START the instance (if EBS backed)
+
+
+
+
+
+2 INSTANCE status checks
+
+
+
+- Instance status checks monitor the software and network configuration of your individual instance
+
+Example of issues
+
+
+    - Incorrect networking or startup configuration
+
+    - Exhausted memory
+
+    - Corrupted file system
+
+    - Incompatible kernel
+
+    - Requires your involvement to fix
+
+    - Restart the EC2 instance, OR
+
+    - Change the EC2 instance configuration
+
+
+
+
+
+Attached EBS status checks
+
+
+-- Attached EBS status checks monitor the EBS volumes attached to your individual instance
+
+Example of issues
+
+    - Hardware or software issues on the storage subsystems underlying the EBS volumes
+    
+    - Hardware issues on the physical host that impact reachability of the EBS volumes
+
+    - Connectivity issues between the instance and EBS volumes
+
+    - Requires your involvement to fix
+
+    - Restart the EC2 instance, OR
+
+    - Replace the affected EBS volumes
+
+
+
+
+
+
+
+---------------------------------------------- EC2 Hibernate
+
+
+
+• We know we can stop, terminate instances
+
+    • Stop – the data on disk (EBS) is kept intact in the next start
+
+    • Terminate – any EBS volumes (root) also set-up to be destroyed is lost
+
+
+
+• On start, the following happens:
+
+    • First start: the OS boots & the EC2 User Data script is run
+
+    • Following starts: the OS boots up
+
+    • Then your application starts, caches get warmed up, and that can take time!
+
+
+
+-- But the idea is that with Hibernate, we want to achieve a new state.
+
+
+• Introducing EC2 Hibernate:
+
+
+        • The in-memory (RAM) state is preserved
+
+        • The instance boot is much faster! (the OS is not stopped / restarted)
+
+        • Under the hood: the RAM state is written to a file in the root EBS volume
+
+        • The root EBS volume must be encrypted
+
+
+
+• Use cases:
+
+        • Long-running processing
+
+        • Saving the RAM state
+
+        • Services that take time to initialize
+
+
+
+
+
+
+ ---------------------------------------------- Limitations on the EC2 instances enabled for hibernation
+
+
+
+    1 You cannot increase/decrease the size of hibernated instance.
+
+    2 Cannot enable snapshot or AMIs from instance in hibernation state.
+
+    3 You can’t enable hibernation after launch.
+
+    4 If an EC2 instance is enabled for auto-scaling group or used by Amazon ECS, then you cannot hibernate that instance.
+
+    5 An EC2 instance cannot be kept hibernated for a period of more than 60 days. To keep the instance for longer than 60 days, you must start the hibernated instance, stop the instance, and start it.
+
+    6 To hibernate an instance that was launched using your own AMI, you must first configure your AMI to support hibernation.
+
+
+
+
+ ---------------------------------------------- EC2 Hibernate – Good to know
+
+
+ • Supported Instance Families – C3, C4, C5, I3, M3, M4, R3, R4,T2,T3, ...
+
+ • Instance RAM Size – must be less than 150 GB.
+
+ • Instance Size – not supported for bare metal instances.
+
+ • AMI – Amazon Linux 2, Linux AMI, Ubuntu, RHEL, CentOS & Windows...
+
+ • Root Volume – must be EBS, encrypted, not instance store, and large
+
+ • Available for On-Demand, Reserved and Spot Instances
+
+ • An instance can NOT be hibernated more than 60 days
+
+
+
+
+
+
+---------------------------------------------- EC2 Hibernate  Hands ON 
+
+
+
+ -- create one instance A with hibernation , do encrypt ur EBS volume while creating and use aws key for encryption
+
+-- create another instance B  , without hibernation 
+
+-- do connect A and type uptime , it will shows the time from how much u are active state 
+
+-- do same for instance B 
+
+-- do stop the instances and wait for 1-2 min 
+
+-- do start the instance again 
+
+-- connect the instance A and do uptime it will give the time from the time when u started the instance A , coz it is hibernated.
+
+--  do same with the instance B , when u do for the instance B , it will show the time from 0 , coz it is not hibernated 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
