@@ -1998,6 +1998,431 @@ IMP
 
 
 
+
+---------------------------------------------- SSM - Automation
+
+
+
+
+• Simplifies common maintenance and deployment tasks of EC2 instances and other AWS resources
+
+• Example: restart instances, create an AMI, EBS snapshot
+
+• Automation Runbook : is the name of the document for SSM that are going to be of type Automation
+
+        • SSM Documents of type Automation
+
+        • Defines actions performed on your EC2 instances or AWS resources
+
+        • Pre-defined runbooks (AWS) or create custom runbooks
+
+
+• Can be triggered
+
+        • Manually using AWSConsole ,AWSCLI or SDK
+
+        • By Amazon EventBridge
+
+        • On a schedule using Maintenance Windows
+
+        • By AWS Config for rules remediations
+
+
+
+
+
+
+---------------------------------------------- SSM - Automation Hands ON 
+
+
+
+-- open system manager in console --> Automation (left side) --> Instance management --> u have so many automation books pre defined --> search "aws-restart" \
+
+--> select AWS-RestartEC2Instance --> Runbook version = latest version --> Rate Control --> Parameter = instanceid --> Targets = All instances --> execute 
+
+
+
+--> So effectively, what we can do, for example, using this automation is just restart a full fleet of EC2 Instances, without enabling SSH access.
+
+
+
+
+
+
+
+
+
+---------------------------------------------------------- SSM Parameter Store -------------------------------- 
+
+
+
+• Secure storage for configuration and secrets
+
+• Optional Seamless Encryption using KMS
+
+• Serverless, scalable, durable, easy SDK
+
+• Version tracking of configurations / secrets
+
+• Security through IAM
+
+• Notifications with Amazon EventBridge
+
+• Integration with CloudFormation
+
+
+
+
+
+---------------------------------------------------------- SSM Parameter Store Hierarchy
+
+
+• /my-department/
+    • my-app/
+        • dev/
+            • db-url
+            • db-password
+
+        • prod/
+            • db-url
+            • db-password
+
+• other-app/
+
+
+
+- You also have the opportunity to access Secrets of Secrets Manager through the Parameter Store by using this reference right here.
+
+        • /aws/reference/secretsmanager/secret_ID_in_Secrets_Manager
+
+
+- there are something called Public Parameters that are issued by AWS that you can use.
+
+        • /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2 (public)
+           
+
+
+
+
+
+
+
+---------------------------------------------------------- SSM Parameter Standard and advanced parameter tiers
+
+
+
+
+Standard :
+
+- Total number of parameters allowed (per AWS account and Region) :  10,000
+
+- Maximum size of a parameter value                               :  4 KB
+
+- Parameter policies available                                    :  No
+
+- Cost                                                            :  No additional charge
+
+- Storage Pricing                                                 :  Free
+
+
+
+
+
+
+Advanced :
+
+- Total number of parameters allowed (per AWS account and Region) :  100,000
+
+- Maximum size of a parameter value                               :  8 KB
+
+- Parameter policies available                                    : yes
+
+- Cost                                                            :  charges Apply
+
+- Storage Pricing                                                 :  $0.05 per advanced parameter per month
+
+
+
+
+
+
+---------------------------------------------------------- Parameters Policies (for advanced parameters)
+
+
+
+• Allow to assign a TTL to a parameter (expiration date) to force updating or deleting sensitive data such as passwords
+
+• Can assign multiple policies at a time
+
+
+
+
+1 Expiration (to delete a parameter) : 
+
+{
+    "Type": "Expiration",
+    "Version": "1.0",
+    "Attributes": {
+        "Timestamp": "2018-12-02T21:34:33.000Z"
+    }
+}
+
+
+
+
+
+2 ExpirationNotification (EventBridge)
+
+
+
+{
+    "Type": "ExpirationNotification",
+    "Version": "1.0",
+    "Attributes": {
+        "Before": "15",
+        "Unit": "Days"
+    }
+}
+
+
+-- So in this example, 15 days before the parameter expires we'll receive notification in EventBridge which gives us enough time to actually update it
+
+-- and make sure the parameter is not getting deleted because of the TTL.
+
+
+
+
+
+3 NoChangeNotification (EventBridge)
+
+
+{
+    "Type": "NoChangeNotification",
+    "Version": "1.0",
+    "Attributes": {
+        "After": "20",
+        "Unit": "Days"
+    }
+}
+
+
+-- maybe sometimes you wanna make sure the parameters change once in a while.
+
+-- So you can have a no change notification in EventBridge so that if a parameter has not been updated for 20 days, then you will be notified as well.
+
+
+
+
+
+
+
+
+
+
+---------------------------------------------------------- SSM Parameter Store Hands ON CLI
+
+
+
+-- open ssm in console --> choose parameter store on left side panel ---> give path to store value (/my-app/dev/db-url) ---> string --> value = dev.database.subbu.com:3306 --> create parameter
+
+-- dev.database.subbu.com:3306 = u can give any value 
+
+-- now do create dev password
+  
+-- give path to store value (/my-app/dev/db-password) ---> securestring --> value = give password here --> KMS Key ID = i am using my own key (eg: tutorial) -----> create parameter       
+
+-- now do create for prod environment also same like as Dev
+
+EG : /my-app/prod/db-url , /my-app/prod/db-password
+
+
+-- So we are going to use this CLI to get the parameters.
+
+-- open cloudshell
+
+       aws ssm get-parameters --names /my-app/dev/db-url /my-app/dev/db-password
+
+
+-- for the password it's a SecureString, and here is the value of it, which is an encrypted value.
+
+-- So for this, you basically need to decrypt it.
+
+-- for this you have a special parameter and it's called with-decryption,
+
+-- so this will check whether or not I have the KMS permission to decrypt this secret that was encrypted with the KMS tutorial key.
+
+         aws ssm get-parameters --names /my-app/dev/db-url /my-app/dev/db-password --with-decryption
+
+
+-- now observe changes 
+
+
+  aws ssm get-parameters-by-path --path /my-app/dev     =  u will get all parameters from specific path if u want 
+
+   aws ssm get-parameters-by-path --path /my-app/ --recursive  --with-decryption     = u will get all parameters under /my-app/ 
+
+
+
+
+
+
+
+
+
+
+
+
+---------------------------------------------------------- SSM Parameter Store Hands ON with LAMBDA 
+
+
+-- create one function with py 3.8 runtime 
+
+
+
+
+import json
+
+import boto3
+
+ssm = boto3.client('ssm', region_name="ap-south-1")
+
+def lambda_handler(event, context):
+    # TODO implement
+    db_url = ssm.get_parameters(Names=["/my-app/dev/db-url"])
+    print(db_url)
+    db_password = ssm.get_parameters(Names=["/my-app/dev/db-password"])
+    print(db_password)
+    return "Worked!"
+
+
+
+-- now go to configuration ---> permissons --->  create inline policy --> system manager ---> give all access --> all resources --> nxt 
+
+-- now do refresht he lambda page 
+
+-- if u get errror , after adding permissions , then wait for 5 min 
+
+-- now u will get this
+
+-- u can see 'SecureString' is encrypted here 
+
+-- So what we'd like to do is now decrypt it,
+
+-- so in code for password decrypt , add 
+
+        db_password = ssm.get_parameters(Names=["/my-app/dev/db-password"], WithDecryption = True)
+
+
+-- now do test , u will get (AccessDeniedException) error 
+
+-- because we're not allowed to use the customer master key and decrypt our secrets.
+
+-- So it turns out that because having given KMS access to my IAM role we're not allowed to decrypt the secrets,
+
+-- so this is a good proof that even though I have access to this database password, because it's encrypted and I don't have access to KMS I'm not able to decrypt it,
+
+-- and so that DB password is really safe and secure.
+
+-- to fix this add permissions 
+
+     permissons --> create inline policy --> kms --> add all permissions --> all resources--> create 
+
+
+-- now do test , u will get decrypted values 
+
+
+-- now to access through the Environment Variables 
+
+-- create  Environment Variable --> DEV_OR_PROD	 = dev
+
+-- add this in code 
+
+
+
+import json
+
+import boto3
+import os 
+
+ssm = boto3.client('ssm', region_name="ap-south-1")
+dev_or_prod = os.environ['DEV_OR_PROD']
+
+
+def lambda_handler(event, context):
+    # TODO implement
+    db_url = ssm.get_parameters(Names=["/my-app/" + dev_or_prod + "/dev/db-url"])
+    print(db_url)
+    db_password = ssm.get_parameters(Names=["/my-app/" + dev_or_prod + "/dev/db-password"], WithDecryption = True)
+    print(db_password)
+    return "Worked!"
+
+
+
+
+-- if u test this u will get dev values 
+
+--  go to env variable , change to prod (DEV_OR_PROD	 = prod )
+
+--  do test again , u will prod values 
+
+        
+
+
+
+
+
+---------------------------------------------------------- SSM – Inventory
+
+
+
+
+• Collect metadata from your managed instances (EC2/On-premises)
+
+• Metadata includes installed software, OS drivers, configurations, installed updates, running services ...
+
+        - It creates an inventory of what's happening on your managed instances.
+
+
+• View data in AWS Console or store in S3 and query and analyze using Athena(for serverless.) and QuickSight(if you want to build some dashboards)
+
+• Specify metadata collection interval (minutes, hours, days)
+
+• Query data from multiple AWS accounts and regions
+
+• Create Custom Inventory for your custom metadata (e.g., rack location of each managed instance)
+
+
+
+
+
+
+
+
+---------------------------------------------------------- SSM – Inventory Hands ON 
+
+
+
+-- open system manager and choose inventory left side --> 
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
  
 
 
