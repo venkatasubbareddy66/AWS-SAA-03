@@ -2398,19 +2398,762 @@ def lambda_handler(event, context):
 
 
 
----------------------------------------------------------- SSM – Inventory Hands ON 
+---------------------------------------------------------- SSM - State Manager
 
 
 
--- open system manager and choose inventory left side --> 
+
+• Automate the process of keeping your managed instances (EC2/On- premises) in a state that you define
+
+• Use cases: bootstrap instances with software, patch OS/software updates on a schedule ...
+
+• State Manager Association:
+
+        • Defines the state that you want to maintain to your managed instances
+
+        • Example: port 22 must be closed, antivirus must be installed ...
+
+        • Specify a schedule when this configuration is applied
+
+
+• Uses SSM Documents to create an Association (e.g., SSM Document to configure CW Agent)
+
+-- So state manager is to ensure that your fleet of instances are all in a state that you desire.
+
+
+
+
+
+
+---------------------------------------------------------- SSM – Patch Manager
+
+
+
+• Automates the process of patching managed instances
+
+• OS updates, applications updates, security updates, ...
+
+• Supports both EC2 instances and on-premises servers
+
+• Supports Linux, macOS, and Windows
+
+• Patch on-demand or on a schedule using "Maintenance Windows"
+
+• Scan instances and generate patch compliance report (missing patches)
+
+• Patch compliance report can be sent to S3
+
+
+
+----------------------- So patch manager has two components
+
+
+
+
+• Patch Baseline
+
+        • Defines which patches should and shouldn’t be installed on your instances
+
+        • Ability to create custom Patch Baselines (specify approved/rejected patches)
+
+        • Patches can be auto-approved within days of their release
+
+        • By default, install only critical patches and patches related to security onto your SSM managed instances.
+
+
+• Patch Group
+
+        • Associate a set of instances with a specific Patch Baseline
+
+        • Example: create Patch Groups for different environments (dev, test, prod)
+
+        • Instances should be defined with the tag key Patch Group
+
+        • An instance can only be in one Patch Group
+
+        • Patch Group can be registered with only one Patch Baseline
+
+
+
+
+----------------------- SSM – Patch Manager Patch Baselines
+
+
+
+• Pre-Defined Patch Baseline
+
+        • Managed by AWS for different Operating Systems (can’t be modified)
+
+        • AWS-RunPatchBaseline (SSM Document) – apply both operating system and application patches (Linux, macOS,Windows Server)
+
+
+• Custom Patch Baseline
+
+        • Create your own Patch Baseline and choose which patches to auto-approve
+
+        • Operating System, allowed patches, rejected patches, ...
+
+        • Ability to specify custom and alternative patch repositories
+
+
+
+
+
+
+---------------------------------------------------------- SSM – Maintenance Windows
+
+
+
+• Defines a schedule for when to perform actions on your instances
+
+• Example: OS patching, updating drivers, installing software, ...
+
+• Maintenance Window contains
+
+        • Schedule
+        • Duration
+        • Set of registered instances 
+        • Set of registered tasks
+
+
+
+
+
+
+
+---------------------------------------------------------- SSM – Patch Manager and Maintenance Windows Hands ON
+
+
+
+
+
+-- open system manager --> patch manager --> create policy --> Scanning and installation = Scan and install --> all values are default or select as ur wish --> create 
+
+
+        - we have the option to either do a scan to have a look at all my instances and see if some patches are missing,
+
+        - or we can do a scan and install.
+
+
+
+-- now open Maintenance Windows ,we can create a maintenance window to run our patches.
+
+-- create window with the values of you want 
+
+-- within this window, what we can do is that we can register specific tasks that will be run.
+
+-- open window id --> Tasks --> register tasks --> Register Run command task --> Command document = AWS-RunPatchBaseline --> targets = select ec2 instance u want --> give rate control and error threshold --> create 
+
+-- So now, that means that within my maintenance window, this run patch baseline will be run, and it will happen only during this window.
+
+-- give time of execution and check the instaces patched Successfully
+
+
+
+
+
+
+
+
+---------------------------------------------------------- SSM – Session Manager
+
+
+
+• Allows you to start a secure shell on your EC2 and on- premises servers
+
+• Access through AWS Console, AWS CLI, or Session Manager SDK
+
+• Does not need SSH access, bastion hosts, or SSH keys
+
+• Supports Linux, macOS, and Windows
+
+• Log connections to your instances and executed commands
+
+• Session log data can be sent to S3 or CloudWatch Logs
+
+• CloudTrail can intercept StartSession events
+
+
+
+• IAM Permissions
+
+        • Control which users/groups can access Session Manager and which instances
+
+        • Use tags to restrict access to only specific EC2 instances
+
+        • Access SSM + write to S3 + write to CloudWatch
+
+
+• Optionally, you can restrict commands a user can run in a session
+
+
+EG : 
+
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ssm:SendCommand",
+                "ssm:GetCommandInvocation",
+                "ssm:DescribeInstanceInformation",
+                "ssm:ListCommands",
+                "ssm:ListCommandInvocations"
+            ],
+            "Resource": "*",
+            "Condition": {
+                "StringEquals": {
+                    "ec2:ResourceTag/Environment": "DEV"
+                }
+            }
+        }
+    ]
+}
+
+
+
+-- this is an IAM policy that allows you to connect to any instance, as long as the resource type of environment is named dev.
+
+
+
+
+
+
+
+
+
+
+
+
+======================================================== High Availability & Scalability ========================================================
+
+
+
+
+
+---------------------------------------------------------- Scalability & High Availability
+
+
+
+• Scalability means that an application / system can handle greater loads by adapting.
+
+• There are two kinds of scalability: 
+
+        • Vertical Scalability
+        • Horizontal Scalability (= elasticity)
+
+
+• Scalability is linked but different to High Availability
+
+
+
+
+---------------------------------------------------------- Vertical Scalability
+
+
+
+• Vertically scalability means increasing the size of the instance
+
+• For example, your application runs on a t2.micro
+
+• Scaling that application vertically means running it on a t2.large
+
+• Vertical scalability is very common for non distributed systems, such as a database.
+
+• RDS, ElastiCache are services that can scale ver tically.
+
+• There’s usually a limit to how much you can vertically scale (hardware limit)
+
+
+
+
+
+---------------------------------------------------------- Horizontal Scalability
+
+
+
+• Horizontal Scalability means increasing the number of instances / systems for your application
+
+• Horizontal scaling implies distributed systems.
+
+• This is very common for web applications / modern applications
+
+• It’s easy to horizontally scale thanks the cloud offerings such as Amazon EC2
+
+
+
+
+
+
+---------------------------------------------------------- High Availability
+
+
+
+• High Availability usually goes hand in hand with horizontal scaling
+
+• High availability means running your application / system in at least 2 data centers (== Availability Zones)
+
+• The goal of high availability is to survive a data center loss
+
+• The high availability can be passive (for RDS Multi AZ for example)
+
+• The high availability can be active (for horizontal scaling)
+
+
+
+
+
+---------------------------------------------------------- High Availability & Scalability For EC2
+
+
+
+• Vertical Scaling: Increase instance size (= scale up / down)
+
+        • From: t2.nano - 0.5G of RAM, 1 vCPU
+
+        • To: u-12tb1.metal – 12.3 TB of RAM, 448 vCPUs
+
+
+
+• Horizontal Scaling: Increase number of instances (= scale out / in)
+
+        • Auto Scaling Group
+        • Load Balancer
+
+
+• High Availability: Run instances for the same application across multi-AZ
+
+        • Auto Scaling Group multi-AZ
+        • Load Balancer multi-AZ
+
+
+
+
+
+
+
+---------------------------------------------------------- What is load balancing?
+
+
+
+• Load Balances are servers that forward traffic to multiple servers (e.g., EC2 instances) downstream
+
+
+
+Why use a load balancer?
+
+
+        • Spread load across multiple downstream instances
+
+        • Expose a single point of access (DNS) to your application
+
+        • Seamlessly handle failures of downstream instances
+
+        • Do regular health checks to your instances
+
+        • Provide SSL termination (HTTPS) for your websites
+
+        • Enforce stickiness with cookies
+
+        • High availability across zones
+
+        • Separate public traffic from private traffic
+
+
+
+
+
+
+
+----------------------------------------------- Why use an Elastic Load Balancer?
+
+
+
+• An Elastic Load Balancer is a managed load balancer
+
+        • AWS guarantees that it will be working
+
+        • AWS takes care of upgrades, maintenance, high availability
+
+        • AWS provides only a few configuration knobs
+
+
+
+• It costs less to setup your own load balancer but it will be a lot more effort on your end
+
+
+• It is integrated with many AWS offerings / services
+
+
+        • EC2, EC2 Auto Scaling Groups, Amazon ECS
+
+        • AWS Certificate Manager (ACM), CloudWatch
+
+        • Route53,AWSWAF,AWSGlobalAccelerator
+
+
+
+
+
+
+----------------------------------------------- Health Checks
+
+
+
+• Health Checks are crucial for Load Balancers
+
+• They enable the load balancer to know if instances it forwards traffic to are available to reply to requests
+
+• The health check is done on a port and a route (/health is common)
+
+• If the response is not 200 (OK), then the instance is unhealthy
+
+
+
+
+
+
+
+---------------------------------------------------- Types of load balancer on AWS
+
+
+
+• AWS has 4 kinds of managed Load Balancers
+
+• Classic Load Balancer (v1 - old generation) – 2009 – CLB 
+
+        • HTTP, HTTPS,TCP,SSL(secureTCP)
+
+
+• Application Load Balancer (v2 - new generation) – 2016 – ALB
+
+        • HTTP, HTTPS,WebSocket
+
+
+• Network Load Balancer (v2 - new generation) – 2017 – NLB
+
+        • TCP,TLS(secureTCP),UDP
+
+
+• Gateway Load Balancer – 2020 – GWLB
+
+        • Operates at layer 3 (Network layer) – IP Protocol
+
+
+
+
+• Overall, it is recommended to use the newer generation load balancers as they provide more features
+
+• Some load balancers can be setup as internal (private) or external (public) ELBs
+
+
+
+
+
+
+
+---------------------------------------------------- Load Balancer Security Groups
+
+
+
+-- So the users can access your load balancer from anywhere using HTTP or HTTPS.
+
+-- therefore the security group rule is going to look like something like this, where the port range is going to be 80 or 443. And the source is going to be 0.0.0.0/0, which means anywhere. And so we allow the users to connect to our load balancer,
+
+-- but then the cool thing is that EC2 instances should only allow traffic coming directly from the load balancer.
+
+-- therefore the security group rule of your EC2 instances is going to look a little bit different.
+
+-- So it's going to allow HTTP traffic on port 80 and the source of it is not going to be an IP range is going to be a security group.
+
+-- So we're going to link the security group of the EC2 instance, to the security group of the load balancer.
+
+-- effectively what this will do is that it will say that the EC2 instance is only allowing traffic if the traffic originates from the load balancer, which is an enhanced security mechanism.
+
+
+
+
+
+---------------------------------------------------- Classic Load Balancers (v1)
+
+
+
+• Suppor ts TCP (Layer 4), HTTP & HTTPS (Layer 7)
+
+• Health checks are TCP or HTTP based
+
+• Fixed hostname XXX.region.elb.amazonaws.com
+
+
+
+
+
+
+---------------------------------------------------- Application Load Balancer (v2)
+
+
+• Application load balancers is Layer 7 (HTTP)
+
+• Load balancing to multiple HTTP applications across machines (target groups)
+
+• Load balancing to multiple applications on the same machine (ex: containers)
+
+• Suppor t for HTTP/2 and WebSocket
+
+• Support redirects (from HTTP to HTTPS for example)
+
+
+
+• Routing tables to different target groups:
+
+        • Routing based on path in URL (example.com/users & example.com/posts)
+
+        • Routing based on hostname in URL (one.example.com & other.example.com)
+
+        • Routing based on Query String, Headers
+
+                (example.com/users?id=123&order=false)
+
+
+• ALB are a great fit for micro services & container-based application (example: Docker & Amazon ECS)
+
+• Has a port mapping feature to redirect to a dynamic port in ECS
+
+• In comparison, we’d need multiple Classic Load Balancer per application
+
+
+
+
+
+
+---------------------------------------------------- Application Load Balancer (v2) Target Groups
+
+
+
+• EC2 instances (can be managed by an Auto Scaling Group) – HTTP
+
+• ECS tasks (managed by ECS itself) – HTTP
+
+• Lambda functions – HTTP request is translated into a JSON event
+
+• IP Addresses – must be private IPs
+
+• ALB can route to multiple target groups
+
+• Health checks are at the target group level
+
+
+
+
+
+
+---------------------------------------------------- Application Load Balancer (v2) Good to Know
+
+
+• Fixed hostname (XXX.region.elb.amazonaws.com)
+
+• The application servers don’t see the IP of the client directly
+
+        • The true IP of the client is inserted in the header X-Forwarded-For
+
+        • We can also get Port (X-Forwarded-Port) and proto (X-Forwarded-Proto)
+
+
+
+
+
+Hands on ---- refer SAA Course 
+
+
+
+
+
+
+
+---------------------------------------------------- Network Load Balancer (v2)
+
+
+
+• Network load balancers (Layer 4) allow to:
+
+        • Forward TCP & UDP traffic to your instances
+
+        • Handle millions of request per seconds
+
+        • Ultra-low latency
+
+
+
+• NLB has one static IP per AZ, and supports assigning Elastic IP (helpful for whitelisting specific IP)
+
+
+• NLB are used for extreme performance,TCP or UDP traffic
+
+• Not included in the AWS free tier
+
+
+
+
+
+
+---------------------------------------------------- Network Load Balancer – Target Groups 
+
+
+
+• EC2 instances
+
+• IP Addresses – must be private IPs
+
+• Application Load Balancer
+
+        - it's also possible for you to have a Network Load Balancer in front of an Application Load Balancer.
+
+        - So in that case, the NLB is in front of your ALB.
+
+        - WHY? for example, the fixed IP addresses, and then, thanks to the Application Load Balancer, you can get all the rules that you have around handling HTP type of traffic, so it is a valid combination.
+
+
+-- Network Load Balancer target groups are support three different kind of protocols.
+
+        • Health Checks support the TCP, HTTP and HTTPS Protocols
+
+
+
+
+
+--------- Hands on See SAA course
+
+
+
+
+
+
+
+---------------------------------------------------- Gateway Load Balancer
+
+
+
+• Deploy, scale, and manage a fleet of 3rd party network virtual appliances in AWS
+
+• Example: Firewalls, Intrusion Detection and Prevention Systems, Deep Packet Inspection Systems, payload manipulation, ...
+
+• Operates at Layer 3 (Network Layer) – IP Packets
+
+• Combines the following functions:
+
+        • Transparent Network Gateway – single entry/exit for all traffic
+
+        • Load Balancer – distributes traffic to your virtual appliances
+
+
+• Uses the GENEVE protocol on port 6081        
+
+
+
+
+
+
+
+---------------------------------------------------- Gateway Load Balancer –Target Groups
+
+
+
+
+• EC2 instances
+
+• IP Addresses – must be private IPs
+
+
+
+
+
+
+
+---------------------------------------------------- Sticky Sessions (Session Affinity)
+
+
+
+
+• It is possible to implement stickiness so that the same client is always redirected to the same instance behind a load balancer
+
+• This works for Classic Load Balancer, Application Load Balancer, and Network Load Balancer
+
+• For both CLB & ALB, the “cookie” used for stickiness has an expiration date you control
+
+• Use case: make sure the user doesn’t lose his session data
+
+• Enabling stickiness may bring imbalance to the load over the backend EC2 instances
+
  
 
 
 
+---------------------------------------------------- Sticky Sessions – Cookie Names
+
+
+
+• Application-based Cookies
+
+        • Custom cookie
+
+                • Generated by the target
+                • Can include any custom attributes required by the application
+                • Cookie name must be specified individually for each target group
+                • Don’t use AWSALB, AWSALBAPP, or AWSALBTG (reserved for use by the ELB)
+
+        • Application cookie
+
+                • Generated by the load balancer
+                • Cookie name is AWSALBAPP
+
+
+
+• Duration-based Cookies
+
+        • Cookie generated by the load balancer
+
+        • Cookie name is AWSALB for ALB, AWSELB for CLB
 
 
 
 
+
+
+---------------------------------------------------- Cross-Zone Load Balancing
+
+
+With Cross Zone Load Balancing:
+
+        - each load balancer instance distributes evenly across all registered instances in all AZ
+
+Without Cross Zone Load Balancing:
+
+        - Requests are distributed in the instances of the node of the Elastic Load Balancer
+
+
+
+
+• Application Load Balancer
+
+        • Enabled by default (can be disabled at the Target Group level)
+
+        • No charges for inter AZ data
+
+
+• Network Load Balancer & Gateway Load Balancer
+
+        • Disabled by default
+
+        • You pay charges ($) for inter AZ data if enabled
+
+
+• Classic Load Balancer
+
+        • Disabled by default
+
+        • No charges for inter AZ data if enabled
 
 
 
@@ -2418,13 +3161,2521 @@ def lambda_handler(event, context):
 
  
 
+ ---------------------------------------------------- SSL/TLS - Basics
 
 
 
 
+• An SSL Certificate allows traffic between your clients and your load balancer to be encrypted in transit (in-flight encryption)
+
+• SSL refers to Secure Sockets Layer, used to encrypt connections
+
+• TLS refers to Transport Layer Security, which is a newer version
+
+• Nowadays, TLS cer tificates are mainly used, but people still refer as SSL
+
+• Public SSL certificates are issued by Certificate Authorities (CA)
+
+• Comodo, Symantec, GoDaddy, GlobalSign, Digicert, Letsencrypt, etc...
+
+• SSL certificates have an expiration date (you set) and must be renewed
+
+
+
+
+
+----------------------------- Load Balancer - SSL Certificates
+
+
+
+
+       HTTPS(encrypted)                      HTTP Over private VPC 
+       Over www
+Users ----------------->      Load balancer  ---------------------->     ec2 instances 
+      <-----------------                     <----------------------  
+
+
+• The load balancer uses an X.509 certificate (SSL/TLS server certificate)
+
+• You can manage certificates using ACM (AWS Certificate Manager)
+
+• You can create upload your own certificates alternatively
+
+• HTTPS listener:
+  • You must specify a default certificate
+  • You can add an optional list of certs to support multiple domains
+  • Clients can use SNI (Server Name Indication) to specify the hostname they reach
+  • Ability to specify a security policy to support older versions of SSL /TLS (legacy clients)
+
+
+
+
+
+---------------------------------------------------- SSL – Server Name Indication (SNI)
+
+
+
+• SNI solves the problem of loading multiple SSL certificates onto one web server (to serve multiple websites)
+
+• It’s a “newer” protocol, and requires the client to indicate the hostname of the target server in the initial SSL handshake
+
+• The server will then find the correct certificate, or return the default one
+
+
+Note:
+
+        • Only works for ALB & NLB (newer generation), CloudFront
+
+        • Does not work for CLB (older gen)
+
+
+
+
+
+---------------------------------------------------- Elastic Load Balancers – SSL Certificates
+
+• Classic Load Balancer (v1)
+  
+   • Support only one SSL certificate
+   • Must use multiple CLB for multiple hostname with multiple SSL certificates
+
+• Application Load Balancer (v2)
+
+   • Supports multiple listeners with multiple SSL certificates
+   • Uses Server Name Indication (SNI) to make it work
+
+• Network Load Balancer (v2)
+ 
+   • Supports multiple listeners with multiple SSL certificates
+   • Uses Server Name Indication (SNI) to make it work
+
+
+
+
+
+
+---------------------------------------------------- Connection Draining
+
+
+
+
+• Feature naming
+
+   • Connection Draining – for CLB
+   • Deregistration Delay – for ALB & NLB
+
+• Time to complete “in-flight requests” while the instance is de-registering or unhealthy
+
+• Stops sending new requests to the EC2 instance which is de-registering
+
+• Between 1 to 3600 seconds (default: 300 seconds)
+
+• Can be disabled (set value to 0)
+
+• Set to a low value if your requests are short
+
+
+
+
+
+
+---------------------------------------------------- ELB Health Checks
+
+
+
+• Target Health Status
+
+        • Initial: registering the target
+        • Healthy
+        • Unhealthy
+        • Unused: target is not registered
+        • Draining: de-registering the target
+        • Unavailable: health checks disabled
+
+
+• If a target group contains only unhealthy targets, ELB routes requests across its unhealthy targets
+
+
+
+
+Setting                         Value           Description
+
+HealthCheckProtocol             HTTP            Protocol used to perform health checks
+
+HealthCheckPort                 80              Port used to perform health checks
+
+HealthCheckPath                 /               Destination for health checks on targets
+
+HealthCheckTimeoutSeconds       5               Consider the health check failed if no response after 5 seconds
+
+HealthCheckIntervalSeconds      30              Send health check every 30 seconds
+
+HealthyThresholdCount           3               Consider the target healthy after 3 successful health checks
+
+UnhealthyThresholdCount         5               Consider the target unhealthy after 5 failed health checks
+
+
+
+
+
+
+
+
+
+
+---------------------------------------------------- Load Balancer Error codes
+
+
+
+• Successful request : Code 200.
+
+• Unsuccessful at client side : 4XX code.
+
+        • Error 400 : Bad Request
+        • Error 401 : Unauthorized
+        • Error 403 : Forbidden
+        • Error 460 : Client closed connection.
+        • Error 463 : X-Forwarded For header with >30 IP (Similar to malformed request).
+
+
+• Unsuccessful at server side : 5xx code.
+
+        • An error 500 / Internal server error would mean some error on the ELB itself. • Error 502 : Bad Gateway
+        • An error 503 / Service Unavailable
+        • Error 504 / Gateway timeout : probably an issue within the server.
+        • Error 561 : Unauthorized
+
+
+
+
+
+---------------------------------------------------- Load Balancers Monitoring
+
+
+
+• All Load Balancer metrics are directly pushed to CloudWatch metrics
+
+        • BackendConnectionErrors 
+
+        • HealthyHostCount /UnHealthyHostCount 
+
+        • HTTPCode_Backend_2XX: Successful request.
+
+        • HTTPCode_Backend_3XX: redirected request
+
+        • HTTPCode_ELB_4XX: Client error codes
+
+        • HTTPCode_ELB_5XX: Server error codes generated by the load balancer.
+
+        • Latency
+
+        - RequestCount
+
+        - RequestCountPerTarget
+
+        - SurgeQueueLength: The totalnumber of requests (HTTPlistener) or connections (TCPlistener) that are pending routing to a healthy instance.Help to scale out ASG. Max value is 1024
+
+        - SpilloverCount: The total number of requests that were rejected because the surge queue is full.
+
+
+
+
+
+
+
+---------------------------------------------------- Load Balancer troubleshooting using metrics
+
+
+
+• HTTP 400: BAD_REQUEST => The client sent a malformed request that does not meet HTTP specifications.
+
+• HTTP 503: Service Unavailable => Ensure that you have healthy instances in every Availability Zone that your load balancer is configured to respond in. Look for HealthyHostCount in CloudWatch
+
+• HTTP 504: Gateway Timeout => Check if keep-alive settings on your EC2 instances are enabled and make sure that the keep-alive timeout is greater than the idle timeout settings of load balancer.
+
+• Set alarms & look at the documentation for troubleshooting: 
+
+        https://docs.aws.amazon.com/elasticloadbalancing/latest/classic/ts-elb-error- message.html
+
+
+
+
+
+---------------------------------------------------- Load Balancers Access Logs
+
+
+
+• Access logs from Load Balancers can be stored in S3 and contain:
+
+        • Time
+        • Client IP address 
+        • Latencies
+        • Request paths
+        • Server response 
+        • Trace Id
+
+
+
+• Only pay for the S3 storage
+
+• Helpful for compliance reason
+
+• Helpful for keeping access data even after ELB or EC2 instances are terminated
+
+• Access Logs are already encrypted
+
+-- go to ALB --> Attributes --> edit --> enable access logs and give bucket name if u want to store 
+
+
+
+
+
+
+
+
+---------------------------------------------------- Application Load Balancer RequestTracing
+
+
+
+• Request tracing – Each HTTP request has an added custom header ‘X-Amzn-Trace-Id’
+
+• Example:
+
+        X-Amzn-Trace-Id: Root=1-67891233-abcdef012345678912345678
+
+
+• This is useful in logs / distributed tracing platform to track a single request
+
+• Application Load Balancer is not (yet) integrated with X-Ray
+
+
+
+
+
+
+
+
+---------------------------------------------------- Target Groups Settings
+
+
+• deregisteration_delay.timeout_seconds: time the load balancer waits before deregistering a target
+
+• slow_start.duration_seconds: 
+
+• load_balancing.algorithm.type: how the load balancer selects targets when routing requests (Round Robin, Least Outstanding Requests)
+
+• stickiness.enabled
+
+• stickiness.type: application-based or duration-based cookie
+
+• stickiness.app_cookie.cookie_name: name of the application cookie
+
+• stickiness.app_cookie.duration_seconds: application-based cookie expiration period
+
+• stickiness.lb_cookie.duration_seconds: duration-based cookie expiration period
+
+
+
+
+
+
+---------------------------------------------------- Slow Start Mode 
+
+
+• By default, a target receives its full share of requests once it’s registered with the target group
+
+• if you enable Slow Start Mode gives healthy targets time to warm-up before the load balancer sends them a full share of requests
+
+• The load balancer linearly increases the number of requests that it sends to the target
+
+        - If you don't have slow start mode, all of a sudden, as soon as your EC2 instance is part of your target group is going to receive a full share of requests, which may overload the instance directly.
+
+        - But with slow start mode, there's going to be a gradual increase. So at first it will receive one request, then it will receive two requests, then it will receive three requests and so on up until the slow start is over and then the EC2 instance will be at full capacity.
+
+
+• A target exits Slow Start Mode when:
+
+        • The duration period elapses
+
+        • The target becomes unhealthy
+
+
+• To disable, set Slow star t duration value to 0
+
+
+
+
+
+---------------------------------------------------- Request Routing Algorithms – Least Outstanding Requests
+
+
+
+• The next instance to receive the request is the instance that has the lowest number of pending/unfinished requests
+
+• Works with Application Load Balancer and Classic Load Balancer (HTTP/HTTPS)
+
+
+
+
+---------------------------------------------------- Request Routing Algorithms – Round Robin
+
+
+• Equally choose the targets from the target group
+
+• Works with Application Load Balancer and Classic Load Balancer(TCP)
+
+
+
+---------------------------------------------------- Request Routing Algorithms – Flow Hash   (NLB)
+
+
+• Selects a target based on the protocol, source/destination IP address, source/destination port, and TCP sequence number
+
+• Each TCP/UDP connection is routed to a single target for the life of the connection which is sort of the equivalent for the sticky sessions
+
+• Works with Network Load Balancer
+
+
+
+
+-- go to target groups --> actions --> edit attributes --> deregistration delay,slow start ,algorith options 
+
+
+
+
+
+
+
+---------------------------------------------------- ALB – Listener Rules
+
+
+• Processed in order (with Default Rule)
+
+• Supported Actions (forward, redirect,fixed-response)
+
+• Rule Conditions:
+
+        • host-header
+        • http-request-method
+        • path-pattern
+        • source-ip
+        • http-header
+        • query-string
+
+
+-- each rule will have a specific target
+
+
+
+
+
+
+
+
+---------------------------------------------------- Target Group Weighting
+
+
+
+• Specify weight for each Target Group on a single Rule
+
+• Example: multiple versions of your app, blue/green deployment
+
+• Allows you to control the distribution of the traffic to your applications
+
+
+
+
+
+
+
+
+
+---------------------------------------------------- What’s an Auto Scaling Group?
+
+
+
+
+
+• In real-life, the load on your websites and application can change
+
+• In the cloud, you can create and get rid of servers very quickly
+
+• The goal of an Auto Scaling Group (ASG) is to:
+   • Scale out (add EC2 instances) to match an increased load
+   • Scale in (remove EC2 instances) to match a decreased load
+   • Ensure we have a minimum and a maximum number of EC2 instances running
+   • Automatically register new instances to a load balancer
+   • Re-create an EC2 instance in case a previous one is terminated (ex: if unhealthy)
+
+• ASG are free (you only pay for the underlying EC2 instances)
+
+IMP : When rebalancing, Amazon EC2 Auto Scaling launches new instances before terminating the earlier ones. This way, rebalancing does not compromise the performance or availability of your application.
+
+-- Because Amazon EC2 Auto Scaling attempts to launch new instances before terminating the earlier ones, being at or near the specified maximum capacity could impede or completely halt rebalancing activities.
+
+
+
+
+
+
+
+---------------------------------------------------- Auto Scaling Group Attributes
+
+
+
+• A Launch Template (older “Launch Configurations” are deprecated)
+
+        • AMI + InstanceType
+        • EC2 User Data 
+        • EBSVolumes
+        • Security Groups 
+        • SSH Key Pair
+        • IAM Roles for your EC2 Instances
+        • Network + Subnets Information 
+        • Load Balancer Information
+
+
+• Min Size / Max Size / Initial Capacity
+
+• Scaling Policies
+
+
+
+
+
+---------------------------------------------------- Auto Scaling - CloudWatch Alarms & Scaling
+
+
+
+• It is possible to scale an ASG based on CloudWatch alarms
+
+• An alarm monitors a metric (such as Average CPU, or a custom metric)
+
+• Metrics such as Average CPU are computed for the overall ASG instances
+
+• Based on the alarm:
+  • We can create scale-out policies (increase the number of instances)
+  • We can create scale-in policies (decrease the number of instances)
+
+
+
+
+
+
+
+
+
+-- create a Load Balancer with  empty TG
+
+-- u have to create Launch template (user-data), u can't edit LT once u created , u have create new LT if u want new version of ur appn 
+
+-- c.o on ASG and Give name as you want and select Launch Template(IMP:Make sure AMI Version is with Kernal 5.10.....) ,select the version of template you want
+
+-- using with LT, create ASG 
+
+-- ASG use LT to launch ec2 instance 
+
+-- if u want ur big Application like tomact on ec2 instance(ASG), cretae ec2 first ,deploy the appn and create AMI 
+
+-- use this custom AMI in LT instead on Linux and create LT 
+
+-- u provide min , max and desired capacity while creating ASG 
+
+-- ASG will launch ec2 in TG automatically 
+
+-- Always Turn on ALB Health checks 'coz, 
+
+Elastic Load Balancing monitors whether instances are available to handle requests. When it reports an unhealthy instance, EC2 Auto Scaling can replace it on its next periodic check.
+
+-- here we need to use sns ( simple notification servie) 
+
+-- in SNS , we have TOPIC and SUBSCRIPTION 
+
+-- in sns u need to crate TOPIC , once u created u need to subscribe
+
+-- u can add this topic in ASG creation
+
+-- create LB with simple TG no need to add any instances as targets ,this job will do by ASG for us during scale out and scale in process
+
+-- now launch template with user-data
+
+#!/bin/bash
+yum update -y
+yum install -y httpd
+systemctl start httpd
+systemctl enable httpd
+echo "<h1>Hello World from $(hostname -f)</h1>" > /var/www/html/index.html
+
+-- create auto scaling group 
+
+-- give LT and subnets as u preffered 
+
+-- in notification topic u jst create topic to get notifications 
+
+-- crate ASG 
+
+-- what this ASG will do is that , it wil take LT and it will launch ec2 automatically according to ur desired capacity , so LT has user data so then our ec2 have index.html appn,all the ec2 instances will registered in the target groups automatically  and these TG are linked to Load balancer , so if u can access LB u will get appn 
+
+-- all the things u have do in the launch template only , based on these LT ec2 will created 
+
+-- go n check in target group 
+
+-- in targets all ec2 are gettig registered 
+
+-- There are 3 types of scaling 
+
+1  manual scaling : u can change manually capapcity 
+
+2  schedule Scaling : do schedule when u want to scale out happens when u feel the traffic will more o the certain days or time 
+
+3  dynamic scalng : automatically happens 
+
+
+-- u can check in activity section how scale out and scle in happens 
+
+-- once it reach to max capaicty it wont go more than that as th given capacity , u can edit once if u want more capacity to scale out 
+
+
+
+
+
+----------------------------------------------------- scaleout practicals 
+
+-- (IMP:Make sure AMI Version is with Kernal 5.10.....) ,select the version of template you want
+
+-- conect one instace to SSH and install manual load to the EC2 instance by install stress commands manually
+
+--  enter the command
+
+ sudo amazon-linux-extras install epel -y 
+
+
+ - if it is not working go to 2nd command directly
+
+-- once avove command is successfully installed , then enter this command
+
+  sudo yum install stress -y
+
+-- once you installed, then try to push the load manually by entering the command
+
+  stress -c 5
+
+--  wait for sometime(4-5 min) to updating the data , then check in ASG and see how the changs are happening
+
+-- u can see the scale out is happening and meet the max capacity
+
+
+
+
+
+
+
+----------------------------------------------------- Auto Scaling Groups – Scaling Policies
+
+
+
+• Dynamic Scaling
+
+        • Target Tracking Scaling
+
+                • Simple to set-up
+                • Example: I want the average ASG CPU to stay at around 40%
+
+        • Simple / Step Scaling
+
+                • When a CloudWatch alarm is triggered (example CPU > 70%), then add 2 units
+
+                • When a CloudWatch alarm is triggered (example CPU < 30%), then remove 1
+
+
+• Scheduled Scaling
+
+        • Anticipate a scaling based on known usage patterns
+
+        • Example: increase the min capacity to 10 at 5 pm on Fridays
+
+
+
+
+
+------------- Good metrics to scale on :
+
+
+
+-- CPU utilization       : AVg CPU across ur instance 
+-- REquestCountPertarget : to makesure the no.of request per ec2 instance is stable
+-- AVG Network in/out    : if u r appn is network bound 
+
+
+IMP NOTE : the ASG can not go over the max capacity that u have mentioned during the creation time 
+
+
+
+
+
+----------------------------------------------------- Auto Scaling Groups - Scaling Cooldowns
+
+
+
+• After a scaling activity happens, you are in the cooldown period (default 300 seconds)
+
+• During the cooldown period, the ASG will not launch or terminate additional instances (to allow for metrics to stabilize)
+
+• Advice: Use a ready-to-use AMI to reduce configuration time in order to be serving request fasters and reduce the cooldown period
+
+
+
+
+
+
+
+----------------------------------------------------- ASG For SysOps  -----------------------------------------------------
+
+
+
+---------------------------- ASG – Lifecycle Hooks
+
+
+-- So, the lifecycle hooks is a way for you to hook into the lifecycle of an ASG instances.
+
+• By default, as soon as an instance is launched in an ASG it’s in service
+
+-- But you can set up an lifecycle hook for that effect.
+
+• You can perform extra steps before the instance goes in service (Pending state)
+
+        • Define a script to run on the instances as they start
+
+        - So when you're done with the initial setup of your EC2 instances, you make them go into a pending proceed state. And then after that, they will be moved into the in service states.        
+     
+        - So this lifecycle hook really allows you to perform some kind of custom logic between the pending and the in service states.
+
+• You can perform some actions before the instance is terminated(Terminating state)        
+
+        • Pause the instances before they’re terminated for troubleshooting
+
+        - this will give you is the opportunity, for example, to take the logs out of your instances.
+
+        - So let's say that instance goes from in service to terminating, then in part of your lifecycle hook, okay, you can go into the terminating wait state, okay. 
+        
+        - And then when you're there, you can execute again, some scripts, or get some logs out, or do whatever you want, or even get some information out, take an AMI, whatever you want, really. Or take an EBS snapshot, and then go into terminating proceed.
+
+
+
+-- the use-cases for all these lifecycle hooks is really to do cleanup, log extraction, or special health checks, before your instance is started and goes in service.
+
+• Integration with EventBridge, SNS, and SQS
+
+
+
+
+
+
+----------------------------------------------------- Launch Configuration vs. Launch Template
+
+
+
+• Both:
+
+        • ID of the AmazonMachineImage(AMI),the instancetype,a keypair,securitygroups,and the other parameters that you use to launch EC2 instances (tags, EC2 user-data...)
+
+        • You can’t edit both LaunchConfigurations and LaunchTemplates
+
+
+
+• Launch Configuration (legacy):
+
+        • Must be re-created every time
+
+
+• LaunchTemplate(newer):
+
+        • Can have multiple versions
+        • Create parameters subsets (partial configuration for re-use and inheritance) 
+        • Provision using both On-Demand and Spot instances (or a mix)
+        • Suppor ts Placement Groups, Capacity Reser vations, Dedicated hosts,
+        • CanuseT2unlimitedburstfeature
+        • RecommendedbyAWSgoingforward
+
+
+
+
+
+
+Launch Configuration :
+
+-- Launch configuration is an instance configuration template that an Auto Scaling Group uses to launch EC2 instances.
+
+-- Launch configuration is similar to EC2 configuration and involves the selection of the Amazon Machine Image (AMI), block devices, key pair, instance type, security groups, user data, EC2 instance monitoring, instance profile, kernel, ramdisk, the instance tenancy, whether the instance has a public IP address, and is EBS-optimized.
+
+-- Launch configuration can be associated with multiple ASGs
+
+-- Launch configuration can’t be modified after creation and needs to be created new if any modification is required.
+
+-- Basic or detailed monitoring for the instances in the ASG can be enabled when a launch configuration is created.
+
+-- By default, basic monitoring is enabled when you create the launch configuration using the AWS Management Console, and detailed monitoring is enabled when you create the launch configuration using the AWS CLI or an API
+
+-- AWS recommends using Launch Template instead.
+
+
+
+
+
+
+
+Launch Template :
+
+-- A Launch Template is similar to a launch configuration, with additional features, and is recommended by AWS.
+
+-- Launch Template allows multiple versions of a template to be defined.
+
+-- With versioning, a subset of the full set of parameters can be created and then reused to create other templates or template versions for e.g, a default template that defines common configuration parameters can be created and allow the other parameters to be specified as part of another version of the same template.
+
+-- Launch Template allows the selection of both Spot and On-Demand Instances or multiple instance types.
+
+-- Launch templates support EC2 Dedicated Hosts. Dedicated Hosts are physical servers with EC2 instance capacity that are dedicated to your use.
+
+-- Launch templates provide the following features
+
+   - Support for multiple instance types and purchase options in a single ASG.
+
+   - Launching Spot Instances with the capacity-optimized allocation strategy.
+   - Support for launching instances into existing Capacity Reservations through an ASG.
+   - Support for unlimited mode for burstable performance instances.
+   - Support for Dedicated Hosts.
+   - Combining CPU architectures such as Intel, AMD, and ARM (Graviton2)
+   - Improved governance through IAM controls and versioning.
+   - Automating instance deployment with Instance Refresh.
+
+
+
+
+
+
+
+
+----------------------------------------------------- SQS with Auto Scaling Group (ASG)
+
+
+
+-- So how to scale, and it's gonna group, based on an SQS queue status.
+
+-- So, in this example we have an SQS queue, and a bunch of EC2 instances processing messages from it.
+
+-- And what you want to do, is to scale your ASG based on whether or not you have more messages in your SQS queue.
+
+-- So for this, you can create a CloudWatch metric. For example, on the queue length.
+
+        - So the metric name is ApproximateNumberOfMessages
+
+-- whenever that queue length is too big, that means you have too many messages to process.        
+
+-- Then you can create an alarm, and that alarm will go into CloudWatch alarm, and would be triggering a scaling policy on your ASG.
+
+
+
+
+
+
+----------------------------------------------------- ASG Health Checks
+
+
+
+• To make sure you have high availability, means you have least 2 instances running across 2 AZ in your ASG (must configure multi-AZ ASG)
+
+• Health checks available:
+
+        • EC2 Status Checks: So, to make sure that the underlying software and hardware of your EC2 instances are still functioning, which is enabled by default.
+
+        • ELB Health Checks: So this is to make sure that your application, if linked to a target group and an ALB will be checked, will be having its health checked by the ELB as well.
+
+        • Custom Health Checks: send instance’s health to ASG using AWS CLI or AWS SDK       
+
+
+• ASG will launch a new instance after terminating an unhealthy one
+
+• ASG will not reboot unhealthy hosts for you
+
+• Good to know CLI:
+
+        • set-instance-health (use with Custom Health Checks)
+
+        • terminate-instance-in-auto-scaling-group
+
+
+
+
+
+
+----------------------------------------------------- Troubleshooting ASG issues
+
+
+
+• <number of instances> instance(s) are already running. Launching EC2 instance failed.
+
+        • The Auto Scaling group has reached the limit set by the MaximumCapacity parameter. Update your Auto Scaling group by providing a new value for the maximum capacity.
+
+
+• Launching EC2 instances is failing:
+
+        • The security group does not exist. SG might have been deleted
+
+        • The key pair does not exist. The key pair might have been deleted
+
+
+• If the ASG fails to launch an instance for over 24 hours, it will automatically suspend the processes (administration suspension)
+
+
+
+
+
+
+----------------------------------------------------- CloudWatch Metrics for ASG
+
+
+
+• Metrics are collected every 1 minute
+
+• ASG-level metrics: (opt-in)
+
+        • GroupMinSize, GroupMaxSize, GroupDesiredCapacity : which represents the value of these parameters over time.
+
+        • GroupInServiceInstances, GroupPendingInstances, GroupStandbyInstances 
+
+        • GroupTerminatingInstances, GroupTotalInstances
+
+        • You should enable metric collection to see these metrics
+
+
+• EC2-level metrics (enabled): CPU Utilization, etc...
+
+        • Basic monitoring: 5 minutes granularity
+        • Detailed monitoring: 1 minute granularity
+
+
+
+
+
+
+
+----------------------------------------------------- AWS Auto Scaling
+
+
+
+• Backbone service of auto scaling for scalable resources in AWS:
+
+• Amazon EC2 Auto Scaling groups: Launch or terminate EC2 instances
+
+• Amazon EC2 Spot Fleet requests: Launch or terminate instances from a Spot Fleet request, or automatically replace instances that get interrupted for price or capacity reasons.
+
+• Amazon ECS:Adjust the ECS service desired count up or down
+
+• Amazon DynamoDB (table or global secondary index):WCU & RCU
+
+• Amazon Aurora: Dynamic Read Replicas Auto Scaling
+
+
+
+
+----------------------------------------------------- AWS Auto Scaling – Scaling Plans
+
+
+
+• Dynamic scaling: creates a target tracking scaling policy
+
+        • Optimize for availability => 40% of resource utilization
+
+        • Balance availability and cost => 50% of resource utilization
+
+        • Optimize for cost => 70% of resource utilization
+
+        • Custom => choose own metric and target value
+
+        • Options:Disablescale-in,cooldownperiod,warmup time (for ASG)
+
+
+
+• Predictive scaling: continuously forecast load and schedule scaling ahead
+
+
+
+
+
+
+
+======================================================== ElasticBeanStalk (see previous course) ========================================================
+
+
+
+
+
+
+
+======================================================== Cloudformation For SysOps ========================================================
+
+
+
+-- check the below topics in previous course 
+
+
+        - Resources 
+        - parameters
+        - Mappings 
+        - Outputs&exports 
+        - conditions
+        - intrinsic functions
+        - rollbacks 
+        - service role 
+        - service role 
+        - capabilities
+        - Deletion Policy 
+        - Stack policy
+        - termination protection
+        - custom resources 
+        - dynamic References
+
+
+
+
+
+
+======================================================== SysOps-specific lectures below (CloudFormation) ========================================================
+
+
+
+-- check cloudformation course for the below topics 
+
+        - UserData 
+        - cfn-init
+        - cfn-signal & wait condition 
+        - cfn-signal Failures
+        - Nested Stacks 
+        - Depends ON
+        - Stack Sets 
+        - troubleshooting
+        
+
+
+
+
+
+
+
+======================================================== AWS Lambda ========================================================
+
+
+
+
+
+
+------------------------------------------------------ Why AWS Lambda
+
+
+Amazon EC2 :
+
+  • Virtual Servers in the Cloud
+  • Limited by RAM and CPU
+  • Continuously running
+  • Scaling means intervention to add / remove servers
+
+
+Amazon Lambda : 
+
+   • Virtual functions – no servers to manage!
+   • Limited by time - short executions
+   • Run on-demand
+   • Scaling is automated!
+
+
+
+
+
+
+
+
+------------------------------------------------------ Benefits of AWS Lambda
+
+
+• Easy Pricing:
+
+    • Pay per request and compute time 
+
+    • Free tier of 1,000,000 AWS Lambda requests and 400,000 GBs of compute time
+
+
+• Integrated with the whole AWS suite of services
+
+• Integrated with many programming languages
+
+• Easy monitoring through AWS CloudWatch
+
+• Easy to get more resources per functions (up to 10GB of RAM!)
+
+• Increasing RAM will also improve CPU and network!
+
+
+
+
+
+
+
+
+
+------------------------------------------------------ AWS Lambda language support
+
+
+• Node.js (JavaScript)
+• Python
+• Java (Java 8 compatible)
+• C# (.NET Core)
+• Golang
+• C# / Powershell
+• Ruby
+• Custom Runtime API (community supported, example Rust)
+
+
+• Lambda Container Image : this Lambda container image is quite special.
+
+     • The container image must implement the Lambda Runtime API , so it's not any container image that can run on Lambda. There needs to be some prerequisites about how that container image is built.
+
+     • ECS / Fargate is preferred for running arbitrary Docker images
+
+
+-- So the exam, if they ask you to run a container on Lambda, unless that container does implement the Lambda runtime API, you will run  that container on ECS or Fargate.
+
+
+
+
+
+
+
+
+
+
+
+
+------------------------------------------------------ AWS Lambda Integrations Main ones
+
+
+1 API Gateway : So API Gateway is to create a REST API, and they will invoke our Lambda functions.
+
+
+2 Kinesis : Kinesis will be using Lambda to do some data transformations on the fly.
+
+
+3 DynamoDB :  DynamoDB will be used to create some triggers, so whenever something happens in our database a Lambda function will be triggered.
+
+
+4 S3 : A Lambda function would be triggered anytime, for example, a file is created in S3.
+
+
+5 CloudFront :  CloudFront, this will be Lambda@edge,
+
+
+6 CloudWatch Events : CloudWatch Events or EventBridge. This is whenever things happen in our infrastructure on AWS, and we want to be able to react to things.
+
+             - For example, say we have a cut pipeline, state changes and we want to do some automations based on it, we can use a Lambda function.
+
+
+7 CloudWatch Logs : CloudWatch Logs, to stream these logs, wherever you want.
+
+
+8 SNS : SNS to react to notifications and your SNS topics.
+
+
+9 SQS : SQS to process messages from your SQS queues.
+
+
+10 Cognito : Cognito to react to whenever, for example, a user login to your database.
+
+
+
+
+-- So, these are just the main ones. There are tons of Lambda integrations.
+
+
+
+
+
+
+
+
+
+------------------------------------------------------ Example: Serverless Thumbnail creation
+
+
+-- So let's say we have an S3 bucket, and we want to create thumbnails on the fly.
+
+-- So there will be an event which is that the new image will be uploaded in Amazon S3.
+
+-- This will trigger, through an S3 event notification, a Lambda function.
+
+-- that Lambda function will have code to generate a thumbnail. That thumbnail maybe pushed and uploaded into another S3 bucket or the same S3 bucket, which would be a smaller version of that image.
+
+-- And also, our Lambda function may want to insert some data into DynamoDB, around some metadata for the image, for example the image, name, size, creation date, etc..
+
+
+
+
+New image in S3 -------------(trigger)----------> AWS Lambda Function Creates a Thumbnail -------------(Push)-------> New thumbnail in S3 / Metadata in DynamoDB
+
+
+
+
+
+
+
+
+
+------------------------------------------------------ Example: Serverless CRON Job
+
+
+-- So CRON is a way on your EC2 instances, for example, to generate jobs every five minutes, or every Monday at 10:00 AM, etc
+
+-- But you need to run CRON on a virtual server. So an EC2 two instance and so on.
+
+-- so while your instance is not running, or at least your CRONs are not doing anything, then your instance time is wasted.
+
+-- so, as such, you can create a CloudWatch Event rule or an EventBridge rule that will be triggered every 1 hour. And every 1 hour it will be integrated with a Lambda function that will perform your task.
+
+-- So this is a way to create a serverless CRON,
+
+-- in this example, CloudWatch Events is serverless and Lambda functions are serverless too.
+
+
+
+
+
+
+
+
+
+------------------------------------------------------ AWS Lambda Pricing: example
+
+
+• You can find overall pricing information here:
+
+     https://aws.amazon.com/lambda/pricing/
+
+
+• Pay per calls:
+
+     • First 1,000,000 requests are free
+
+     • $0.20 per 1 million requests thereafter ($0.0000002 per request)
+
+
+• Pay per duration: (in increment of 1 ms)
+
+     • 400,000 GB-seconds of compute time per month for FREE
+
+     • == 400,000 seconds if function is 1GB RAM
+
+     • == 3,200,000 seconds if function is 128 MB RAM
+
+     • After that $1.00 for 600,000 GB-seconds
+
+
+• It is usually very cheap to run AWS Lambda so it’s very popular
+
+
+
+
+
+
+
+
+
+------------------------------------------------------ Lambda Hands On
+
+
+-- open lambda in console ---> check how it will work on the intro page 
+
+-- c.o scale seamlessly , to observe how this will work and how it will get scale automatically
+
+-- Lambda responds to events : Once you create Lambda functions, you can configure them to respond to events from a variety of sources. Try sending a mobile notification, streaming data to Lambda, or placing a photo in an S3 bucket.
+
+
+-- Scale seamlessly : Lambda scales up and down automatically to handle your workloads, and you don't pay anything when your code isn't running.
+
+       - * Your first 1 million requests or 400,000 GB-seconds of compute per month are free. Costs in this demo are based on a 128 MB function with a 1 second invocation duration.
+
+
+
+-- choose blue print --> hello world python --> this will give lambda function code --> create function
+
+
+-- create test event and do test and observe the result 
+
+
+
+
+
+
+
+------------------------------------------------------ CloudWatch Events / EventBridge
+
+
+-- how we can integrate CloudWatch Events or EventBridge with Lambda.
+
+-- 2 ways 
+
+
+1 CRON or Rate EventBridge Rule ------------------(Trigger Every 1 hour)------------> AWS Lambda Funchon Perform a task
+
+
+2 CodePipeline EventBridge Rule ------------------(Trigger on State Changes) ------------> AWS Lambda Function Perform a task
+
+
+
+
+
+
+
+
+------------------------------------------------------  CloudWatch Events / EventBridge (Hands ON)
+
+
+
+-- create one function with python 3.9
+
+-- make sure this function is being invoked by EventBridge.
+
+-- Eventbridge --> rule --> create new rule --> Rule type = Schedule --> c.o continue to create rule ---> A schedule that runs at a regular rate, such as every 10 minutes. (1 min)--> choose target as aws lambda fun---> create rule
+
+-- do refresh page of lambda u will see invocation of Eventbridge
+
+-- wait for 1 min --> now check in cloudwatch invocation happens
+
+-- now add print(event) in code and deploy the changes and wait for 1 Min
+
+-- now do check in CW recent logs, u will see the event info
+
+-- do disable our rule 
+
+
+
+
+
+
+
+
+
+
+
+------------------------------------------------------ lambda and S3 Events Notifications
+
+
+• S3:ObjectCreated, S3:ObjectRemoved, S3:ObjectRestore, S3:Replication...
+
+    - So just a reminder on S3 event notifications, it is a way for you to get notified whenever an object is created, removed, restored, when there is a replication happening.
+
+• Object name filtering possible (*.jpg)
+
+    - You can filter by prefix and by suffix. And the use case is, the classic one is to generate thumbnail images of every image uploaded into Amazon S3.
+    
+    • Use case: generate thumbnails of images uploaded to S3
+
+
+-- So you have your events into Amazon S3, and S3 can send it to three things,
+
+
+1 Amazon S3 -------(Events)-------> SNS ---------> SQS
 
  
+EXP : your events into Amazon S3, send to SNS and from an SNS topic, we can do a fan out pattern to send to multiple SQ-Q,  we can sent it into an SQ-Q
 
+
+2 Amazon S3 -------(Events)-------> SQS ---------> Lambda Function
+
+
+EXP : we can sent it into an SQ-Q , and have a Lambda function directly read off that SQ-SQ,
+
+
+3 Amazon S3 -------(Events)-------(async)----------> Lambda Function ----------- (DLQ) ---------> SQS
+
+
+EXP : we could have an Amazon S3 event notification, directly invoke our Lambda function and this is an asynchronous invocation.
+
+- this Lambda function could do whatever it wants with that data, and then in case things go wrong, we can set up a dead-letter queue, for example an SQS, as we've seen from before.
+
+
+
+• S3 event notifications typically deliver events in seconds but can sometimes take a minute or longer
+
+• If two writes are made to a single non- versioned object at the same time, it is possible that only a single event notification will be sent
+
+• If you want to ensure that an event notification is sent for every successful write, you can enable versioning on your bucket.
+
+
+
+
+
+
+
+
+
+------------------------------------------------------ Simple S3 Event Pattern – Metadata Sync
+
+
+  S3 bucket -------------(New file event)------------> lambda (Update metadata table) -----------> DynamoDB Table / Table in RDS
+
+
+EXP : So, here is a simple pattern. An S3 bucket will have a new file event into Lambda. And Lambda function will process that file maybe insert that data into DynamoDB Table or even a table in RDS database.
+
+
+
+
+
+
+
+------------------------------------------------------ lambda and S3 Events Notifications Hands On
+
+
+-- create one lambda function and one s3 bucket , make sure both are in same region
+
+-- s3 buket --> properties --> event notificatin --> create event notification for all object creation
+
+-- So this event notification is enabled to send data into lambda function.
+
+print(event) in code 
+
+
+import json
+
+def lambda_handler(event, context):
+    print(event)
+    # TODO implement
+    return {
+        'statusCode': 200,
+        'body': json.dumps('Hello from Lambda!')
+    }
+
+
+
+-- now do upload a file in the s3 bucket
+
+-- now what's going to happen is that this should trigger an event into my Lambda function and to see whether or not this has worked,
+
+-- lambda --> cloudwatch --> u will see that records have created with all the event info 
+
+
+
+
+
+
+
+
+
+
+------------------------------------------------------ Lambda Execution Role (IAM Role)
+
+
+• Grants the Lambda function permissions to AWS services / resources
+
+• Sample managed policies for Lambda:
+  
+      • AWSLambdaBasicExecutionRole – Upload logs to CloudWatch.
+
+      • AWSLambdaKinesisExecutionRole – Read from Kinesis
+
+      • AWSLambdaDynamoDBExecutionRole – Read from DynamoDB Streams
+
+      • AWSLambdaSQSQueueExecutionRole – Read from SQS
+
+      • AWSLambdaVPCAccessExecutionRole – Deploy Lambda function in VPC
+
+      • AWSXRayDaemonWriteAccess – Upload trace data to X-Ray.
+
+
+
+• When you use an event source mapping to invoke your function, Lambda uses the execution role to read event data.
+
+• Best practice: create one Lambda Execution Role per function
+
+
+
+
+
+
+
+------------------------------------------------------ Lambda Resource Based Policies
+
+
+• Use resource-based policies to give other accounts and AWS services permission to use your Lambda resources
+
+• Similar to S3 bucket policies for S3 bucket
+
+• An IAM principal can access Lambda:
+
+      • if the IAM policy attached to the principal authorizes it (e.g. user access and we have full permissions, so we can access our Lambda function, this is what we've been doing so far,)
+
+      • OR if the resource-based policy authorizes (e.g. service access) , this is more helpful when you have a service to service access.
+
+
+
+• When an AWS service like Amazon S3 calls your Lambda function, the resource-based policy gives it access.
+
+
+
+
+
+
+
+------------------------------------------------------  Lambda Resource Based Policies Hands On
+
+
+--  go to IAM --> search for lambda permissions --:> explore those permissions it have 
+
+
+
+
+
+
+
+
+
+------------------------------------------------------ Lambda Logging & Monitoring
+
+
+-- how Lambda does logging, monitoring, and tracing.
+
+
+• CloudWatch Logs: 
+
+      • AWS Lambda execution logs are stored in AWS CloudWatch Logs
+
+      • Make sure your AWS Lambda function has an execution role with an IAM policy that authorizes writes to CloudWatch Logs , this is included in the Lambda basic execution role as we've seen before.
+
+
+• CloudWatch Metrics: 
+   
+      • AWS Lambda metrics are displayed in AWS CloudWatch Metrics UI or the Lambda UI.
+
+      • they will represent information about your Invocations, Durations, Concurrent Executions
+
+      • Error count, Success Rates, Throttles
+
+      • Async Delivery Failures
+
+      • Iterator Age (Kinesis & DynamoDB Streams)
+
+
+
+
+
+
+
+
+------------------------------------------------------ Lambda Tracing with X-Ray
+
+
+• Enable in Lambda configuration (Active Tracing)
+
+• It will Runs the X-Ray daemon for you
+
+• Use AWS X-Ray SDK in Code
+
+• Ensure Lambda Function has a correct IAM Execution Role
+
+      • The managed policy is called AWSXRayDaemonWriteAccess
+
+
+IMP • Environment variables to communicate with X-Ray
+
+        • _X_AMZN_TRACE_ID: contains the tracing header 
+
+        • AWS_XRAY_CONTEXT_MISSING: by default, LOG_ERROR
+
+ IMP    • AWS_XRAY_DAEMON_ADDRESS: the X-Ray Daemon IP_ADDRESS:PORT
+
+     
+
+
+
+
+
+------------------------------------------------------ Lambda Tracing with X-Ray Hands On
+
+
+-- lambda function ---> configuration --> monitor --> enable active tracing 
+
+-- take s3 event notifications examples ---> write code for success --> upload object --> wait for 5 minutes --> go n check in x-ray console 
+
+
+
+
+
+
+
+
+
+------------------------------------------------------ Lambda Function Improvement
+
+
+
+Lambda Function Configuration
+
+
+• RAM:
+
+     • From 128MB to 10GB in 1MB increments
+
+     • The more RAM you add, the more vCPU credits you get
+
+     • At 1,792 MB of RAM, a function has the equivalent of one full vCPU
+
+     • After 1,792 MB, you get more than one CPU, and need to use multi-threading in your code to benefit from it (up to 6 vCPU)
+
+
+• If your application is CPU-bound (computation heavy), increase RAM
+
+    - So if your application is CPU bound, that means that it has a lot of computations, and you want to improve the performance of your application, 
+    
+    - that means to decrease the amount of time your function will run for, then you need to increase your application,your lambda function RAM.
+
+
+• Timeout: default 3 seconds, maximum is 900 seconds (15 minutes)
+
+    - by default has a timeout of three seconds. That means that if your lambda function runs for more than three seconds, it will error out with a timeout,
+
+    - Anything above 15 minutes is not a good use case for lambda and is something maybe that's going to be better for Fargate, ECS, or EC2.
+
+
+
+
+
+
+------------------------------------------------------ Lambda Execution Context 
+
+
+• The execution context is a temporary runtime environment that initializes any external dependencies of your lambda code
+
+• Great for database connections, HTTP clients, SDK clients...
+
+• The execution context is maintained for some time in anticipation of another Lambda function invocation
+
+• The next function invocation can “re-use” the context to execution time and save time in initializing connections objects
+
+• The execution context includes the /tmp directory
+
+     - which is a space where you can write files and they will be available across executions.
+
+
+
+------------------------------------------------------ Initialize outside the handler
+
+
+BAD : The DB connection is established At every function invocation
+
+
+import json
+import time
+
+def lambda_handler(event, context):
+    connect_to_db()
+  
+    # TODO implement
+    return {
+        'statusCode': 200,
+        'body': json.dumps('Hello from Lambda!')
+    }
+def connect_to_db():
+      time.sleep(3)
+
+
+
+
+GOOD! : The DB connection is established Once And re-used across invocations
+
+import json
+import time
+
+def connect_to_db():
+      time.sleep(3)
+
+
+connect_to_db()
+
+def lambda_handler(event, context):
+   
+  
+    # TODO implement
+    return {
+        'statusCode': 200,
+        'body': json.dumps('Hello from Lambda!')
+    }
+
+
+
+
+
+
+
+------------------------------------------------------ Lambda Functions /tmp space
+
+
+-- what if you need to write some temporary files and reuse them?
+
+ANS : You can use the /tmp space.
+
+• If your Lambda function needs to download a big file to work...
+
+• If your Lambda function needs disk space to perform operations...
+
+• You can use the /tmp directory
+
+• Max size is 10GB
+
+• The directory content remains when the execution context is frozen, providing transient cache that can be used for multiple invocations (helpful to checkpoint your work)
+
+• For permanent persistence of object (non temporary), use S3
+
+• To encrypt content on /tmp, you must generate KMS Data Keys
+
+
+
+
+------------------------------------------------------ Lambda Function Improvement Hands On
+
+
+
+step 1 :
+
+
+-- lambda function --> configuraation --> general configuration --> keep timeout sec = 3 
+
+-- now modify code for this demo 
+
+
+import json
+import time
+
+def lambda_handler(event, context):
+    time.sleep(2)
+    # TODO implement
+    return {
+        'statusCode': 200,
+        'body': json.dumps('Hello from Lambda!')
+    }
+
+
+-- here we make sleep = 2 sec , it will work 'coz we have given timeout sec = 3 , and see the executed time 
+
+-- But what happens if we make the Lambda function sleep five seconds?
+
+-- make sleep(5), do test 
+
+-- the Lambda function will fail. Why? Because it will timeout. So we got an error message here saying, Hey the tasks timed out after three seconds
+
+-- now change timeout = 6 secs in configuration 
+
+-- now u will get response without any error
+
+
+
+Step 2 :
+
+
+------ Last thing to optimize your Lambda function performance is around where you set the initialization of your function.
+
+-- So if you're connecting to a DB, modify code
+
+import json
+import time
+
+def lambda_handler(event, context):
+    connect_to_db()
+  
+    # TODO implement
+    return {
+        'statusCode': 200,
+        'body': json.dumps('Hello from Lambda!')
+    }
+def connect_to_db():
+      time.sleep(3)
+
+
+-- where we connect to the database within the Lambda handler,
+
+-- that means that every time we invoke our function this function connects to DB is going to be run it's going to take three seconds 
+
+-- because it takes a long time to connect your database and then is going to return the results you have.
+
+-- test again , it will take 3 sec again because we are connecting to database every single time, 
+
+
+
+Step 3 :
+
+
+-- instead of doing the connection to the database within the Lambda handler, you do it outside of it.
+
+
+import json
+import time
+
+def connect_to_db():
+      time.sleep(3)
+
+
+connect_to_db()
+
+def lambda_handler(event, context):
+   
+  
+    # TODO implement
+    return {
+        'statusCode': 200,
+        'body': json.dumps('Hello from Lambda!')
+    }
+
+
+
+-- deploy and run the code , at first INIT time it will take 3 sec , then do test again 
+
+-- it will take less time , now my function is much quicker because we've done the database initialization again outside of the function handler.
+
+-- Imagine that instead of here, instead of sleeping, you actually connect to the database and you get a database object out of it that you can use within your Lambda handler
+
+
+
+
+
+
+
+
+
+------------------------------------------------------ Lambda Concurrency
+
+
+
+-------------------- Lambda Concurrency and Throttling
+
+
+-- In Lambda, concurrency is the number of in-flight requests that your function is currently handling. There are two types of concurrency controls available:
+
+
+1 Reserved concurrency – This represents the maximum number of concurrent instances allocated to your function. When a function has reserved concurrency, no other function can use that concurrency. Configuring reserved concurrency for a function incurs no additional charges.
+
+
+2 Provisioned concurrency – This is the number of pre-initialized execution environments allocated to your function. These execution environments are ready to respond immediately to incoming function requests. Configuring provisioned concurrency incurs additional charges to your AWS account.
+
+
+
+
+
+
+-- So the more we invoke our Lambda functions, the more we will have concurrent executions of our Lambda functions. We know this because Lambda can scale very, very easily and fast.
+
+• Concurrency limit: up to 1000 concurrent executions
+
+• Can set a “reserved concurrency” at the function level (=limit)
+
+       EG : this Lambda function can only have "up to 50 concurrent executions.
+
+
+• Each invocation over the concurrency limit will trigger a “Throttle”
+
+• Throttle behavior:
+
+       • If synchronous invocation => return ThrottleError - 429
+
+       • If asynchronous invocation => retry automatically and then go to DLQ
+
+
+• If you need a higher limit, open a support ticket
+
+
+
+
+-------------------- Lambda Concurrency Issue
+
+
+• If you don’t reserve (=limit) concurrency, the following can happen:
+
+IMP : the concurrency limit applies to all the functions in your accounts, and so you have to be careful because if one function goes over the limit, it's possible that your other functions get throttled.
+
+
+
+
+-------------------- Concurrency and Asynchronous Invocations
+
+
+-- let's take the example of S3 event notifications. So we are uploading files into our S3 buckets,
+
+-- and this creates a new file event that will invoke our Lambda functions,
+
+-- say we are putting many, many files at the same time. So we get many, many different Lambda concurrent executions happening.
+
+• If the function doesn't have enough concurrency available to process all events, additional requests are throttled.
+
+• For throttling errors (429) and system errors (500-series), Lambda returns the event to the queue and attempts to run the function again for up to 6 hours. So there's a lot of retries that happens due to the throttling and so on.
+
+       - 'coz it is asynchronous mode
+
+
+• The retry interval increases exponentially from 1 second after the first attempt to a maximum of 5 minutes.
+
+
+
+
+
+-------------------- Cold Starts & Provisioned Concurrency
+
+
+• Cold Start:
+
+      • New instance => code is loaded and code outside the handler run (init)
+
+      • If the init is large (code, dependencies, SDK...) this process can take some time.
+
+      • First request served by new instances has higher latency than the rest , user is unhappy
+
+      - that may impact your users. So if your user is maybe waiting three seconds to get a request response, that may be very, very slow for them and 
+
+      - they may experience a cold start and may be unhappy with your product.
+
+
+• Provisioned Concurrency:
+
+      • Concurrency is allocated before the function is invoked (in advance)
+
+      • So the cold start never happens and all invocations have low latency
+
+      • Application Auto Scaling can manage concurrency (schedule or target utilization),to make sure that you have enough reserved Lambda functions to be ready to be used and minimize this cold start problem.
+
+
+
+• Note:
+ 
+     • Note:cold starts inVPC have been dramatically reduced in Oct & Nov 2019
+
+     - https://aws.amazon.com/blogs/compute/announcing-improved-vpc-networking-for-aws-lambda-functions/
+
+
+
+
+
+-------------------- Reserved and Provisioned Concurrency
+
+
+https://docs.aws.amazon.com/lambda/latest/dg/configuration-concurrency.html
+
+
+
+
+
+
+
+
+
+
+------------------------------------------------------------- Lambda Monitoring – CloudWatch Metrics
+
+
+
+• Invocations – number of times your function is invoked (success/failure)
+
+• Duration – amount of time your function spends processing an event
+
+• Errors – number of invocations that result in a function error
+
+• Throttles – number of invocation requests that are throttled (no concurrency available)
+
+• DeadLetterErrors – number of times Lambda failed to send an event to a DLQ (async invocations)
+
+• IteratorAge – time between when a Stream receives a record and when the Event Source Mapping sends the event to the function (for Event Source Mapping that reads from Stream)
+
+• ConcurrentExecutions – number of function instances that are processing events
+
+
+
+
+
+
+------------------------------------------------------------- Lambda Monitoring – CloudWatch Alarms
+
+
+
+
+• Example 1 – No Lambda Invocations in the last hour using "Invocations" CloudWatch Metric
+
+• Example 2 – When error > 0 using Errors CloudWatch Metric
+
+• Example 3 – When throttles > 0 using Throttles CloudWatch Metric
+
+
+
+
+
+------------------------------------------------------------- Lambda Monitoring – CloudWatch Logs Insights
+
+
+
+• Allows you to search through all your Lambda functions logs
+
+        Example: How many times Lambda function had errors in the last 7 days
+
+
+
+-- Example CloudWatch Logs Insights Queries
+
+
+
+  Query                                                                                                                          Descripcon
+
+
+fields Timestamp, LogLevel, Message | filter LogLevel == "ERR”
+sort @timestamp desc                                                                                                     The last 100 errors
+limit 100
+
+
+
+filter @type = "REPORT”
+| stats sum(strcontains(@message, "Init Duration"))/count(*) * 100 as                                                      Percentage of cold starts in total invocations
+coldStartPct, avg(@duration)by bin(5m)        
+
+
+
+filter @type = "REPORT" and @maxMemoryUsed=@memorySize | statscount_distinct(@requestId) by bin(30m)                         Invocations using 100% of assigned memory
+
+
+avgMemoryUsedPERC,avg(@billedDuration) as avgDurationMSby bin(5m)                                                            Average memory used across invocations
+
+
+filter @message like /Task timed out/ | stats count() by bin(30m)                                                               Invocations that timed out
+
+
+
+
+
+
+------------------------------------------------------------- Lambda Monitoring – Lambda Insights
+
+
+
+• Collects, aggregates, and summarizes:
+
+        • System-level Metrics – CPU time, memory, disk, network
+
+        • Diagnostic Information – cold starts, Lambda worker shutdowns
+
+
+
+• Helps you isolate issues with your Lambda functions and resolve them quickly
+
+• Uses a CloudWatch Lambda Extension (provided as a Lambda layer)
+
+
+
+
+
+
+
+
+
+
+========================================================  EC2 Storage and Data Management - EBS and EFS ========================================================
+
+
+
+
+
+
+------------------------------------------------------------- What’s an EBS Volume?
+
+
+
+• An EBS (Elastic Block Store) Volume is a network drive you can attach to your instances while they run
+
+• It allows your instances to persist data, even after their termination
+
+• They can only be mounted to one instance at a time (at the CCP level)
+
+• They are bound to a specific availability zone
+
+• Analogy:Think of them as a “network USB stick”
+
+• Free tier: 30 GB of free EBS storage of type General Purpose (SSD) or Magnetic per month
+
+
+
+
+
+------------------------------------------------------------- EBS Volume
+
+
+• It’s a network drive (i.e. not a physical drive)
+
+        • It uses the network to communicate the instance, which means there might be a bit of latency
+
+        • It can be detached from an EC2 instance and attached to another one quickly
+
+
+
+• It’s locked to an Availability Zone (AZ)
+
+        • An EBS Volume in us-east-1a cannot be attached to us-east-1b
+
+        • To move a volume across, you first need to snapshot it
+
+
+• Have a provisioned capacity (size in GBs, and IOPS)
+
+        • You get billed for all the provisioned capacity
+
+        • You can increase the capacity of the drive over time
+
+
+
+
+
+
+------------------------------------------------------------- DeleteOnTermination
+
+
+
+NOTE : if u terminate the instance all ur root volumes get terminated by default coz, "delete on termination" is checked/enabled / Yes
+
+-  if u want to retain the root volume do uncheck  "delete on termination" while launching te ec2 instance 
+
+- if u terminate ec2 , by default "additional volume will not be deleted coz "DOT" is unchecked/disabled/No
+
+
+========= IMP : If the instance is already running, you can set DeleteOnTermination to False using the "command line."
+    
+EG : To modify the deleteOnTermination attribute of the root volume through command line 
+
+-- The following modify-instance-attribute example sets the deleteOnTermination attribute for the root volume of the specified Amazon EBS-backed instance to false. By default, this attribute is true for the root volume.
+
+     cmd : 
+
+     aws ec2 modify-instance-attribute --instance-id i-1234567890abcdef0 --block-device-mappings "[{\"DeviceName\": \"/dev/sda1\",\"Ebs\":{\"DeleteOnTermination\":false}}]"
+
+      This command produces no output
+
+
+
+
+
+
+------------------------------------------------------------- EC2 Instance Store
+
+
+• EBS volumes are network drives with good but “limited” performance
+
+• If you need a high-performance hardware disk, use EC2 Instance Store
+
+• Better I/O performance
+
+• EC2 Instance Store lose their storage if they’re stopped (ephemeral)
+
+• Good for buffer / cache / scratch data / temporary content
+
+• Risk of data loss if hardware fails
+
+• Backups and Replication are your responsibility
+
+
+
+
+
+
+------------------------------------------------------------- EBS Volume Types 
+
+
+
+
+• EBS Volumes come in 6 types
+
+        • gp2 / gp3 (SSD): General purpose SSD volume that balances price and performance for a wide variety of workloads
+
+        • io1 / io2 Block Express (SSD): Highest-performance SSD volume for mission-critical low-latency or high-throughput workloads
+
+        • st1 (HDD): Low cost HDD volume designed for frequently accessed, throughput- intensive workloads
+
+        • sc1 (HDD): Lowest cost HDD volume designed for less frequently accessed workloads
+
+
+
+• EBS Volumes are characterized in Size | Throughput | IOPS (I/O Ops Per Sec)
+
+• When in doubt always consult the AWS documentation – it’s good!
+
+• Only gp2/gp3 and io1/io2 Block Express can be used as boot volumes
+
+
+
+
+------------------------------------------------------------- EBS Volume Types Use cases
+
+
+
+1 General Purpose SSD
+
+        • Cost effective storage, low-latency
+
+        • System boot volumes,Virtual desktops, Development and test environments
+
+        • 1 GiB - 16TiB
+
+        • gp3:
+
+                • Baseline of 3,000 IOPS and throughput of 125 MiB/s
+
+                • Can increase IOPS up to 16,000 and throughput up to 1000 MiB/s independently
+
+        • gp2:
+
+                • Small gp2 volumes can burst IOPS to 3,000
+
+                • Size of the volume and IOPS are linked, max IOPS is 16,000
+
+                • 3 IOPS per GB, means at 5,334 GB we are at the max IOPS        
+
+
+
+
+
+2 Provisioned IOPS (PIOPS) SSD
+
+
+
+
+        • Critical business applications with sustained IOPS performance
+
+        • Or applications that need more than 16,000 IOPS
+
+        • Great for databases workloads (sensitive to storage perf and consistency)
+
+        • io1 (4 GiB - 16TiB):
+
+                • Max PIOPS: 64,000 for Nitro EC2 instances & 32,000 for other
+
+                • Can increase PIOPS independently from storage size
+
+
+        • io2 Block Express (4 GiB – 64 TiB):
+
+                • Sub-millisecond latency
+
+                • Max PIOPS: 256,000 with an IOPS:GiB ratio of 1,000:1
+
+
+        • Supports EBS Multi-attach
+
+
+
+
+3 Hard Disk Drives (HDD)
+
+        • Cannot be a boot volume
+
+        • 125 GiB to 16TiB
+
+        • Throughput Optimized HDD (st1)
+
+                • Big Data, Data Warehouses, Log Processing
+                • Max throughput 500 MiB/s – max IOPS 500
+
+        • Cold HDD (sc1):
+
+                • For data that is infrequently accessed
+                • Scenarios where lowest cost is important
+                • Max throughput 250 MiB/s – max IOPS 250
+
+
+
+
+
+
+
+------------------------------------------------------------- EBS Multi-Attach – io1/io2 family
+
+
+
+
+• Attach the same EBS volume to multiple EC2 instances in the same AZ
+
+• Each instance has full read & write permissions to the high-performance volume
+
+• Use case:
+
+        • Achieve higher application availability in clustered Linux applications (ex:Teradata)
+
+        • Applications must manage concurrent write operations
+
+• Up to 16 EC2 Instances at a time
+
+- this Multi-Attach feature is only available from within a specified availability zone, of course. It doesn't allow you to attach an EBS volume from one AZ to another AZ.
+
+• Must use a file system that’s cluster-aware (not XFS, EXT4, etc...)
+
+
+
+
+
+
+
+
+------------------------------------------------------------- EBS Volume Resizing
+
+
+
+• You can only increase the EBS volumes:
+
+        • Size (any volume type)
+
+        • IOPS (only in IO1)
+
+
+• After resizing an EBS volume, you need to repartition your drive
+
+        - That means that after you increase the size of your volume, there's gonna be more size available, but you're EC2 instance will not know about it until you repartition your drive to tell your instance to use that new space.
+
+
+• After increasing the size, it’s possible for the volume to be in a long time in the “optimisation” phase.The volume is still usable
+
+• You can’t decrease the size of your EBS volume ((create another smaller volume then migrate data))
+
+
+
+
+
+------------------------------------------------------------- EBS Volume Resizing Hands ON 
+
+
+-- create one ec2 instace -> connect ec2 instance , then do 
+
+-- lsblk   , it will show you like this 
+
+NAME      MAJ:MIN RM SIZE RO TYPE MOUNTPOINTS
+xvda      202:0    0   8G  0 disk 
+├─xvda1   202:1    0   8G  0 part /
+├─xvda127 259:0    0   1M  0 part 
+└─xvda128 259:1    0  10M  0 part /boot/efi
+
+
+-- now is to go and extend my volume 'cause we want a bigger volume.
+
+-- go to volumes in consle --> select volume --> Actions --> modify change from 8 to 10 GiB --> modify 
+
+-- now type lsblk , u can able to see 10G volume and 8G comes under partition
+
+-- df -h 
+
+Filesystem      Size  Used Avail Use% Mounted on
+devtmpfs        4.0M     0  4.0M   0% /dev
+tmpfs           475M     0  475M   0% /dev/shm
+tmpfs           190M  444K  190M   1% /run
+/dev/xvda1      8.0G  1.6G  6.4G  20% /
+tmpfs           475M     0  475M   0% /tmp
+/dev/xvda128     10M  1.3M  8.7M  13% /boot/efi
+tmpfs            95M     0   95M   0% /run/user/1000
+
+
+-- as you can see again, it's eight gigabytes for X V D A 1. after doing df -h 
+
+-- So we need to perform some operations to use the full 10 gigabytes on my instance.
+
+-- our volume is xvda , df -h it is in /dev/xvda1 so give this cmnd 
+
+        sudo growpart /dev/xvda 1 
+
+-- it will give like this 
+
+        CHANGED: partition=1 start=24576 old: size=16752607 end=16777183 new: size=20946911 end=20971487
+
+
+-- do lsblk 
+
+
+NAME      MAJ:MIN RM SIZE RO TYPE MOUNTPOINTS
+xvda      202:0    0  10G  0 disk 
+├─xvda1   202:1    0  10G  0 part /
+├─xvda127 259:0    0   1M  0 part 
+└─xvda128 259:1    0  10M  0 part /boot/efi
+
+
+-- as you can see now, we have 10 gigabytes for the main partition, which is the same size as the disc.
+
+-- do df -h 
+
+
+Filesystem      Size  Used Avail Use% Mounted on
+devtmpfs        4.0M     0  4.0M   0% /dev
+tmpfs           475M     0  475M   0% /dev/shm
+tmpfs           190M  444K  190M   1% /run
+/dev/xvda1      8.0G  1.6G  6.4G  20% /
+tmpfs           475M     0  475M   0% /tmp
+/dev/xvda128     10M  1.3M  8.7M  13% /boot/efi
+tmpfs            95M     0   95M   0% /run/user/1000
+[ec2-user@ip-172-31-15-215 ~]$ 
+
+
+      - we only see eight gigabytes. So to fix this, we can run some more commands, or we just reboot it from the console.
+
+
+
+-- after doing reeboot , enter lsblk and df -h cmnds u can get 
+
+
+Filesystem      Size  Used Avail Use% Mounted on
+devtmpfs        4.0M     0  4.0M   0% /dev
+tmpfs           475M     0  475M   0% /dev/shm
+tmpfs           190M  480K  190M   1% /run
+/dev/xvda1       10G  1.6G  8.4G  16% /
+tmpfs           475M     0  475M   0% /tmp
+/dev/xvda128     10M  1.3M  8.7M  13% /boot/efi
+tmpfs            95M     0   95M   0% /run/user/1000
+
+
+
+
+
+
+
+------------------------------------------------------------- EBS Snapshots
+
+
+
+• Make a backup (snapshot) of your EBS volume at a point in time
+
+• Not necessary to detach volume to do snapshot, but recommended
+
+• Can copy snapshots across AZ or Region
+
+
+
+
+
+------------------------------------------------------------- Amazon Data Lifecycle Manager
+
+
+• Automate the creation, retention, and deletion of EBS snapshots and EBS-backed AMIs
+
+• Schedule backups, cross-account snapshot copies, delete outdated backups, ...
+
+• Uses resource tags to identify the resources (EC2 instances, EBS volumes)
+
+• Can’t be used to manage snapshots/AMIs created outside DLM
+
+• Can’t be used to manage instance-store backed AMIs
+
+
+
+
+
+
+------------------------------------------------------------- EBS Snapshots – Fast Snapshot Restore (FSR)
+
+
+
+-- one little feature that could be really really helpful but really really expensive
+
+• EBS Snapshots stored in S3, So you don't see them, but this is how they're stored internally in AWS.
+
+• By default, there’s a latency of I/O operations the first time each block is accessed (block must be pulled from S3)
+
+• Solution: force the initialization of the entire volume (using the dd or fio command), 
+
+        - so the idea is that you start an EC2 instance, you attach an EBS volume, and you read the entire volume. Then therefore, all the blocks will be accessed and initiated. 
+        
+        - or you can enable FSR
+
+• FSR helps you to create a volume from a snapshot that is fully initialized at creation (no I/O latency)
+
+• Enabled for a snapshot in a particular AZ (billed per minute – very expensive $$$) around $500 per month.
+
+• Can be enabled on snapshots created by Data Lifecycle Manager
+
+
+
+
+
+
+------------------------------------------------------------- EBS Snapshots Features
+
+
+
+• EBS Snapshot Archive
+
+        • Move a Snapshot to an ”archive tier” that is 75% cheaper
+
+        • Takes within 24 to 72 hours for restoring the archive
+
+
+• Recycle Bin for EBS Snapshots
+
+        • Setup rules to retain deleted snapshots so you can recover them after an accidental deletion
+
+        • Specify retention (from 1 day to 1 year)
+
+
+
+
+
+------------------------------------------------------------- EBS Snapshots Hands ON 
+
+
+
+-- volumes --> select volume --> actions --> create snapshots --> u can see not encrypted coz main volm is not encrypted --> create snapshot
+
+-- go to snapshots 
+        
+        - we can create a volume back from the snapshot if you want 
+        
+        - we can change the availability zone if you wanted to.
+
+        - So my main volume was in eu-west-1a. But thanks to the Restore Snapchat option, I can move my volume to eu-west-1b.
+
+        - we can enable encryption for this volume if you wanted to encrypt our EBS volume, the new one with a KMS key , if you wan to do emcryption 
+
+
+-- snapshots --> actions --> copy snapshots 
+
+        - you can copy it into the same region or a different region for disaster recovery purposes.
+
+        - when we copy the snapshots, we can encrypt it with a KMS key if we wanted to.
+
+        - then any volumes created from the snapshots would of course be encrypted as well.
+
+        - Manage fast snapshot restore 
+
+                - So the idea is that when you want to restore a huge volume, then instead of mounting it and then reading all the blocks, you can enable fast snapshot restore.
+
+        - Storage Tier 
+
+                - my storage tier is currently standard. So that means that the storage tier is standard, but I can actually move the storage tier        
+
+                - so we can archive the snapshots. And when you archive a snapshot, it's going to be in the archived tier which is costing you less money,
+
+                - But if you do so, then it's going to take a little bit of time to restore from the snapshot. So you save on costs, but then if you wanna restore from snapshot, it will take longer.
+
+
+
+
+
+-- now go to DLM in console 
+
+        - So Lifecycle Manager allows you to create an EBS snapshot policy
+
+                - only the volumes that have been marked with the tags are going to be archived.
+
+                - create schedule as u want 
+
+
+-- recycle Bin 
+
+        - create rule --> Resource type = EBS or AMI --> apply to all resource --> Rule lock settings = lock /unlock as u want(So you can unlock it, which that means that this rule can be modified at any point by anyone or you can lock it and say that this rule will be locked for a specific delay period and no one can change it.) --> create 
+
+        - now do snaphot delete in console 
+
+        - now to recycle bin and check Resources , u can able to see the snapshots and now do retain if you want 
+
+        
 
 
 

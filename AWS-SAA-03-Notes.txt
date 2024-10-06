@@ -2543,7 +2543,7 @@ it onlt evaluates
 • A risk score is associated with all vulnerabilities for prioritization
 
 
-=========================================================AWS Macie ===========================
+========================================================= AWS Macie ===========================
 
 • Amazon Macie is a fully managed data security and data privacy service that uses machine learning and pattern matching to discover and protect your sensitive data in AWS.
 
@@ -3723,6 +3723,10 @@ echo "<h1>Hello World from $(hostname -f)</h1>" > /var/www/html/index.html
 
 -- setup rules to retain deleted snpshots so u can recover them after accidental deletion, (retention period 1 day to 1 yr)
 
+
+
+
+
 ------------Fast snapshot Restore(FSR)
 
 -- it is bilable
@@ -4369,6 +4373,9 @@ EXP :
 
 --------------------------------------------------------------------------- types of L.B's
 
+
+
+
 -------------------- 1 classic load balancer : 2009
 
 • Suppor ts TCP (Layer 4), HTTP & HTTPS (Layer 7)
@@ -4952,6 +4959,10 @@ IMP to know
 
 
 =====================================SSL/TLS - Basics ==============================
+
+
+
+
 
 • An SSL Certificate allows traffic between your clients and your load balancer to be encrypted in transit (in-flight encryption)
 
@@ -5828,7 +5839,7 @@ IMP : When rebalancing, Amazon EC2 Auto Scaling launches new instances before te
 
 Elastic Load Balancing monitors whether instances are available to handle requests. When it reports an unhealthy instance, EC2 Auto Scaling can replace it on its next periodic check.
 
--- here we need to use sns ( simle notification servie) 
+-- here we need to use sns ( simple notification servie) 
 
 -- in SNS , we have TOPIC and SUBSCRIPTION 
 
@@ -5971,7 +5982,16 @@ You can use predictive scaling to improve availability for applications whose wo
 As a best practice, consider using both dynamic scaling and predictive scaling. Predictive scaling uses forecasts to make decisions about when to add capacity according to a metric's historical trends while dynamic scaling makes adjustments in response to real-time changes in a metric's value.
 
 
+
+
+
+
+
+
+
 ------------- Good metrics to scale on :
+
+
 
 -- CPU utilization       : AVg CPU across ur instance 
 -- REquestCountPertarget : to makesure the no.of request per ec2 instance is stable
