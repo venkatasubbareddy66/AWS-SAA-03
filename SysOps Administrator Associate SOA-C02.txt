@@ -5680,3 +5680,405 @@ tmpfs            95M     0   95M   0% /run/user/1000
 
 
 
+
+
+------------------------------------------------------------- EBS Migration
+
+
+
+• EBS Volumes are only locked to a specific AZ
+
+• To migrate it to a different AZ (or region):
+
+        • Snapshot the volume
+
+        • (optional) Copy the volume to a different region
+
+        • Create a volume from the snapshot in the AZ of your choice
+
+
+
+
+
+------------------------------------------------------------- EBS Encryption
+
+
+• When you create an encrypted EBS volume, you get the following:
+
+        • Data at rest is encrypted inside the volume
+
+        • All the data in flight moving between the instance and the volume is encrypted
+
+        • All snapshots are encrypted
+
+        • All volumes created from the snapshot
+
+
+• Encryption and decryption are handled transparently (you have nothing to do) It's all handled by EC2 and EBS behind the scenes.
+
+• Encryption has a minimal impact on latency
+
+• EBS Encryption leverages keys from KMS (AES-256)
+
+• Copying an unencrypted snapshot allows encryption
+
+• Snapshots of encrypted volumes are encrypted
+
+
+
+
+
+------------------------------------------------------------- Encryption: encrypt an unencrypted EBS volume 
+
+
+
+• Create an EBS snapshot of the volume
+
+• Encrypt the EBS snapshot ( using copy )
+
+• Create new ebs volume from the snapshot ( the volume will also be encrypted )
+
+• Now you can attach the encrypted volume to the original instance
+
+
+
+
+
+------------------------------------------------------------- Encryption: encrypt an unencrypted EBS volume Hands ON 
+
+
+
+
+-- any snapshots encrypted from a non-encrypted EBS volume, will be not encrypted.
+
+-- create volm withput encryption 
+
+-- now take snapshot from the volm u have created 
+
+-- this snapshot, as we observe is not encrypted.
+
+-- so, to create an encrypted snapshot, now, what you have to do is to do action --> copy snapshot
+
+-- when you copy the snapshots, you have the option right here to enable encryption into the same destination region.
+
+-- from this encrypted snapshots that is now completed I can create a volume.
+
+-- We saw how we can encrypt one EBS volume this way, by going through a snapshot copying and so on.
+
+
+-- There's a shortcut.
+
+        - go to unencrypted snapshot in console --> create volumes from snapshot
+
+        - you can actually on the fly enable encryption for the EBS volume directly from here,
+
+        - select an EBS key, and you would create an encrypted EBS volume this way through a unencrypted snapshots.
+
+
+
+
+
+
+
+------------------------------------------------------------- Amazon EFS – Elastic File System 
+
+
+
+• Managed NFS (network file system) that can be mounted on many EC2
+
+• EFS works with EC2 instances in multi-AZ
+
+• Highly available, scalable, expensive (3x gp2), pay per use
+
+• Use cases: content management, web serving, data sharing,Wordpress
+
+• Uses NFSv4.1 protocol
+
+• Uses security group to control access to EFS
+
+• Compatible with Linux based AMI (not Windows)
+
+• Encryption at rest using KMS
+
+
+
+
+• POSIX file system (~Linux) that has a standard file API
+
+• File system scales automatically, pay-per-use, no capacity planning!
+
+
+
+
+
+------------------------------------------------------------- EFS – Performance & Storage Classes
+
+
+
+• EFS Scale
+
+        • 1000s of concurrent NFS clients, 10 GB+ /s throughput
+
+        • Grow to Petabyte-scale network file system, automatically
+
+
+• Performance Mode (set at EFS creation time)
+
+        • General Purpose (default) – latency-sensitive use cases (web server, CMS, etc...)
+
+        • Max I/O – higher latency, throughput, highly parallel (big data, media processing)
+
+
+• Throughput Mode
+
+        • Bursting – 1TB = 50MiB/s + burst of up to 100MiB/s
+
+        • Provisioned – set your throughput regardless of storage size, ex: 1 GiB/s for 1 TB storage
+
+        • Elastic – automatically scales throughput up or down based on your workloads
+
+                • Upto 3GiB/s for reads and 1GiB/s for writes
+
+                • Used for unpredictable work loads
+
+
+
+
+
+
+
+------------------------------------------------------------- EFS – Storage Classes
+
+
+
+• Storage Tiers (lifecycle management feature – move file after N days)
+
+        • Standard: for frequently accessed files price to store.
+
+        • Archive: rarely accessed data (few times each year), 50% cheaper
+
+        • Archive: rarely accessed data (few times each year), 50% cheaper
+
+        • Implement lifecycle policies to move files between storage tiers
+
+
+• Availability and durability
+
+        • Standard: Multi-AZ, greatforprod
+
+        • OneZone: OneAZ, great for dev, backup enabled by default, compatible with IA (EFS One Zone-IA)
+
+
+
+
+
+
+
+
+------------------------------------------------------------- EFS Hands ON 
+
+
+
+
+
+-- create EFS 
+
+-- throughput : speed b/w ec2 and EFS 
+
+-- EFS is regional 
+
+-- Replicatio is posssible in EFS , cost calulated how much data is transferred 
+
+-- launch 1 ec2 instances 
+
+-- in S.G add NFS inbound rule 
+
+-- connect instance 1 and follow some commands 
+
+1  sudo -s 
+
+2  yum install -y nfs-utils
+
+3   mkdir efs  --- create one folder 
+
+4   now do mount with folder 
+
+
+mount -t nfs4 fs-0c90179e0f0b6c46b.efs.ap-south-1.amazonaws.com:/ efs/
+
+
+explanation :   fs-0c90179e0f0b6c46b.efs.ap-south-1.amazonaws.com  -- u wil get from efs dns name    and efs is folder name 
+
+-- cd efs 
+
+-- now create some files here 
+
+
+---- now create 2nd instance in diff A.Z 
+
+-- follow the same steps , here u can give mkdir names anything u want 
+
+-- once u do ls u will get same filesin diff A.Z zone instances also 
+
+-- create one file new in ec2 1 and check in 2nd ec2 u will get that file 
+
+-- same for deletion also 
+
+-- this is how u do with Efs amd u can also do repliction EFS 
+
+
+
+
+
+
+
+------------------------------------------------------------- EBS vs EFS – Elastic Block Storage
+
+
+EBS vs EFS – Elastic Block Storage 
+
+
+• EBS volumes...
+
+    • one instance (except multi-attach io1/io2)
+    • are locked at the Availability Zone (AZ) level 
+    • gp2: IO increases if the disk size increases
+    • gp3 & io1: can increase IO independently
+
+
+
+• To migrate an EBS volume across AZ
+
+   • Take a snapshot
+   • Restore the snapshot to another AZ
+   • EBS backups use IO and you shouldn’t run them while your application is handling a lot of traffic
+
+• Root EBS Volumes of instances get terminated by default if the EC2 instance gets terminated. (you can disable that by using "DeleteOnTermination")
+
+
+
+
+EBS vs EFS – Elastic File System
+
+• Mounting 100s of instances across AZ 
+
+• EFS share website files (WordPress)
+
+• Only for Linux Instances (POSIX)
+
+• EFS has a higher price point than EBS 
+
+• Can leverage EFS-IA for cost savings
+
+
+
+
+
+
+
+------------------------------------------------------------- EFS – Access Points
+
+
+
+
+
+• Easily manage applications access to NFS environments
+
+• Enforce a POSIX user and group to use when accessing the file system
+
+• Restrict access to a directory within the file system and optionally specify a different root directory
+
+• Can restrict access from NFS clients using IAM policies
+
+
+
+-- So here's an example, we have an EFS file system that's going to be shared across your entire company but has different folders under the routes.
+
+-- There is a data folder, the secret folder and the config folder, and we want different users to access different parts of your EFS file system.
+
+
+
+
+
+
+------------------------------------------------------------- EFS - Operations
+
+
+
+
+• Operations that can be done in place:
+
+        • Lifecycle Policy (enable IA or change IA settings)
+
+        • Throughput Mode and Provisioned Throughput Numbers
+
+        • EFS Access Points
+
+
+-- But, some operations require a full migration of your EFS file system
+
+• Operations that require a migration using DataSync (replicates all file attributes and metadata)
+
+        • Migration to encrypted EFS
+
+        • Performance Mode (e.g. Max IO)
+
+
+
+
+-- So let's have an example.
+
+        - we have one source file system and destination file system which is encrypted.
+
+        - so to migrate between the two, using the DataSync service,
+
+        - then you can migrate your E2 instances from the first file system to the second file system.
+
+
+
+
+
+
+-------------------------------------------------------------  EFS – CloudWatch Metrics
+
+
+
+• PercentIOLimit
+
+        • How close the file system reaching the I/O limit(General Purpose)        
+
+        • If at 100%, move to Max I/O (migration) to increase your I/O capacity of your EFS file system.
+
+        - So, though if you wanted to enable Max I/O, if you remember, you would have to perform a migration because this operation cannot be done in place.
+
+        - So that means creating a new file system with a Max I/O already enabled and then migrating from the previous file system to the new file system using a data sync service.        
+
+
+• BurstCreditBalance
+
+         • The number of burst credits the file system can use to achieve higher throughput levels
+
+
+• StorageBytes
+
+        • File system’s size in bytes (15 minutes interval)
+
+        • Dimensions: Standard, IA,Total (Standard + IA)
+
+
+
+-- go and check efs monitoiring tab 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
