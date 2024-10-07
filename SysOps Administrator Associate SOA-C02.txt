@@ -6079,6 +6079,16 @@ EBS vs EFS – Elastic File System
 
 
 
+======================================================== Amazon S3 ========================================================
 
 
+
+
+• Amazon S3 is one of the main building blocks of AWS
+
+• It’s advertised as ”infinitely scaling” storage
+
+• Many websites use Amazon S3 as a backbone
+
+• Many AWS services use Amazon S3 as an integration as well
 
