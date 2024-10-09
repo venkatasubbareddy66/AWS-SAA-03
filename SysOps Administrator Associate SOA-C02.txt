@@ -6490,3 +6490,433 @@ https://aws.amazon.com/blogs/security/how-to-prevent-uploads-of-unencrypted-obje
 
 
 
+------------------------------------------------------------- Amazon S3 – Static Website Hosting
+
+
+• S3 can host static websites and have them accessible on the Internet
+
+• The website URL will be (depending on the region)
+
+        • http://bucket-name.s3-website-aws-region.amazonaws.com 
+
+        OR
+
+        • http://bucket-name.s3-website.aws-region.amazonaws.com
+
+
+• If you get a 403 Forbidden error, make sure the bucket policy allows public reads!
+
+
+
+
+
+
+------------------------------------------------------------- Amazon S3 - Versioning
+
+
+
+• You can version your files in Amazon S3
+
+• It is enabled at the bucket level
+
+• Same key overwrite will change the “version”: 1, 2, 3....
+
+• It is best practice to version your buckets
+
+        • Protect against unintended deletes (ability to restore a version)
+
+        • Easy roll back to previous version
+
+
+• Notes:
+
+        • Any file that is not versioned prior to enabling versioning will have version “null”
+
+        • Suspending versioning does not delete the previous versions
+
+
+
+
+
+
+-- when u have critical data it is help to bacjup
+
+-- Versionong is like a backup tool 
+
+-- by deafult versioning is not enabled 
+
+-- this cna be also do while creating bucket 
+
+-- enable on bucket level and applied to objects 
+
+-- Version ID is always Unique 
+
+-- if u delete original ,it will have marker (delete marker) applied to  new version 
+
+-- to restore object , delete the mrker and ur object is restored automatically (latest version) 
+
+-- but if u want to previous version to be restored , u have to download it nd upload it again 
+
+-- it is possible to download version files 
+
+-- it is not posible to download delete marker , u can only delete it 
+
+-- delete marker is applied to only latetst version, not for old/previous versions 
+
+-- once u can enable versioning u can't disable it but u can do suspend it 
+
+-- u can not restore the files when u suspend the versioning 
+
+-- when the version is suspended it wont effect on previus objects but coming objects get effected 
+
+-- It is enabled at the bucket level
+
+
+----IMP POINTS 
+
+-- min object size = 0 bytes , MAx objct size = 5TB
+
+-- you can have unlimited number of objects having 5TB each in a single bucket 
+
+-- if u have file 5TB u can not upload it in one shot , so in aws recommened MPU(multi-part-upload) 
+
+-- this will done through the CLI not from the console 
+
+-- aws recommended , if u have object > 100MB , go for MPU 
+
+
+
+
+
+
+
+------------------------------------------------------------- Amazon S3 - Versioning Hands On 
+
+
+
+
+-- enable versioning for bucket 
+
+-- upload same 2 images again
+
+-- once u toggled show versions options t will show u L with image which means the latest 
+
+-- do delete image 1 
+
+-- now select versions and delete the delete marker u will get back u images 
+
+-- this is how u will get back files if u enebled versioning 
+
+
+-- Bucket Versioning : properties 
+
+-------------IMP : ------------- MFA delete : additional layer of security that requries MFA for changing bucket versioning settings and permaenetly delete object versions . this feature can be enabled CLI only 
+
+
+-- -- in S3 , it is possible suspend the versioning 
+
+-- once u suspend versioning u cant get back  the files once u dlete 
+
+-- even though u can see delete marker options but u can not get back those files once u delete , when u suspend the versioning 
+
+-- existing objects do not have any impact once u suspend the vesioning 
+
+eg: for image 1 u have enebled version previously and nxt suspend versioning once u dleete image 1 u will get back those image co existing files wont get any effect 
+
+
+IMP :  for image 3 nad 4 u did not enable versioning 
+
+-- now do enable versioning , now dlete image 4 and go n check enable versions dlete marker u will get back ur image 4 , coz now versioning is enabled 
+
+-- once the enable is enabled u will get back all files , irresective of uploading time with versioning enable time suspended time 
+
+
+
+
+
+
+
+
+
+------------------------------------------------------------- Amazon S3 – Replication (CRR & SRR) 
+
+
+
+• Must enable Versioning in source and destination buckets
+
+• Cross-Region Replication (CRR)
+
+• Same-Region Replication (SRR)
+
+• Buckets can be in different AWS accounts
+
+• Copying is asynchronous
+
+• Must give proper IAM permissions to S3
+
+
+• Use cases:
+
+        • CRR – compliance, lower latency access, replication across accounts
+
+        • SRR – log aggregation, live replication between production and test accounts
+
+
+
+• After you enable Replication, only new objects are replicated
+
+• Optionally, you can replicate existing objects using S3 Batch Replication
+
+        • Replicates existing objects and objects that failed replication
+
+
+• For DELETE operations
+
+        • Can replicate delete markers from source to target (optional setting)
+
+        • Deletions with a version ID are not replicated (to avoid malicious deletes)
+
+
+• There is no “chaining” of replication
+
+        • If bucket 1 has replication into bucket 2, which has replication into bucket 3
+
+        • Then objects created in bucket 1 are not replicated to bucket 3
+
+
+
+
+
+
+
+------------------------------------------------------------- CRR(Cross-Region Replication)
+
+
+
+
+-- u have bucket in mumbai and u have another bucket in singapore 
+
+-- whatever the thing in b1 it will get relicate in singapore also 
+
+-- for this u have to create CRR rules in Bucket 1
+
+-- CRR is not enebled by default 
+
+-- it is BUcket-level
+
+-- CRR can be shared to different Accounts possible 
+
+
+Cost : cross-region replication incurs request and transfer fees of $0.005/1000 requests and $0.02/1GB transferred. Standard storage pricing on the replicated side apply and differ by region.  Currently for US locations N. California is 10-60% more expensive than N. Virginia and Oregon, depending on S3, S3-IA, or Glacier.
+
+EG : For an example, replicating 2500GB data containing 5000files breaks down as follows:
+
+5 * $0.005 + 2500 * $0.02 = $50.025 access & transfer fees
+
+
+-------------------------------- LAB 
+
+Relication Rules for CRR
+
+-- one bucket files in bk1 , this files replicate to bkt 2
+
+-- go to management 
+
+-- enable versioning is maditory 
+
+--public or private it is does not matter 
+
+-- create 2 buckets in two different regions 
+
+-- go to bkt 1 -->> management n create relication rules select destination path 
+
+-- ask aws to create new IAM role
+
+-- now upload some file sin bkt 1 n do refresh in blt 2 u will get same files in bkt 2 
+
+
+-- if u get delete object in bkt 1 , it won't get delete in the bucket 2 (same for CRR and SRR)
+
+
+============SRR(same region replication) ==================
+
+
+-- if u are replicating same region 
+
+-- it is bucket level 
+
+
+NOTE : versioning is manditory to have CRR/SRR
+
+
+VERY IMP for EPV :
+
+
+-- if u want to get logs of ur bucket u have to enable " server Access Logs"
+
+-- object level logs can be captured in CloudTrail
+
+
+
+
+
+
+
+
+-------------------------------------------------------------  S3 Storage Classes
+
+
+
+• Amazon S3 Standard - General Purpose
+• Amazon S3 Standard-Infrequent Access (IA) 
+• Amazon S3 One Zone-Infrequent Access
+• Amazon S3 Glacier Instant Retrieval
+• Amazon S3 Glacier Flexible Retrieval
+• Amazon S3 Glacier Deep Archive
+• Amazon S3 Intelligent Tiering
+
+
+
+• Can move between classes manually or using S3 Lifecycle configurations
+
+
+
+
+
+------------------------------------------------------------- S3 Durability and Availability
+
+
+
+• Durability:
+
+        • High durability (99.999999999%, 11 9’s) of objects across multiple AZ
+
+        • If you store 10,000,000 objects with Amazon S3, you can on average expect to
+
+        incur a loss of a single object once every 10,000 years
+
+        • Same for all storage classes
+
+
+• Availability:
+
+        • Measures how readily available a service is
+
+        • Varies depending on storage class
+
+        • Example: S3 standard has 99.99% availability = not available 53 minutes a year
+
+
+
+
+
+
+------------------------------------------------------------- S3 Standard – General Purpose
+
+
+
+
+• 99.99% Availability
+• Used for frequently accessed data
+• Low latency and high throughput
+• Sustain 2 concurrent facility failures
+
+
+• Use Cases: Big Data analytics, mobile & gaming applications, content distribution...
+
+
+
+
+
+
+------------------------------------------------------------- S3 Storage Classes – Infrequent Access
+
+
+• For data that is less frequently accessed, but requires rapid access when needed
+
+• Lower cost than S3 Standard
+
+
+• Amazon S3 Standard-Infrequent Access (S3 Standard-IA)
+
+        • 99.9% Availability
+
+        • Use cases: Disaster Recovery, backups
+
+
+• Amazon S3 One Zone-Infrequent Access (S3 One Zone-IA)
+
+        • High durability (99.999999999%) in a single AZ; data lost when AZ is destroyed
+
+        • 99.5% Availability
+
+        • Use Cases: Storing secondary backup copies of on-premises data, or data you can recreate
+
+
+
+
+
+------------------------------------------------------------- Amazon S3 Glacier Storage Classes
+
+
+
+• Low-cost object storage meant for archiving / backup
+
+• Pricing: price for storage + object retrieval cost
+
+
+• Amazon S3 Glacier Instant Retrieval
+
+        • Millisecond retrieval, great for data accessed once a quarter
+
+        • Minimum storage duration of 90 days
+
+
+• Amazon S3 Glacier Flexible Retrieval (formerly Amazon S3 Glacier):
+
+        • Expedited (1 to 5 minutes), Standard (3 to 5 hours), Bulk (5 to 12 hours) – free
+
+        • Minimum storage duration of 90 days
+
+
+• Amazon S3 Glacier Deep Archive – for long term storage:
+
+        • Standard (12 hours), Bulk (48 hours)
+
+        • Minimum storage duration of 180 days
+
+
+
+
+
+
+------------------------------------------------------------- S3 Intelligent-Tiering
+
+
+• Small monthly monitoring and auto-tiering fee
+
+• Moves objects automatically between Access Tiers based on usage
+
+• There are no retrieval charges in S3 Intelligent-Tiering
+
+
+• Frequent Access tier (automatic): default tier
+
+• Infrequent Access tier (automatic): objects not accessed for 30 days
+
+• Archive Instant Access tier (automatic): objects not accessed for 90 days
+
+• Archive Access tier (optional): configurable from 90 days to 700+ days
+
+• Deep Archive Access tier (optional): config. from 180 days to 700+ days
+
+
+
+
+
+
+https://aws.amazon.com/s3/storage-classes/   - for more info 
+
+
+
+

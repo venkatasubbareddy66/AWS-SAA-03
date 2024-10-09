@@ -7713,7 +7713,7 @@ EPV : 1) When you apply a retention period to an object version explicitly, you 
 
 
 
-=============================CRR(Cross-Region Replication)============
+============================= CRR(Cross-Region Replication)============
 
 -- u have bucket in mumbai and u have another bucket in singapore 
 
