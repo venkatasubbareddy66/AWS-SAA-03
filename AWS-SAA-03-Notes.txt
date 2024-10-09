@@ -7477,6 +7477,7 @@ NOte : it is possible to move objcts from one storage class to another storage c
 -- In LCR we have Transistion and expiration 
 
 - Transistion : configure objects to transition to another storage class
+
 - Move to Glacier for archiving after 6 months
 
 FA --> IA(30 days) --> Glacier(60 dyas) 
@@ -7637,6 +7638,10 @@ ANS : Use Amazon S3 Glacier vault to store the sensitive archived data and then 
 
 
 --------------------------------- Object Lock (versioning must be enabled)
+
+
+
+
 
 -- Adopt a WORM (Write Once Read Many) model
 
@@ -8135,6 +8140,9 @@ if u choose Wait to run the job when it's ready , u have to run job manually
 
 =============================================== S3 sync command ===========================================
 
+
+
+
 -- The aws S3 sync command uses the CopyObject APIs to copy objects between Amazon S3 buckets. 
 
 -- The sync command lists the source and target buckets to identify objects that are in the source bucket but that aren't in the target bucket. 
@@ -8267,6 +8275,8 @@ IMP :  for image 3 nad 4 u did not enable versioning
 
 
 ===============================S3 event notifications=============
+
+
 
 -- if something is hapen in S3 u will get notifications 
 
@@ -15254,6 +15264,8 @@ AWS Backup ----------Create Backup Plan (frequency, retention policy) -------> A
 ------- Backup Plan : it allows you to configure when to take the backups , u can define frequency of taking backup and also retention policy 
 
 ------- backup vault ; -- it is like a container which stores all ur backups 
+
+
 
 -------------------- AWS Backup Vault Lock
 

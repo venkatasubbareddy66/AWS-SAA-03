@@ -6920,3 +6920,955 @@ https://aws.amazon.com/s3/storage-classes/   - for more info
 
 
 
+
+
+
+
+======================================================== Amazon S3 – Advanced ========================================================
+
+
+
+
+------------------------------------------------------------- Amazon S3 – Moving between Storage Classes
+
+
+
+• You can transition objects between storage classes
+
+• For infrequently accessed object, move them to Standard IA
+
+• For archive objects that you don’t need fast access to, move them to Glacier or Glacier Deep Archive
+
+• Moving objects can be automated using a Lifecycle Rules
+
+
+
+
+
+------------------------------------------------------------- Amazon S3 – Lifecycle Rules
+
+
+
+• Transition Actions – configure objects to transition to another storage class
+
+        • Move objects to Standard IA class 60 days after creation
+
+        • Move to Glacier for archiving after 6 months
+
+
+• Expiration actions – configure objects to expire (delete) after some time
+
+        • Access log files can be set to delete after a 365 days
+
+        • Can be used to delete old versions of files (if versioning is enabled)
+
+        • Can be used to delete incomplete Multi-Part uploads
+
+
+• Rules can be created for a certain prefix (example: s3://mybucket/mp3/*)
+
+• Rules can be created for certain objectsTags (example:Department:Finance)
+
+
+
+
+
+
+
+
+
+
+IMP FOR EPV : Amazon S3 supports a waterfall model for transitioning between storage classes,
+
+S3 Standard storage 
+
+    S3 Standard-IA storage class 
+     
+          S3 Intelligent-Tiering storage class
+
+               S3 One Zone-IA storage class
+
+                    S3 Glacier Instant Retrieval storage class
+
+                           S3 Glacier Flexible Retrieval storage class 
+
+                                    S3 Glacier Deep Archive storage class.
+
+
+
+
+1  Supported lifecycle transitions
+
+-- Amazon S3 supports the following lifecycle transitions between storage classes using an S3 Lifecycle configuration. You can transition from the following:
+
+-  The S3 Standard storage class to any other storage class.
+
+-  The S3 Standard-IA storage class to the S3 Intelligent-Tiering, S3 One Zone-IA, S3 Glacier Instant Retrieval, S3 Glacier Flexible Retrieval, or S3 Glacier Deep Archive storage classes.
+
+-  The S3 Intelligent-Tiering storage class to the S3 One Zone-IA, S3 Glacier Instant Retrieval, S3 Glacier Flexible Retrieval, or S3 Glacier Deep Archive storage classes.
+
+-  The S3 One Zone-IA storage class to the S3 Glacier Flexible Retrieval or S3 Glacier Deep Archive storage classes.
+
+-  The S3 Glacier Instant Retrieval storage class to the S3 Glacier Flexible Retrieval or S3 Glacier Deep Archive storage classes.
+
+-  The S3 Glacier Flexible Retrieval storage class to the S3 Glacier Deep Archive storage class.
+
+-  Any storage class to the S3 Glacier Deep Archive storage class.
+
+
+2  Unsupported lifecycle transitions
+
+-- Amazon S3 does not support any of the following lifecycle transitions. You can't transition from the following:
+
+- Any storage class to the S3 Standard storage class.
+
+- Any storage class to the Reduced Redundancy Storage (RRS) class.
+
+- The S3 Intelligent-Tiering storage class to the S3 Standard-IA storage class.
+
+- The S3 One Zone-IA storage class to the S3 Intelligent-Tiering, S3 Standard-IA, or S3 Glacier Instant Retrieval storage classes.
+
+
+Constraints : 
+
+
+-- When you transition objects from the S3 Standard or S3 Standard-IA storage classes to S3 Intelligent-Tiering, S3 Standard-IA, or S3 One Zone-IA, the following object size constraints apply:
+
+Larger objects  : For the following transitions, there is a cost benefit to transitioning larger objects:
+
+  - From the S3 Standard or S3 Standard-IA storage classes to S3 Intelligent-Tiering.
+
+  - From the S3 Standard storage class to S3 Standard-IA or S3 One Zone-IA.
+
+-- Objects smaller than 128 KiB : For the following transitions, Amazon S3 does not transition objects that are smaller than 128 KiB:
+
+  - From the S3 Standard or S3 Standard-IA storage classes to S3 Intelligent-Tiering or S3 Glacier Instant Retrieval.
+
+  - From the S3 Standard storage class to S3 Standard-IA or S3 One Zone-IA.
+
+
+ref: https://docs.aws.amazon.com/AmazonS3/latest/userguide/lifecycle-transition-general-considerations.html
+
+
+
+
+
+
+
+
+
+
+---------------------------- Amazon S3 – Lifecycle Rules (Scenario 1)
+
+Q Your application on EC2 creates images thumbnails after profile photos are uploaded to Amazon S3.These thumbnails can be easily recreated, and only need to be kept for 60 days.The source images should be able to be immediately retrieved for these 60 days, and afterwards, the user can wait up to 6 hours. How would you design this?
+ 
+ Ans : -- S3 source images can be on Standard, with a lifecycle configuration to transition them to Glacier after 60 days
+
+       -- S3 thumbnails can be on One-Zone IA, with a lifecycle configuration to expire them (delete them) after 60 days
+
+
+----------------------------- Amazon S3 – Lifecycle Rules (Scenario 2)
+
+-- A rule in your company states that you should be able to recover your deleted S3 objects immediately for 30 days, although this may happen rarely. After this time, and for up to 365 days, deleted objects should be recoverable within 48 hours.
+
+Ans : Enable S3 Versioning in order to have object versions, so that “deleted objects” are in fact hidden by a “delete marker” and can be recovered
+
+-- Transition the “noncurrent versions” of the object to Standard IA
+-- Transition afterwards the “noncurrent versions” to Glacier Deep Archive
+
+
+
+
+
+
+
+------------------------------------------------------------- Amazon S3 Analytics – Storage Class Analysis
+
+
+
+-- Help you decide when to transition objects to the right storage class
+
+-- Recommendations for Standard and Standard IA
+
+-- Does NOT work for One-Zone IA or Glacier
+
+-- Report is updated daily
+
+-- 24 to 48 hours to start seeing data analysis
+
+--  S3 bucket --> Storage Class Analysis --> .csv report 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+------------------------------------------------------  S3 Events Notifications
+
+
+• S3:ObjectCreated, S3:ObjectRemoved, S3:ObjectRestore, S3:Replication...
+
+    - So just a reminder on S3 event notifications, it is a way for you to get notified whenever an object is created, removed, restored, when there is a replication happening.
+
+• Object name filtering possible (*.jpg)
+
+    - You can filter by prefix and by suffix. And the use case is, the classic one is to generate thumbnail images of every image uploaded into Amazon S3.
+    
+    • Use case: generate thumbnails of images uploaded to S3
+
+
+-- So you have your events into Amazon S3, and S3 can send it to three things,
+
+
+1 Amazon S3 -------(Events)-------> SNS ---------> SQS
+
+ 
+EXP : your events into Amazon S3, send to SNS and from an SNS topic, we can do a fan out pattern to send to multiple SQ-Q,  we can sent it into an SQ-Q
+
+
+2 Amazon S3 -------(Events)-------> SQS ---------> Lambda Function
+
+
+EXP : we can sent it into an SQ-Q , and have a Lambda function directly read off that SQ-SQ,
+
+
+3 Amazon S3 -------(Events)-------(async)----------> Lambda Function ----------- (DLQ) ---------> SQS
+
+
+EXP : we could have an Amazon S3 event notification, directly invoke our Lambda function and this is an asynchronous invocation.
+
+- this Lambda function could do whatever it wants with that data, and then in case things go wrong, we can set up a dead-letter queue, for example an SQS, as we've seen from before.
+
+
+
+• S3 event notifications typically deliver events in seconds but can sometimes take a minute or longer
+
+• If two writes are made to a single non- versioned object at the same time, it is possible that only a single event notification will be sent
+
+• If you want to ensure that an event notification is sent for every successful write, you can enable versioning on your bucket.
+
+
+
+
+
+
+
+
+
+------------------------------------------------------ Simple S3 Event Pattern – Metadata Sync
+
+
+  S3 bucket -------------(New file event)------------> lambda (Update metadata table) -----------> DynamoDB Table / Table in RDS
+
+
+EXP : So, here is a simple pattern. An S3 bucket will have a new file event into Lambda. And Lambda function will process that file maybe insert that data into DynamoDB Table or even a table in RDS database.
+
+
+
+
+
+
+
+------------------------------------------------------ lambda and S3 Events Notifications Hands On
+
+
+-- create one lambda function and one s3 bucket , make sure both are in same region
+
+-- s3 buket --> properties --> event notificatin --> create event notification for all object creation
+
+-- So this event notification is enabled to send data into lambda function.
+
+print(event) in code 
+
+
+import json
+
+def lambda_handler(event, context):
+    print(event)
+    # TODO implement
+    return {
+        'statusCode': 200,
+        'body': json.dumps('Hello from Lambda!')
+    }
+
+
+
+-- now do upload a file in the s3 bucket
+
+-- now what's going to happen is that this should trigger an event into my Lambda function and to see whether or not this has worked,
+
+-- lambda --> cloudwatch --> u will see that records have created with all the event info 
+
+
+
+
+
+
+
+
+
+------------------------------------------------------ S3 Event Notifications with Amazon EventBridge
+
+
+
+
+
+events ---------> s3 bucket ---(ALL Events) -----> Amazon EventBridge -----(Rules)-------> Over 18 AWS services as destinations
+
+
+
+• Advanced filtering options with JSON rules (metadata, object size, name...)
+
+• Multiple Destinations – ex Step Functions, Kinesis Streams / Firehose...
+
+• EventBridge Capabilities – Archive, Replay Events, Reliable delivery
+
+
+
+
+
+
+
+------------------------------------------------------ S3 – Baseline Performance
+
+
+• Amazon S3 automatically scales to high request rates, latency 100-200 ms
+
+• Your application can achieve at least 3,500 PUT/COPY/POST/DELETE or 5,500 GET/HEAD requests per second per prefix in a bucket.
+
+• There are no limits to the number of prefixes in a bucket.
+
+• Example (object path => prefix):
+
+        • bucket/folder1/sub1/file => /folder1/sub1/
+
+                - So, in this case it is slash folder one, slash sub one. So, that means that for this file in this prefix, you can get 3,500 Puts and 5,500 Gets per second.
+
+        • bucket/folder1/sub2/file => /folder1/sub2/
+
+        • bucket/1/file => /1/
+
+        • bucket/2/file => /2/
+
+
+• If you spread reads across all four prefixes evenly, you can achieve 22,000 requests per second for GET and HEAD
+
+
+
+
+
+
+------------------------------------------------------ S3 Performance
+
+
+
+• Multi-Part upload:
+
+        • recommended for files > 100MB, must use for files > 5GB
+
+        • Can help parallelize uploads (speed up transfers)
+
+
+
+• S3Transfer Acceleration
+
+        • Increase transfer speed by transferring file to an AWS edge location which will forward the data to the S3 bucket in the target region
+
+        • Compatible with multi-part upload
+
+        - We have a file in the United States of America, and we want to upload it to S3 bucket in Australia.
+
+        - So, what this will do is that we will upload that file through an edge location in the United States, which will be very, very quick, and then we'll be using the public internet.
+
+        - And then from that edge location to the Amazon S3 bucket in Australia, the edge location will transfer it over the fast, private AWS network. So, this is called transfer acceleration,
+
+        - because we minimized the amount of public internet that we go through and we maximized the amount of private AWS network that we go through.
+
+        - So, transfer acceleration is a great way to speed up transfers.
+
+
+
+
+
+
+
+
+------------------------------------------------------ S3 Performance – S3 Byte-Range Fetches
+
+
+
+• Parallelize GETs by requesting specific byte ranges
+
+• Better resilience in case of failures
+
+- Can be used to speed up downloads
+
+- Can be used to retrieve only partial data (for example the head of a file)
+
+
+
+
+
+
+
+
+
+------------------------------------------------------ S3 Batch Operations
+
+
+
+
+-- if u wnat to perform bulk operations on existing S3 object with a single request , example:
+
+• Modify object metadata & properties 
+• Copy objects between S3 buckets
+• Encrypt un-encrypted objects
+• Modify ACLs,tags
+• Restore objects from S3 Glacier
+• Invoke Lambda function to perform custom action on each lambda object
+
+• A job consists of a list of objects, the action to perform, and optional parameters
+
+
+• S3 Batch Operations manages retries, tracks progress, sends completion notifications, generate reports ...
+
+• You can use S3 Inventory to get object list and use S3 Select to filter your objects
+
+
+
+
+
+
+
+------------------------------------- LAB 
+
+IMP NOTE : Do not create your own IAM Roles and policies for this project , You just go with "create new Role" option while doing this process
+
+
+-- create 2 buckets , versioning is must 
+
+-- now in bucket 1 , upload some files 
+
+-- our main aim is to replicate the existing objects from one bukcet to another bucket
+
+-- now in the bucket 1 --> management --> create replication rule 
+
+-- give rule name 
+
+-- Destination : select destination bukcet 
+
+-- IAM role = ask aws to create a role 
+
+-- once u click on save , pop-ip will come and select "Yes, replicate existing objects."
+
+-- Job run options = select any one 
+
+if u choose Automatically run the job when it's ready , it will run automatically once it will get finished 
+
+if u choose Wait to run the job when it's ready , u have to run job manually 
+
+-- Generate completion report = create new bucket to store the report or just simply give bkt 1 for practice only 
+
+-- ask aws to create new IAM role for this job 
+
+-- click on save , once u save this it will create job operations for u and wait for some time , once it get finished , all the objects will get replicated from source to dest bucket
+
+-- now upload file in bucket 1 and it will replicate in dest bucket 'coz we have created replication 
+
+
+
+------------------- LAB 2 
+
+-- if u have create only replication rule(SRR, CRR ) already , jst click on view configuration and Click on create manifestjob and provide the details like the above example
+
+-- set Priority b/w 1-5 
+
+
+
+
+
+
+
+
+
+------------------------------------------------------ S3 Inventory
+
+
+
+• List objects and their corresponding metadata (alternative to S3 List API operation)
+
+• Usage examples:
+
+        • Audit and report on the replication and encryption status of your objects
+
+        • Get the number of objects in an S3 bucket
+
+        • Identify the total storage of previous object versions
+
+• Generate daily or weekly reports
+
+• Output files: CSV, ORC, or Apache Parquet
+
+• You can query all the data using Amazon Athena, Redshift, Presto, Hive, Spark...
+
+• You can filter generated report using S3 Select
+
+• Use cases: Business, Compliance, Regulatory needs, ...
+
+
+
+
+
+
+------------------------------------------------------ S3 Inventory Hands on 
+
+
+-- create one s3 bucket this is ur destination bucket 
+
+-- chooose one bucket and it should have some files in i it , it act as source bucket 
+
+-- note  both are in same region 
+
+-- go to source bucket --> management --> inventory configuration --> create and give values as ur want 
+
+-- it will take 48 hrs to create 
+
+-- u will find all the data once after 48hrs 
+
+
+
+
+
+
+
+------------------------------------------------------ Amazon S3 Glacier
+
+
+
+• Low-cost object storage meant for archiving / backup
+
+• Data is retained for the longer term (10s of years)
+
+• Alternative to on-premises magnetic tape storage
+
+• Average annual durability is 99.999999999%
+
+• Cost per storage per month ($0.004 / GB – Standard | $0.00099 / GB Deep Archive)
+
+
+• Each item in Glacier is called “Archive” (up to 40TB)
+
+• Archives are stored in ”Vaults”
+
+• By default, data encrypted at rest using AES-256 – keys managed by AWS
+
+
+
+• Exam tip: archival from S3 after XXX days => use Glacier
+
+
+
+
+
+------------------------------------------------------ Amazon S3 Glacier Operations
+
+
+
+• Vault Operations:
+
+        • Create & Delete – delete only when there’s no archives in it
+
+        • Retrieving Metadata – creation date, number of archives, total size of all archives, ...
+
+        • Download Inventory–list of archives in the vault(archiveID,creationdate,size,...)
+
+
+• Glacier Operations:
+
+        • Upload - single operation or by parts (MultiPart upload) for larger archives
+
+        • Download - first initiate a retrieval job for the archive, Glacier then prepares it for download.
+
+                - User then has a limited time to download the data from staging server. (optionally, specify a range or portion of bytes to retrieve)
+
+        • Delete - use Glacier Rest API or AWS SDKs by specifying archive ID
+
+
+
+
+• Restore links have an expiry date
+
+• Retrieval Options:
+
+        • Expedited (1 to 5 minutes retrieval) – $0.03 per GB and $10 per 1000 requests
+
+        • Standard (3 to 5 hours) - $0.01 per GB and 0.03 per 1000 requests
+
+        • Bulk (5 to 12 hours) - $0.0025 per GB and $0.025 per 1000 requests
+
+
+
+ 
+
+
+
+------------------------------------------------------ Amazon S3 Glacier - Vault Policies & Vault Lock
+
+
+
+• Each Vault has:
+
+        • ONE vault access policy
+
+        • ONE vault lock policy
+
+
+• Vault Policies are written in JSON
+
+• Vault Access Policy is like a bucket policy (restrict user / account permissions)
+
+• Vault Lock Policy is a policy you lock, for regulatory and compliance requirements.
+
+• The policy is immutable, it can never be changed (that’s why it’s call LOCK)
+
+        • Example 1: forbid deleting an archive if less than 1 year old
+
+        • Example 2: implement WORM policy (write once read many)
+
+
+
+
+
+
+------------------------------------------------------ Glacier – Notifications for Restore Operations
+
+
+
+-- So, because glacier is asynchronous because you have to initiate resource and then they will happen in time in the future. Then you need to have notification
+
+
+• Vault Notification Configuration
+
+        - Configure a vault so that when a job completes, a message is sent to SNS
+
+        - Optionally, specify an SNS topic when you initiate a job
+
+
+
+• S3 Event Notifications
+
+        - S3 supports the restoration of objects archived to S3 Glacier storage classes
+
+        - s3:ObjectRestore:Post => notify when object restoration initiated
+
+        - s3:ObjectRestore:Completed => notify when object restoration completed
+
+
+
+
+
+
+------------------------------------------------------ Amazon S3 Glacier vault Hands ON 
+
+
+-- go to s3 glacier in console 
+
+-- create a vault --> turnoff notificatin
+
+-- open vault --> vault policies --> Vault Lock policy 
+
+        - https://docs.aws.amazon.com/amazonglacier/latest/dev/vault-lock-policy.html?icmpid=docs_console_unmapped
+
+        - u will find examples of vault policies
+
+        - copy lock id eg : hlL937ZBSpye2jq1t4sCcuLP
+
+
+
+{
+               "Version":"2012-10-17",
+               "Statement":[
+                  {
+                     "Sid": "deny-based-on-archive-age",
+                     "Principal": "*",
+                     "Effect": "Deny",
+                     "Action": "glacier:DeleteArchive",
+                     "Resource": [
+                        "arn:aws:glacier:us-west-2:123456789012:vaults/examplevault"
+                     ],
+                     "Condition": {
+                        "NumericLessThan" : {
+                              "glacier:ArchiveAgeInDays" : "365"
+                              }
+                           }
+                        }
+                     ]
+                  }
+            
+
+-- so, we'll never ever ever be able to delete an archive that is less than 365 days, ever. I cannot change this. And so this is why vault lock policies are so important,
+
+
+
+-- review and create lock , u cannot delete once u create the lock 
+
+-- IMP 
+
+        - The last thing to know is that through this UI, you're not able to upload files that relate to Glacier. You will have to use the SDK, or the CLI,
+        
+        - Here we have to use the API if wanting to upload file into this our vault.
+
+
+
+
+
+
+------------------------------------------------------ S3 Multi Part Upload – Deep Dive
+
+
+
+• Upload large objects in parts (any order)
+
+• Recommended for files > 100MB, must use for files > 5GB
+
+• Can help parallelize uploads (speed up transfers)
+
+• Max. parts: 10,000
+
+• Failures: restart uploading ONLY failed parts (improves performance)
+
+• Use Lifecycle Policy to automate old parts deletion of unfinished upload after x days (e.g., network outage)
+
+• Upload using AWS CLI or AWS SDK
+
+
+
+
+
+
+
+------------------------------------------------------ S3 Multi Part Upload – hands On 
+
+
+
+
+-- open cloudshell 
+
+1  give bucket name 
+
+       BUCKET_NAME=mymultipartupload
+
+2  create bucket using cmnd 
+
+        aws s3 mb s3://$BUCKET_NAME
+
+
+3 genearate 100mb file 
+
+        dd if=/dev/zero of=100MB.txt bs=1MB count=100
+
+        - it will create file with name 100MB.txt
+
+
+4 split into 3 parts of 35MB each 
+
+        split -b 35m 100MB.txt 100MB_part_
+
+5 we're going to create a multipart upload 
+
+        aws s3api create-multipart-upload --bucket $BUCKET_NAME --key 100MB.txt
+
+
+{
+    "ServerSideEncryption": "AES256",
+    "Bucket": "mymultipartupload",
+    "Key": "100MB.txt",
+    "UploadId": "XjrPzuYVjz5E4zpYwF2c508KgxUs37kC75.5HEpHUXPJxQ0ymi136A0.04bsT4b1JPOsA5deI8fRFtMbrRzdpV1HCyoh6gECHFVxuxqlWOMBvGy7yFgrwnc2yCQ27TtG"
+}
+
+
+
+6  upload to s3 
+
+        UPLOAD_ID=XjrPzuYVjz5E4zpYwF2c508KgxUs37kC75.5HEpHUXPJxQ0ymi136A0.04bsT4b1JPOsA5deI8fRFtMbrRzdpV1HCyoh6gECHFVxuxqlWOMBvGy7yFgrwnc2yCQ27TtG 
+
+
+
+7 list all multipart uplaod 
+
+        aws s3api list-multipart-uploads --bucket $BUCKET_NAME
+
+
+
+{
+    "Uploads": [
+        {
+            "UploadId": "XjrPzuYVjz5E4zpYwF2c508KgxUs37kC75.5HEpHUXPJxQ0ymi136A0.04bsT4b1JPOsA5deI8fRFtMbrRzdpV1HCyoh6gECHFVxuxqlWOMBvGy7yFgrwnc2yCQ27TtG",
+            "Key": "100MB.txt",
+            "Initiated": "2024-10-09T11:20:33+00:00",
+            "StorageClass": "STANDARD",
+            "Owner": {
+                "DisplayName": "dharmasathya33",
+                "ID": "4e15fbb634d441b5553de0d6d654e0bc5f544f8b41a564724037046d275ac33c"
+            },
+            "Initiator": {
+                "ID": "arn:aws:iam::298132369629:user/demo-copilot",
+                "DisplayName": "demo-copilot"
+            }
+        }
+    ],
+    "RequestCharged": null
+}
+
+
+
+
+
+8  upload the parts 
+
+        aws s3api upload-part --bucket $BUCKET_NAME --key 100MB.txt --part-number 1 --body 100MB_part_aa --upload-id $UPLOAD_ID
+
+        aws s3api upload-part --bucket $BUCKET_NAME --key 100MB.txt --part-number 2 --body 100MB_part_ab --upload-id $UPLOAD_ID
+
+        aws s3api upload-part --bucket $BUCKET_NAME --key 100MB.txt --part-number 3 --body 100MB_part_ac --upload-id $UPLOAD_ID
+
+        - if I go into my S3 bucket now and refresh we currently don't see any objects. That's because the parts don't appear in the console UI. The parts are not yet objects.
+
+
+9 list the parts 
+
+         aws s3api list-parts --upload-id $UPLOAD_ID --bucket $BUCKET_NAME --key 100MB.txt
+
+
+
+{
+    "Parts": [
+        {
+            "PartNumber": 1,
+            "LastModified": "2024-10-09T11:27:13+00:00",
+            "ETag": "\"cdbd372cb84b1720b94c30cc95d5c4cf\"",
+            "Size": 36700160
+        },
+        {
+            "PartNumber": 2,
+            "LastModified": "2024-10-09T11:27:58+00:00",
+            "ETag": "\"cdbd372cb84b1720b94c30cc95d5c4cf\"",
+            "Size": 36700160
+        },
+        {
+            "PartNumber": 3,
+            "LastModified": "2024-10-09T11:28:04+00:00",
+            "ETag": "\"53d2747cf38ca67cfb9c165d90ff896f\"",
+            "Size": 26599680
+        }
+    ],
+    "ChecksumAlgorithm": null,
+    "Initiator": {
+        "ID": "arn:aws:iam::298132369629:user/demo-copilot",
+        "DisplayName": "demo-copilot"
+    },
+    "Owner": {
+        "DisplayName": "dharmasathya33",
+        "ID": "4e15fbb634d441b5553de0d6d654e0bc5f544f8b41a564724037046d275ac33c"
+    },
+    "StorageClass": "STANDARD"
+}
+
+
+
+10 complete the multipart upload in single command 
+
+
+                  aws s3api complete-multipart-upload --bucket $BUCKET_NAME --key 100MB.txt --upload-id $UPLOAD_ID --multipart-upload "{\"Parts\":[{\"ETag\":\"etag1\",\"PartNumber\":1},{\"ETag\":\"etag2\",\"PartNumber\":2},{\"ETag\":\"etag3\",\"PartNumber\":3}]}"
+
+
+-- in above cmnd change etag based on previous cmnd  , for eg 
+
+
+
+                aws s3api complete-multipart-upload --bucket $BUCKET_NAME --key 100MB.txt --upload-id $UPLOAD_ID --multipart-upload "{\"Parts\":[{\"ETag\":\"cdbd372cb84b1720b94c30cc95d5c4cf\",\"PartNumber\":1},{\"ETag\":\"cdbd372cb84b1720b94c30cc95d5c4cf\",\"PartNumber\":2},{\"ETag\":\"53d2747cf38ca67cfb9c165d90ff896f\",\"PartNumber\":3}]}"
+
+
+-- go n see console it will upload to s3 bucket 
+
+
+
+-- now delete bucket and file 
+
+
+
+
+
+
+
+
+------------------------------------------------------ Amazon Athena
+
+
+
+• Serverless query service to analyze data stored in Amazon S3
+
+• Uses standard SQL language to query the files (built on Presto)
+
+• SupportsCSV,JSON,ORC,Avro,andParquet
+
+• Pricing: $5.00 per TB of data scanned
+
+• Commonly used with Amazon Quicksight for repor ting/dashboards
+
+• Use cases: Business intelligence / analytics / reporting, analyze & queryVPC Flow Logs,ELB Logs,CloudTrail trails,etc...
+
+
+
+• Exam Tip: analyze data in S3 using serverless SQL, use Athena
+
+
+
+
+
+------------------------------------------------------ Amazon Athena – Performance Improvement
+
+
+
+• Use columnar data for cost-savings (less scan)
+
+        • Apache Parquet or ORC is recommended
+
+        • Huge performance improvement
+
+        • Use Glue to convert your data to Parquet or ORC
+
+
+• Compress data for smaller retrievals (bzip2, gzip, lz4, snappy, zlip, zstd...)
+
+• Partition datasets in S3 for easy querying on virtual columns
+
+        • s3://yourBucket/pathToTable
+
+                 /<PARTITION_COLUMN_NAME>=<VALUE>
+                  /<PARTITION_COLUMN_NAME>=<VALUE>
+                    /<PARTITION_COLUMN_NAME>=<VALUE>
+
+        • Example:s3://athena-examples/flight/parquet/year=1991/month=1/day=1/
+
+
+• Use larger files (> 128 MB) to minimize overhead
+
+
+
+
+
+
+
+------------------------------------------------------ Amazon Athena – Federated Query
+
+
+
