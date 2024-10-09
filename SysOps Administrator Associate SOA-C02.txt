@@ -6092,3 +6092,401 @@ EBS vs EFS – Elastic File System
 
 • Many AWS services use Amazon S3 as an integration as well
 
+
+
+
+
+------------------------------------------------------------- Amazon S3 Use cases
+
+
+• Backup and storage
+
+• Disaster Recovery
+
+• Archive
+
+• Hybrid Cloud storage 
+
+• Application hosting
+
+• Media hosting
+
+• Data lakes & big data analytics • Software delivery
+
+• Static website
+
+
+
+
+
+
+
+------------------------------------------------------------- Amazon S3 - Buckets
+
+
+
+• Amazon S3 allows people to store objects (files) in “buckets” (directories)
+
+• Buckets must have a globally unique name (across all regions all accounts)
+
+• Buckets are defined at the region level
+
+• S3 looks like a global service but buckets are created in a region
+
+• Naming convention
+
+        • No uppercase, No underscore
+        • 3-63 characters long
+        • Not an IP
+        • Must start with lowercase letter or number
+        • Must NOT start with the prefix xn--
+        • Must NOT end with the suffix -s3alias
+
+
+
+
+
+------------------------------------------------------------- Amazon S3 - Objects 
+
+
+• Objects (files) have a Key
+
+• The key is the FULL path:
+
+        • s3://my-bucket/my_file.txt
+
+        • s3://my-bucket/my_folder1/another_folder/my_file.txt
+
+
+• The key is composed of prefix + object name
+
+        • s3://my-bucket/my_folder1/another_folder/my_file.txt
+
+• There’s no concept of “directories” within buckets (although the UI will trick you to think otherwise)
+
+• Just keys with very long names that contain slashes (“/”)
+
+• Object values are the content of the body:
+
+        • Max. Object Size is 5TB (5000GB)
+
+        • If uploading more than 5GB, must use “multi-part upload”
+
+
+• Metadata (list of text key / value pairs – system or user metadata)
+
+• Tags (Unicode key / value pair – up to 10) – useful for security / lifecycle
+
+• Version ID (if versioning is enabled)
+
+
+
+
+
+
+------------------------------------------------------------- Amazon S3 – Security
+
+
+
+• User-Based
+
+        • IAM Policies – which API calls should be allowed for a specific user from IAM
+
+
+• Resource-Based
+
+        • Bucket Policies – bucket wide rules from the S3 console - allows cross account
+
+        • Object Access Control List (ACL) – finer grain (can be disabled)
+
+        • Bucket Access Control List (ACL) – less common (can be disabled)
+
+
+
+• Note: an IAM principal can access an S3 object if
+
+        • The user IAM permissions ALLOW it OR the resource policy ALLOWS it
+
+        • AND there’s no explicit DENY then the IAM principle can access the S3 object on the specified API call.
+
+
+
+
+
+• Encryption: encrypt objects in Amazon S3 using encryption keys 
+
+
+
+
+
+
+
+------------------------------------------------------------- S3 Bucket Policies
+
+
+
+
+• JSON based policies
+
+        • Resources: buckets and objects
+
+        • Effect: Allow / Deny
+
+        • Actions: Set of API to Allow or Deny
+
+        • Principal:The account or user to apply the policy to
+
+
+• Use S3 bucket for policy to:
+
+        • Grant public access to the bucket
+
+        • Force objects to be encrypted at upload
+
+        • Grant access to another account (Cross Account)
+
+
+
+
+
+
+------------------------------------------------------------- Bucket settings for Block Public Access
+
+
+
+• These settings were created to prevent company data leaks
+
+• If you know your bucket should never be public, leave these on
+
+        - So even though you would set an S3 Bucket policy that would make it public, if these settings are enabled, the Bucket will never be public.
+
+• Can be set at the account level
+
+
+
+
+
+
+------------------------------------------------------------- S3 Bucket Policies Advanced 
+
+
+• Use S3 bucket for policy to:
+
+        • Grant public access to the bucket
+
+        • Force objects to be encrypted at upload
+
+        • Grant access to another account (Cross Account)
+
+
+• Optional Conditions on:
+
+        • Public IP or Elastic IP (not on Private IP)
+
+        • Source VPC or Source VPC Endpoint – only works with VPC Endpoints
+
+        • CloudFront Origin Identity
+
+        • MFA
+
+
+
+• Examples here: https://docs.aws.amazon.com/AmazonS3/latest/dev/example- bucket-policies.html
+
+
+
+
+Examples :
+
+
+1
+
+
+
+
+https://aws.amazon.com/blogs/security/control-access-to-aws-resources-by-using-the-aws-organization-of-iam-principals/
+
+
+
+• Restrict access to only principals from AWS accounts inside an AWS Organization using aws:PrincipalOrgID condition key
+
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AllowGetObject",
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::2018-Financial-Data/*",
+            "Condition": {"StringEquals": 
+                             {"aws:PrincipalOrgID": [ "o-yyyyyyyyyy" ]}
+                         }
+        }
+    ]
+}
+
+
+
+
+
+2 
+
+
+
+
+
+• Prevent uploads of unencrypted objects to an S3 bucket using s3:x-amz-server-side- encryption condition key
+
+https://aws.amazon.com/blogs/security/how-to-prevent-uploads-of-unencrypted-objects-to-amazon-s3/#:~:text=The%20policy%20needs%20to%20cover,server%2Dside%2Dencryption%20key.
+
+
+
+
+{
+     "Version": "2012-10-17",
+     "Id": "PutObjPolicy",
+     "Statement": [
+           {
+                "Sid": "DenyIncorrectEncryptionHeader",
+                "Effect": "Deny",
+                "Principal": "*",
+                "Action": "s3:PutObject",
+                "Resource": "arn:aws:s3:::<bucket_name>/*",
+                "Condition": {
+                        "StringNotEquals": {
+                               "s3:x-amz-server-side-encryption": "AES256"
+                         }
+                }
+           },
+           {
+                "Sid": "DenyUnEncryptedObjectUploads",
+                "Effect": "Deny",
+                "Principal": "*",
+                "Action": "s3:PutObject",
+                "Resource": "arn:aws:s3:::<bucket_name>/*",
+                "Condition": {
+                        "Null": {
+                               "s3:x-amz-server-side-encryption": true
+                        }
+               }
+           }
+     ]
+ }
+
+
+
+
+ -- check above link for more info 
+
+
+
+
+
+
+ • Restrict access to specific IP addresses using NotIpAddress condition key
+
+
+
+
+{
+  "Id": "Policy1721724823144",
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "Stmt1721724821411",
+      "Action": [
+        "s3:DeleteObject",
+        "s3:GetObject",
+        "s3:ListBucket",
+        "s3:PutObject"
+      ],
+      "Effect": "Deny",
+      "Resource": ["arn:aws:s3:::hfgvgdgs","arn:aws:s3:::Bucket-Name/*"],
+      "Condition": {
+        "NotIpAddress": {
+          "aws:SourceIp": "3.109.60.179/24"
+        }
+      },
+      "Principal": "*"
+    }
+  ]
+}
+
+
+
+
+
+
+4  
+
+
+• Grant user access to list and download all objects in an S3 bucket
+
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::your-bucket-name"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::your-bucket-name/*"
+        }
+    ]
+}
+
+
+
+
+
+
+5 
+
+
+
+• Restrict access to users authenticated using MFA using MultiFactorAuthPresent condition key
+
+
+
+
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::your-bucket-name",
+            "Condition": {
+                "Bool": {
+                    "aws:MultiFactorAuthPresent": "true"
+                }
+            }
+        },
+        {
+            "Effect": "Allow",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::your-bucket-name/*",
+            "Condition": {
+                "Bool": {
+                    "aws:MultiFactorAuthPresent": "true"
+                }
+            }
+        }
+    ]
+}
+
+
+
+
+
+
+
+
+
