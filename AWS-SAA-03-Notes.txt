@@ -7924,8 +7924,8 @@ The Amazon S3 Encryption Client works as an intermediary between you and Amazon 
 -- Encryption in flight is also called SSL/TLS
 
 -- Amazon S3 exposes two endpoints:
-• HTTP Endpoint – non encrypted
-• HTTPS Endpoint – encryption in flight
+  • HTTP Endpoint – non encrypted
+  • HTTPS Endpoint – encryption in flight
 
 -- HTTPS is recommended
 

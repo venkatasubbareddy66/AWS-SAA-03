@@ -7872,3 +7872,850 @@ if u choose Wait to run the job when it's ready , u have to run job manually
 
 
 
+• Allows you to run SQL queries across data stored in relational, non-relational, object, and custom data sources (AWS or on-premises)
+
+• Uses Data Source Connectors that run on AWS Lambda to run Federated Queries (e.g., CloudWatch Logs, DynamoDB, RDS, ...)
+
+• Store the results back in Amazon S3
+
+
+
+
+
+
+------------------------------------------------------ Amazon Athena Hands ON 
+
+
+
+
+
+
+Step 1 : create s3 bucket and insert some .csv data 
+
+--  insert some  data in the bucket 
+
+--   create one folder inside bucket and go to google and search for sample .csv files downlaod and upload in the s3 bucket 
+
+Step 2 : Glue
+
+-- open glue in console
+
+-- glue --> from left panel data Catalog --> crawlers --> add crawlers --> give name of ur crawler --> not yet --> add a data source --> choose s3 --> copy uri of ur bucket and paste in S3 path --> click on create new role , give name of ur role and select nxt --> click on create new database --> give name of ur database , nxt --> frequency = on-demand --> create crawler
+
+-- now try to run the crawler , 
+
+--  u can also check the logs in cloudwatch 
+
+-- once u done with the running part , a table will added to the database , table name is same as the folder name of s3 that u have uploaded 
+
+--  if ur data is not match , then u can also do edit ur schema 
+
+
+step 3 : Athena
+
+-- open Athena in the console
+
+-- in the left panel u will see the database and table , u can check all the coloums of ur table
+
+-- now do queries , before that u should add destination to store our outputs in the s3 bucket 
+
+-- go to s3 buckets create one folder in the bucket to store the outputs
+
+-- now try to query in athena editor
+
+-- SELECT * FROM "weather-database"."weather_csv" limit 10;
+
+above is eg query , u can replace with ur details 
+
+weather-database = database name 
+
+weather_csv = table name
+
+
+NOTE : if u r getting zero records but query is successfull then do 
+
+ur s3 location is like this 
+
+s3://doc-example-bucket/table1.csv 
+
+-- to get avoid from this error , jst create one sub-folder and upload .csv file in that subfolder 
+
+s3://doc-example-bucket/table1/table1.csv
+
+
+
+-- in the crawler location u have to give like this , then u won't get any error
+
+s3://doc-example-bucket/table1/
+
+
+
+
+
+
+
+
+
+
+======================================================== Amazon S3 – Security ========================================================
+
+
+
+
+
+------------------------------------------------------ Amazon S3 – Object Encryption
+
+
+
+• You can encrypt objects in S3 buckets using one of 4 methods
+
+
+• Server-Side Encryption (SSE)
+
+        • Server-Side Encryption with Amazon S3-Managed Keys (SSE-S3) – Enabled by Default
+
+                 • Encrypts S3objects using key shandled,managed,and owned by AWS
+
+        • Server-Side Encryption with KMS Keys stored in AWS KMS (SSE-KMS)
+
+                • Leverage AWS KeyManagement Service(AWSKMS)to manage encryption keys
+
+        • Server-Side Encryption with Customer-Provided Keys (SSE-C)
+
+                • When you want to manage your own encryption keys
+
+
+
+• Client-Side Encryption
+
+• It’s important to understand which ones are for which situation for the exam
+
+
+
+
+
+
+
+------------------------------------------------------ Amazon S3 Encryption – SSE-S3
+
+
+
+- it is used Algorith called AES-256 (advanced Encryption Standard)
+
+- by deafult , bucket encryption is enabled 
+
+- Object is encrypted server-side
+
+- Must set header "x-amz-server-side-encryption": "AES256"
+
+
+explanation : Server-side encryption is the encryption of data at its destination by the application or service that receives it. Amazon S3 encrypts your data at the object level as it writes it to disks in AWS data centers and decrypts it for you when you access it. As long as you authenticate your request and you have access permissions, there is no difference in the way you access encrypted or unencrypted objects. For example, if you share your objects by using a presigned URL, that URL works the same way for both encrypted and unencrypted objects. Additionally, when you list objects in your bucket, the list API operations return a list of all objects, regardless of whether they are encrypted.
+
+
+-- When you use Server-Side Encryption with Amazon S3-Managed Keys (SSE-S3), each object is encrypted with a unique key. As an additional safeguard, it encrypts the key itself with a master key that it regularly rotates.
+
+
+
+
+
+
+
+------------------------------------------------------ Amazon S3 Encryption – SSE-KMS
+
+
+
+
+- KMS advantages: user control + audit key usage using CloudTrail
+
+- Object is encrypted server side
+
+- Must set header "x-amz-server-side-encryption": "aws:kms"
+
+explanation : All Amazon S3 buckets have encryption configured by default, and all new objects that are uploaded to an S3 bucket are automatically encrypted at rest. Server-side encryption with Amazon S3 managed keys (SSE-S3) is the default encryption configuration for every bucket in Amazon S3. To use a different type of encryption, you can either specify the type of server-side encryption to use in your S3 PUT requests, or you can set the default encryption configuration in the destination bucket.
+
+
+---- SSE-KMS Limitation
+
+-- If you use SSE-KMS, you may be impacted by the KMS limits
+
+-- When you upload, it calls the GenerateDataKey KMS API
+
+-- When you download, it calls the Decrypt KMS API
+
+-- Count towards the KMS quota per second (5500, 10000, 30000 req/s based on region)
+
+-- You can request a quota increase using the Service Quotas Console
+
+
+
+
+
+
+------------------------------------------------------ Amazon S3 Encryption – SSE-C
+
+
+
+-- SSE-C you can only do from the CLI not from console 
+
+- Server-Side Encryption using keys fully managed by the customer outside of AWS
+
+- Amazon S3 does NOT store the encryption key you provide
+
+- HTTPS must be used
+
+- Amazon S3 will reject any requests made over HTTP when using SSE-C. For security considerations, AWS recommends that you consider any key you send erroneously using HTTP to be compromised.
+
+- Encryption key must provided in HTTP headers, for every HTTP request made
+
+explanation : Server-side encryption is about protecting data at rest. Server-side encryption encrypts only the object data, not the object metadata. By using server-side encryption with customer-provided keys (SSE-C), you can store your own encryption keys. With the encryption key that you provide as part of your request, Amazon S3 manages data encryption as it writes to disks and data decryption when you access your objects. Therefore, you don't need to maintain any code to perform data encryption and decryption. The only thing that you need to do is manage the encryption keys that you provide.
+
+When you upload an object, Amazon S3 uses the encryption key that you provide to apply AES-256 encryption to your data. Amazon S3 then removes the encryption key from memory. When you retrieve an object, you must provide the same encryption key as part of your request. Amazon S3 first verifies that the encryption key that you provided matches, and then it decrypts the object before returning the object data to you.
+
+
+
+EPV : A development team wants to ensure that all objects uploaded to an Amazon S3 bucket are encrypted?
+
+ANS : Configure the bucket policy to deny if the PutObject does not have an "x-amz-server-side-encryption" header set
+
+EXP : 
+
+-- Server-side encryption is about data encryption at rest—that is, Amazon S3 encrypts your data at the object level as it writes it to disks in its data centers and decrypts it for you when you access it.
+
+-- As long as you authenticate your request and you have access permissions, there is no difference in the way you access encrypted or unencrypted objects.
+
+-- To encrypt an object at the time of upload, you need to add a header called x-amz-server-side-encryption to the request to tell S3 to encrypt the object using SSE-C, SSE-S3, or SSE-KMS.
+
+-- In order to enforce object encryption, create an Amazon S3 bucket policy that denies any S3 Put request that does not include the x-amz-server-side-encryption header. 
+
+-- There are two possible values for the x-amz-server-side-encryption header
+
+    1 AES256, which tells S3 to use S3-managed keys, 
+
+    2 aws:kms, which tells Amazon S3 to use AWS KMS–managed keys.
+
+
+
+
+
+
+
+
+
+------------------------------------------------------ Amazon S3 Encryption – Client-Side Encryption
+
+
+
+• Use client libraries such as Amazon S3 Client-Side Encryption Library
+
+• Clients must encrypt data themselves before sending to Amazon S3
+
+• Clients must decrypt data themselves when retrieving from Amazon S3
+
+• Customer fully manages the keys and encryption cycle
+
+
+
+Client-side encryption is the act of encrypting your data locally to help ensure its security in transit and at rest. To encrypt your objects before you send them to Amazon S3, use the Amazon S3 Encryption Client. When your objects are encrypted in this manner, your objects aren't exposed to any third party, including AWS. Amazon S3 receives your objects already encrypted; Amazon S3 does not play a role in encrypting or decrypting your objects. You can use both the Amazon S3 Encryption Client and server-side encryption to encrypt your data. When you send encrypted objects to Amazon S3, Amazon S3 doesn't recognize the objects as being encrypted, it only detects typical objects.
+
+The Amazon S3 Encryption Client works as an intermediary between you and Amazon S3. After you instantiate the Amazon S3 Encryption Client, your objects are automatically encrypted and decrypted as part of your Amazon S3 PutObject and GetObject requests. Your objects are all encrypted with a unique data key. The Amazon S3 Encryption Client does not use or interact with bucket keys, even if you specify a KMS key as your wrapping key.
+
+
+
+
+
+
+------------------------------------------------------ Amazon S3 – Encryption in transit (SSL/TLS)
+
+
+
+
+
+-- Encryption in flight is also called SSL/TLS
+
+-- Amazon S3 exposes two endpoints:
+  • HTTP Endpoint – non encrypted
+  • HTTPS Endpoint – encryption in flight
+
+-- HTTPS is recommended
+
+-- HTTPS is mandatory for SSE-C
+
+-- Most clients would use the HTTPS endpoint by default
+
+Encrypting Data-at-Rest and Data-in-Transit
+
+To protect data in transit, AWS encourages customers to leverage a multi-level approach. All network traffic between AWS data centers is transparently encrypted at the physical layer. All traffic within a VPC and between peered VPCs across regions is transparently encrypted at the network layer when using supported Amazon EC2 instance types. At the application layer, customers have a choice about whether and how to use encryption using a protocol like Transport Layer Security (TLS). All AWS service endpoints support TLS to create a secure HTTPS connection to make API requests.
+
+
+
+
+
+
+       
+
+------------------------------------------------------ Amazon S3 – Force Encryption in Transit aws:SecureTransport
+
+
+
+
+{
+  "Version": "2012-10-17",
+  "Id": "ExamplePolicy01",
+  "Statement": [
+    {
+      "Sid": "VisualEditior0",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "*"
+      },
+      "Action": [
+"elasticfilesystem:ClientRootAccess",
+"elasticfilesystem:ClientMount",
+"elasticfilesystem:ClientWrite"
+      ],
+      "Condition": {
+        "Bool": {
+          "aws:SecureTransport": "true"
+        }
+      }
+    }
+  ]
+}
+
+
+
+-- So SecureTransport is going to be true whenever using HTTPS and false whenever you're not using an encryption,
+
+--  so, therefore, any user trying to use HTTP on your bucket is going to be blocked, but users using HTTPS may be allowed.
+
+
+
+
+
+
+
+------------------------------------------------------ What is CORS?
+
+
+
+• Cross-Origin Resource Sharing (CORS)
+
+• Origin = scheme (protocol) + host (domain) + port
+
+        • example: https://www.example.com (implied port is 443 for HTTPS, 80 for HTTP)
+
+• Web Browser based mechanism to allow requests to other origins while visiting the main origin        
+
+• Same origin: http://example.com/app1 & http://example.com/app2
+
+• Different origins: http://www.example.com & http://other.example.com
+
+• The requests won’t be fulfilled unless the other origin allows for the requests, using CORS Headers (example: Access-Control-Allow-Origin)
+
+
+• If a client makes a cross-origin request on our S3 bucket, we need to enable the correct CORS headers
+
+• It’s a popular exam question
+
+• You can allow for a specific origin or for * (all origins)
+
+
+
+
+
+
+
+------------------------------------------------------ CORS Hands ON 
+
+
+
+
+
+-- create 2 public buckets 
+
+-- create 2 html files 
+
+1 index.html 
+
+2 load.html 
+
+
+1  
+
+<html>
+<head>
+<title>AWS s3 Cors Demo </title>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.1/jquery.min.js"></script>
+</head>
+<body>
+<h1>AWS S3 CORS DEMO</h1>
+<div id="loadDiv"></div>
+</body>
+</html>
+<script type="text/javascript">
+$("#loadDiv").load("load.html");
+</script>
+
+
+2
+
+this is load from same bucket 
+
+
+
+-- upload 2 htm files and make them as public in bucket 1
+
+-- enable static web hosting 
+
+-- now try to access link u will get o/p 2 lines calling load.html 
+
+-- now create another bucket 2 (public bucket) and upload only load.html 
+
+-- make file public 
+
+-- copy object url of load.html from bucket 1
+
+
+<html>
+<head>
+<title>AWS S3 CORS DEMO </title>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.1/jquery.min.js"></script>
+</head>
+<body>
+<h1>AWS S3 CORS DEMO</h1>
+<div id="loadDiv"></div>
+</body>
+</html>
+<script type="text/javascript">
+$("#loadDiv").load("https://cors-dem2.s3.ap-south-1.amazonaws.com/load.html");
+</script>
+
+-- now upload back index.html(updated) to s3 again and make public in bucket 1
+
+-- make them public 
+
+-- now do refresh the link in browser  
+
+-- u can not able to see load.html content in the browser coz u are calling from the other bucket and u did not enable CORS so u are not getting content 
+
+-- now go and create CORS in Bucket2 
+
+-- open 2 bkt --> permissions --> CORS c.o learn more --> copy snippet from document in google 
+
+[
+    {
+        "AllowedHeaders": [
+            "*"
+        ],
+        "AllowedMethods": [
+            "PUT",
+            "POST",
+            "DELETE"
+        ],
+        "AllowedOrigins": [
+            "*"
+        ],
+        "ExposeHeaders": []
+    },
+    {
+        "AllowedHeaders": [
+            "*"
+        ],
+        "AllowedMethods": [
+            "PUT",
+            "POST",
+            "DELETE"
+        ],
+        "AllowedOrigins": [
+            "*"
+        ],
+        "ExposeHeaders": []
+    },
+    {
+        "AllowedHeaders": [],
+        "AllowedMethods": [
+            "GET"
+        ],
+        "AllowedOrigins": [
+            "*"
+        ],
+        "ExposeHeaders": []
+    }
+]
+
+
+-- now do refrsh the link u will get content of load.html 
+
+
+
+
+
+
+
+
+------------------------------------------------------ Amazon S3 – MFA Delete
+
+
+• MFA (Multi-Factor Authentication) – force users to generate a code on a device (usually a mobile phone or hardware) before doing important operations on S3
+
+• MFA will be required to:
+
+        • Permanently delete an object version
+
+        • Suspend Versioning on the bucket
+
+
+• MFA won’t be required to:
+
+        • EnableVersioning
+
+        • List deleted versions
+
+
+• To use MFA Delete, Versioning must be enabled on the bucket
+
+• Only the bucket owner (root account) can enable/disable MFA Delete
+
+
+
+
+
+
+
+------------------------------------------------------ Amazon S3 – MFA Delete Hands ON 
+
+
+
+-- create bucket and eneble version
+
+-- go to bucket --> properties --> edit versioning --> usee MFA option 
+
+-- you cannot change this through the UI of Amazon console, for some reason. So maybe someday they will allow us to enable it. But for now, what you have to do is to enable it directly using the AWS CLI.
+
+-- so to do this , u have to login through the root account --> security credential --> MFA 
+
+-- create new access key and secret key for this demo 
+
+-- go to server or cmd promt in your local machine 
+
+        aws configure --profile root-mfa-delete-demo
+
+        - give access key and secret key and configure 
+
+        - aws s3 ls --profile root-mfa-delete-demo     , able to see buckets if you have any 
+
+
+-- # enable mfa delete
+
+        aws s3api put-bucket-versioning --bucket mfa-demo-stephane --versioning-configuration Status=Enabled,MFADelete=Enabled --mfa "arn-of-mfa-device mfa-code" --profile root-mfa-delete-demo
+
+        - change ur bucket name 
+
+        - change ARN of device u will get from the IAM MFA console 
+
+        - MFA code you will get from your application directly 
+
+
+-- if I go into my bucket versioning and refresh, as we can see now, bucket versioning, it says bucket versioning is enabled as well as Multi-Factor authentication,MFA delete is enabled.
+
+
+
+
+-- so, how do we know if it worked?
+
+        - let's say I'm going to my objects and I'm going to upload objects. So let me upload, for example, a copy of the file,
+
+        - I will upload it, so this is working
+
+        - If I go back to my buckets, take that objects and delete it. Okay, we're going to delete it,
+
+        - but we have enabled versioning, so this is just going to add a delete marker. This is working as well.
+
+        - if I list my bucket versions now, okay I have two versions for my file, but now if I wanted to, for example, delete this specific version ID.
+
+        - It says, you cannot delete object because Multi-Factor authentication, MFA deletes is enabled for this bucket.(pop-up)
+
+        - So we can just go ahead and disable MFA delete, using cli / server 
+
+        -  # disable mfa delete
+
+                aws s3api put-bucket-versioning --bucket mfa-demo-stephane --versioning-configuration Status=Enabled,MFADelete=Disabled --mfa "arn-of-mfa-device mfa-code" --profile root-mfa-delete-demo
+
+        - chnage mfa code 
+
+        - now try to delete the version id , u are able to delete 
+
+        - # delete the root credentials in the IAM console!!!
+
+
+
+
+
+
+------------------------------------------------------ S3 Access Logs
+
+
+
+• For audit purpose, you may want to log all access to S3 buckets
+
+• Any request made to S3, from any account, authorized or denied, will be logged into another S3 bucket
+
+• That data can be analyzed using data analysis tools...
+
+• The target logging bucket must be in the same AWS region
+
+
+
+• The log format is at: https://docs.aws.amazon.com/AmazonS3/latest/dev/LogFormat.html
+
+
+
+
+
+------------------------------------------------------ S3 Access Logs:Warning
+
+
+
+• Do not set your logging bucket to be the monitored bucket
+
+• It will create a logging loop, and your bucket will grow exponentially
+
+
+
+
+
+
+------------------------------------------------------ S3 Access Logs Hands ON 
+
+
+-- create 2 buckets 
+
+-- open source bkt and enable server access logs and choose destination bkt 
+
+-- upload some files in source bucket  wait for some time to generate logs in destination bkt 
+
+-- after hours u will see the logs of each actions 
+
+
+
+
+
+
+
+
+------------------------------------------------------ Amazon S3 – Pre-Signed URLs
+
+
+
+• Generate pre-signed URLs using the S3 Console, AWS CLI or SDK
+
+• URL Expiration
+
+        • S3 Console – 1 min up to 720 mins (12 hours)
+
+        • AWS CLI – configure expiration with --expires-in parameter in seconds (default 3600 secs, max. 604800 secs ~ 168 hours)
+
+
+• Users given a pre-signed URL inherit the permissions of the user that generated the URL for GET / PUT
+
+
+• Examples:
+
+        • Allow only logged-in users to download a premium video from your S3 bucket
+
+        • Allow an ever-changing list of users to download files by generating URLs dynamically
+
+        • Allow temporarily a user to upload a file to a precise location in your S3 bucket
+
+ 
+
+
+
+ ------------------------------------------------------ Amazon S3 – Pre-Signed URLs Hands ON 
+
+
+
+
+
+
+-- if u want to generate Pre-signed url through cli
+
+          aws s3 presign s3://hfgvgdgs/ec2.py --expires-in 604800 --region ap-south-1 --endpoint-url https://s3.ap-south-1.amazonaws.com
+
+                                               or 
+
+          aws s3 presign s3://hfgvgdgs/ec2.py --expires-in 3600                                               
+
+
+
+-- if u want to create with python
+
+
+
+import boto3 
+
+
+def lambda_handler(event, context):
+    url = boto3.client('s3').generate_presigned_url(
+    ClientMethod='get_object',
+    Params={'Bucket': 'hfgvgdgs', 'Key': 'ec2.py'},
+    ExpiresIn = 3600)
+    
+    
+    print("the url is " + url)
+
+
+
+
+
+
+-- Downloading the File
+
+         curl -o "output-file-name" "presigned-url"
+
+
+
+-- Customizing File Name and Location
+
+         curl -o "/path/to/destination/file-name.extension" "presigned-url"
+
+          - Ensure that the directory exists before executing the command.
+
+
+
+
+
+
+------------------------------------------------------ S3 Glacier Vault Lock
+
+
+
+• Adopt a WORM (Write Once Read Many) model
+
+• Create a Vault Lock Policy
+
+• Lock the policy for future edits (can no longer be changed or deleted)
+
+• Helpful for compliance and data retention
+
+
+
+
+------------------------------------------------------ S3 Object Lock (versioning must be enabled)
+
+
+
+• Adopt a WORM (Write Once Read Many) model
+
+• Block an object version deletion for a specified amount of time
+
+• Retention mode - Compliance:
+
+        • Object versions can't be overwritten or deleted by any user, including the root user
+
+        • Objects retention modes can't be changed, and retention periods can't be shortened
+
+• Retention mode - Governance:
+
+        • Most users can't overwrite or delete an object version or alter its lock settings
+
+        • Some users have special permissions to change the retention or delete the object
+
+
+• Retention Period: protect the object for a fixed period, it can be extended
+
+• Legal Hold:
+
+        • protect the object indefinitely, independent from retention period
+
+        • can be freely placed and removed using the s3:PutObjectLegalHold IAM permission
+
+
+
+
+
+
+
+------------------------------------------------------ S3 – Access Points
+
+
+
+• Access Points simplify security management for S3 Buckets
+
+• Each Access Point has:
+
+        • its own DNS name (Internet Origin or VPC Origin)
+
+        • an access point policy (similar to bucket policy) – manage security at scale
+
+
+
+
+
+
+
+------------------------------------------------------ S3 – Access Points - VPC Origin
+
+
+
+• We can define the access point to be accessible only from within the VPC
+
+• You must create a VPC Endpoint to access the Access Point (Gateway or Interface Endpoint)
+
+• The VPC Endpoint Policy must allow access to the target bucket and Access Point
+
+
+
+
+- The following example policy statement configures a VPC endpoint to allow calls to GetObject for a bucket named awsexamplebucket1 and an access point named example-vpc-ap.
+
+
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+    {
+        "Principal": "*",
+        "Action": [
+            "s3:GetObject"
+        ],
+        "Effect": "Allow",
+        "Resource": [
+            "arn:aws:s3:::awsexamplebucket1/*",
+            "arn:aws:s3:us-west-2:123456789012:accesspoint/example-vpc-ap/object/*"
+        ]
+    }]
+}
+
+
+
+ 
+
+ ------------------------------------------------------ S3 – Access Points Hands ON check in course 
+
+
+
+
+
+
+------------------------------------------------------ S3 – Multi-Region Access Points
+
+
+• Provide a global endpoint that span S3 buckets in multiple AWS regions
+
+• Dynamically route requests to the nearest S3 bucket (lowest latency)
+
+• Bi-directional S3 bucket replication rules are created to keep data in sync across regions
+
+• Failover Controls – allows you to shift requests across S3 buckets in different AWS regions within minutes (Active-Active or Active- Passive)
+
+
+
+
+
+
+
+
+
+
+ 
