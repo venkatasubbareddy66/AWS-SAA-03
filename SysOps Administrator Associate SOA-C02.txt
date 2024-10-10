@@ -8716,6 +8716,1264 @@ def lambda_handler(event, context):
 
 
 
+======================================================== Advanced Storage Solutions ========================================================
 
 
- 
+
+
+
+
+------------------------------------------------------ AWS Snow Family
+
+
+• Highly-secure, portable devices to collect and process data at the edge, and migrate data into and out of AWS
+
+
+
+-- Data migration:
+1 Snowcone
+2 Snowball Edge
+3 Snowmobile
+
+
+
+-- Edge computing:
+1 Snowcone
+2 Snowball Edge
+
+
+
+
+                                Snowcone                      Snowball Edge
+
+Storage Capacity                8 TB HDD-14 TB SSD            80 TB-210 TB
+Migration Size                  Up to terabytes               Up to petabytes
+
+
+
+
+
+
+---------------- Data Migrations with AWS Snow Family
+
+                  Time to Transfer
+
+            100 Mbps     1Gbps      10Gbps
+10 TB       12 days      30 hours    3 hours
+100 TB      124 days     12 days     30 hours
+1PB         3 years      124 days    12 days
+
+
+
+-- Challenges:
+• Limited connectivity
+• Limited bandwidth
+• High network cost
+• Shared bandwidth (can’t maximize the line)
+• Connection stability
+
+
+
+-- AWS Snow Family: offline devices to perform data migrations
+
+-- If it takes more than a week to transfer over the network, use Snowball devices!
+
+
+
+
+
+
+------------------------------------------------------ Snow Family – Usage Process
+
+
+
+
+1. Request Snowball devices from the AWS console for delivery
+
+2. Install the snowball client / AWS OpsHub on your servers
+
+3. Connect the snowball to your servers and copy files using the client
+
+4. Ship back the device when you’re done (goes to the right AWS facility)
+
+5. Data will be loaded into an S3 bucket
+
+6. Snowball is completely wiped
+
+
+
+
+
+
+
+------------------------------------------------------ What is Edge Computing?
+
+-- Process data while it’s being created on an edge location
+
+
+• A truck on the road,a ship on the sea,a mining station underground...
+
+-- These locations may have 
+• Limited / no internet access
+• Limited / no easy access to computing power
+
+
+--- We setup a Snowball Edge / Snowcone device to do edge computing
+
+-- Use cases of Edge Computing:
+• Preprocess data
+• Machine learning at the edge 
+• Transcoding media streams
+
+-- Eventually (if need be) we can ship back the device to AWS (for transferring data for example)
+
+
+
+• We setup a Snowball Edge / Snowcone device to do edge computing
+
+        • Snowcone: 2 CPUs, 4 GB of memory, wired or wireless access
+
+        • Snowball Edge Compute Optimized (dedicated for that use case) & Storage Optimized
+
+        • Run EC2 Instances or Lambda functions at the edge
+
+
+
+
+
+------------------------------------------------------   1 Snowball Edge (for data transfers)
+
+
+
+
+
+-- The AWS Snowball service uses physical storage devices to transfer large amounts of data between Amazon Simple Storage Service (Amazon S3) and client's onsite data storage location at faster-than-internet speeds. 
+
+-- Snowball provides powerful interfaces that you can use to create jobs, track data, and track the status of your jobs through to completion. 
+
+-- AWS recommends snowball only if you want to transfer greater than 10 TB of data between your on-premises data centers and Amazon S3.
+
+-- Physical data transport solution : moveTBs or PBs of data in or out of AWS
+
+-- Alternative to moving data over the network (and paying network fees)
+
+-- Pay per data transfer job
+
+-- Provide block storage and Amazon S3-compatible object storage
+
+-- Snowball Edge Storage Optimized
+   • 80 TB of HDD capacity for block volume and S3 compatible object storage
+
+Migration Size : Up to petabytes, offline
+
+-- Snowball Edge Compute Optimized
+   • 42 TB of HDD or 28TB NVMe capacity for block volume and S3 compatible object storage
+
+-- Usecases:large data cloud migrations,DC decommission,disaster recovery
+
+-- no pre installation of data sync
+
+
+
+
+
+------------------------------------------------------  2 AWS Snowcone & Snowcone SSD
+
+
+
+
+-- Small, portable computing, anywhere, rugged & secure, withstands harsh environments
+
+-- Light (4.5 pounds, 2.1 kg)
+
+-- Device used for edge computing, storage, and data transfer
+
+-- Snowcone – 8 TB of HDD Storage
+
+-- Snowcone SSD – 14 TB of SSD Storage
+
+-- Use Snowcone where Snowball does not fit (space- constrained environment)
+
+-- Must provide your own battery / cables
+
+-- Can be sent back to AWS offline, or connect it to internet and use AWS DataSync to send data
+
+-- Migration Size : Up to 24 TB, online and offline
+
+
+
+
+  ------------------------------------------------------ 3 AWS Snowmobile
+
+
+
+
+-- Transfer exabytes of data (1 EB = 1,000 PB = 1,000,000 TBs)
+
+-- Each Snowmobile has 100 PB of capacity (use multiple in parallel)
+
+-- High security: temperature controlled, GPS, 24/7 video surveillance
+
+-- Better than Snowball if you transfer more than 10 PB
+
+-- Migration Size : Up to exabytes, offline
+
+-- no pre installation of data sync
+
+-- AWS Snowmobile is an Exabyte-scale data transfer service used to move extremely large amounts of data to AWS. You can transfer up to 100PB per Snowmobile, a 45-foot long ruggedized shipping container, pulled by a semi-trailer truck. 
+
+-- Snowmobile makes it easy to move massive volumes of data to the cloud, including video libraries, image repositories, or even a complete data center migration. 
+
+-- Transferring data with Snowmobile is more secure, fast, and cost-effective. AWS recommends using Snowmobile to migrate large datasets of 10PB or more in a single location.
+
+-- For datasets less than 10PB or distributed in multiple locations, you should use Snowball.
+
+
+
+
+
+------------------------------------------------------ Amazon FSx – Overview
+
+
+• Launch 3rd party high-performance file systems on AWS
+
+• Fully managed service
+
+        FSx for Lustre
+
+        FSx for Windows File Server
+
+        FSx for NetApp ONTAP
+
+        FSx for OpenZFS
+
+
+
+
+
+
+
+---------------- 1 Amazon FSx for Lustre
+
+
+
+• Lustre is a type of parallel distributed file system, for large-scale computing
+
+• The name Lustre is derived from “Linux” and “cluster
+
+• Machine Learning, High Performance Computing (HPC)
+
+• Video Processing, Financial Modeling, Electronic Design Automation
+
+• Scales up to 100s GB/s, millions of IOPS, sub-ms latencies
+
+• Storage Options:
+     • SSD – low-latency, IOPS intensive workloads, small & random file operations
+     • HDD – throughput-intensive workloads, large & sequential file operations
+
+
+• Seamless integration with S3 
+     • Can “read S3” as a file system (through FSx)
+     • Can write the output of the computations back to S3 (through FSx)
+
+
+• Can be used from on-premises servers (VPN or Direct Connect)
+
+
+
+----- FSx Lustre - File System Deployment Options
+
+
+1 • Scratch File System
+     • Temporary storage
+     • Data is not replicated (doesn’t persist if file server fails)
+     • High burst (6x faster, 200MBps per TiB)
+     • Usage: short-term processing, optimize costs
+
+
+2 • Persistent File System
+
+     • Long-term storage
+     • Data is replicated within same AZ
+     • Replace failed files within minutes
+     • Usage: long-term processing, sensitive data
+
+
+
+
+
+------------------- 2 Amazon FSx for Windows (File Server)
+
+• FSx for Windows is a fully managed Windows file system share drive
+
+• Suppor ts SMB protocol & Windows NTFS
+
+• Microsoft ActiveDirectory integration, ACLs, userquotas
+
+• Can be mounted on Linux EC2 instances
+
+• Supports Microsoft's Distributed File System (DFS) Namespaces (group files across multiple FS)
+
+• Scale up to 10s of GB/s, millions of IOPS, 100s PB of data
+
+• Storage Options:
+    • SSD – latency sensitive workloads (databases, media processing, data analytics, ...)
+    • HDD – broad spectrum of workloads (home directory, CMS, ...)
+
+• Can be accessed from your on-premises infrastructure (VPN or Direct Connect)
+
+• Can be configured to be Multi-AZ (high availability)
+
+• Data is backed-up daily to S3
+
+
+
+--------------------- 3 Amazon FSx for NetApp ONTAP
+
+• Managed NetApp ONTAP on AWS
+
+• File System compatible with NFS, SMB, iSCSI protocol
+
+• Move workloads running on ONTAP or NAS to AWS
+
+• Works with:
+      • Linux
+      • Windows
+      • MacOS
+      • VMware Cloud on AWS
+      • Amazon Workspaces & AppStream 2.0
+      • Amazon EC2, ECS and EKS
+
+
+• Storage shrinks or grows automatically
+
+• Snapshots,replication,low-cost,compression and data de-duplication
+
+• Point-in-time instantaneous cloning (helpful for testing new workloads)
+
+
+----- Scheduled replication using NetApp SnapMirror
+
+-- You can use NetApp SnapMirror to schedule periodic replication of your FSx for ONTAP file system to or from a second file system. This capability is available for both in-Region and cross-Region deployments.
+
+-- NetApp SnapMirror replicates data at high speeds, so you get high data availability and fast data replication across ONTAP systems, whether you're replicating between two Amazon FSx file systems in AWS, or from on-premises to AWS.
+
+-- Replication can be scheduled as frequently as every 5 minutes, although intervals should be carefully chosen based on RPOs (Recovery Point Objectives), RTOs (Recovery Time Objectives), and performance considerations.
+
+-- There are two types of SnapMirror replication: Volume-level SnapMirror and SVM Disaster Recovery (SVMDR). Only volume-level SnapMirror replication is supported by FSx for ONTAP.
+
+
+
+
+----------------------- 4 Amazon FSx for OpenZFS
+
+• Managed OpenZFS file system on AWS
+
+• File System compatible with NFS (v3, v4, v4.1, v4.2)
+
+• Move workloads running on ZFS to AWS
+
+• Works with:
+      • Linux
+      • Windows
+      • MacOS
+      • VMwareCloudonAWS
+      • AmazonWorkspaces&AppStream2.0 
+      • AmazonEC2, ECS and EKS
+
+
+• Up to 1,000,000 IOPS with < 0.5ms latency
+
+• Snapshots, compression and low-cost
+
+• Point-in-time instantaneous cloning (helpful for testing new workloads)
+
+
+
+
+
+
+
+
+
+
+------------------------------------------------------ FSx for SysOps
+
+
+
+• FSx for Windows – Single-AZ
+
+        • Automatically replicates data within an AZ
+
+        • Two generations: Single-AZ 1 (SSD), Single-AZ 2 (SSD & HDD)
+
+
+
+• FSx for Windows – Multi-AZ
+
+        • Automatically replicates data across AZs (synchronous)
+
+        • Standby file server in a different AZ (automatic failover)
+
+
+
+
+
+
+
+
+------------------------------------------------------ Hybrid Cloud for Storage
+
+
+
+• AWS is pushing for ”hybrid cloud”
+
+        • Part of your infrastructure is on the cloud
+
+        • Part of your infrastructure is on-premises
+
+
+• This can be due to
+
+        • Long cloud migrations
+
+        • Security requirements
+
+        • Compliance requirements
+
+        • IT strategy
+
+
+• S3 is a proprietary storage technology (unlike EFS / NFS), so how do you expose the S3 data on-premises?
+
+• AWS Storage Gateway!
+
+
+
+
+
+------------------------------------------------------ AWS Storage Cloud Native Options
+
+
+-- Block
+
+        - Amazon EBS
+
+        - EC2 Instance Store
+
+-- File        
+
+        - Amazon EFS
+
+        - Amazon FSx
+
+-- Object
+
+        - Amazon S3
+
+        - Amazon Glacier
+
+
+
+
+
+------------------------------------------------------ AWS Storage Gateway
+
+
+- AWS Storage Gateway stores volume, snapshot, and tape data in the AWS region in which the gateway is activated
+
+
+-- it works as hybrid cloud service 
+
+-- the data that u have in S3, ebs,fsx,glacier  move these data into the on-premises through the "storage gateway", it it support only "S3, ebs,fsx,glacier" 
+
+-- Storage Gateway provides a standard set of storage protocols such as iSCSI(Internet Small Computer Systems Interface ), SMB, and NFS, which allow you to use AWS storage without rewriting your existing applications.
+
+-- ur lap is also called on-premises 
+
+-- it is not possible to mount storage service(s3,efs,glacier,FSx) to ur on-premises but by use of storage gateway u can do this 
+
+
+
+
+• Bridge between on-premises data and cloud data
+
+• Use cases:
+
+        • disaster recovery
+
+        • backup & restore
+
+        • tiered storage
+
+        • on-premises cache & low-latency files access
+
+
+• Types of Storage Gateway:
+
+        • S3 File Gateway
+
+        • FSx File Gateway
+
+        • Volume Gateway
+
+        • Tape Gateway
+
+
+
+
+
+------------------------------------------------------ Amazon S3 File Gateway
+
+
+• Configured S3 buckets are accessible using the NFS and SMB protocol
+
+• Most recently used data is cached in the file gateway
+
+• Supports S3 Standard,S3 StandardIA,S3 OneZoneA,S3 IntelligentTiering
+
+• Transition to S3 Glacier using a Lifecycle Policy
+
+• Bucket access using IAM roles for each File Gateway
+
+• SMB Protocol has integration with Active Directory (AD) for user authentication
+
+
+
+
+Application Server <-------(NFS or SMB)---->s3 filegateway <------(HTTPS)------> (AWS cloud )s3 storage class ----> (lifecycle policy) --> S3 glacier
+
+
+
+
+
+
+------------------------------------------------------ Amazon FSx File Gateway
+
+
+
+• Native access to Amazon FSx for Windows File Server
+
+• Local cache for frequently accessed data
+
+• Windows native compatibility (SMB, NTFS, Active Directory...)
+
+• Useful for group file shares and home directories
+
+
+
+
+
+------------------------------------------------------ Volume Gateway
+
+
+
+• Block storage using iSCSI protocol backed by S3
+
+• Backed by EBS snapshots which can help restore on-premises volumes!
+
+• Cached volumes: low latency access to most recent data
+
+• Stored volumes: entire dataset is on premise, scheduled backups to S3
+
+
+
+
+
+
+------------------------------------------------------ Tape Gateway
+
+
+
+• Some companies have backup processes using physical tapes (!)
+
+• With Tape Gateway, companies use the same processes but, in the cloud
+
+• VirtualTape Library (VTL) backed by Amazon S3 and Glacier
+
+• Back up data using existing tape-based processes (and iSCSI interface)
+
+• Works with leading backup software vendors
+
+
+
+
+
+
+
+------------------------------------------------------ Storage Gateway – Hardware appliance
+
+
+
+
+-- as you can see in all these diagrams from before, the gateway has to be installed on your corporate data center, it has to run within your corporate data center. But sometimes you do not have virtual servers to run this additional gateway.
+
+-- So an option for you is to leverage hardware from AWS. So it's called Storage Gateway Hardware Appliance.
+
+
+• Using Storage Gateway means you need on-premises virtualization
+
+• Otherwise, you can use a Storage Gateway Hardware Appliance
+
+• You can buy it on amazon.com
+
+• Works with File Gateway,Volume Gateway,Tape Gateway
+
+• Has the required CPU, memory, network, SSD cache resources
+
+• Helpful for daily NFS backups in small data centers
+
+
+
+
+
+
+------------------------------------------------------ Storage Gateway – Hands ON 
+
+
+
+
+
+-- we do not have on-premises ,so consider ur lap as on-premises and VM as Ec2 and install Storage gateway appliance(agent) on on-premises
+
+-- this is chargable 
+
+-- go to soage gateway and create s3 file gateway 
+
+-- Platform options = ec2 
+
+-- customize ur settings 
+
+-- c.o launch instance , automatically AMI is take here 
+
+-- select Instance type is = m5.xlarge
+
+-- add additional volume of 150 GiB of gp2 
+
+-- c.o checkbox and nxt 
+
+-- copy IP of instance and give in nxt step as a connection 
+
+-- now on-premises and file gate way now connected 
+
+-- activate and configure 
+
+-- now ceate s3 private bucket 
+
+-- now file share we have to create , if u open gateway u will have options like what to creat now we have files so create file share 
+
+-- all the data come to the file share and this data stored in AWS S3 
+
+-- c.o customize configuration , in step 3 u can give accesss client to all (0.0.0.0/0)
+
+-- open file share u will find "mount point"
+
+-- launch t2.micro instance for testing 
+
+-- connect nstance 
+
+-- sudo -s 
+
+-- yum install -y nfs-utils
+
+-- mkdir filesystem
+
+-- go to file share and copy mount point for linux 
+
+-- mount -t nfs -o nolock,hard 172.31.1.243:/store-gate [MountPath]/
+
+-- cd foledername
+
+-- now indirectly iam in S3 only if i put any data and stored this data in S3 
+
+-- do df -h n see s3 bucket is there so u r doing mount 
+
+-- create some files 
+
+-- check in S3 ur file will store in S3 automatically 
+
+-- the file u created all go through Storage gateway appliance(agent) --> storefile gateway--> S3 
+
+
+-- delete all resource 
+
+-- delete additional volume also it has 150 GIB 
+
+
+
+
+
+
+------------------------------------------------------ Storage Gateway – SysOps
+
+
+
+• File Gateway is POSIX compliant (Linux file system)
+
+        • POSIX metadata ownership, permissions, and timestamps stored in the object’s metadata in S3
+
+• Reboot Storage Gateway VM: (e.g., maintenance)
+
+        • File Gateway: simply restart the Storage GatewayVM
+
+        • Volume and Tape Gateway:
+
+                • Stop Storage Gateway Service (AWS Console,VM local Console, Storage Gateway API)
+
+                • Reboot the Storage GatewayVM
+
+                • Start Storage Gateway Service (AWS Console,VM local Console, Storage Gateway API)
+
+
+
+
+
+------------------------------------------------------ Storage Gateway – Activations
+
+
+• Two ways to get Activation Key:
+
+        • Using the Gateway VMCLI
+
+        • Make a web request to the GatewayVM (Port 80)
+
+
+• Troubleshooting Activation Failures:
+
+        • Make sure the GatewayVM has port 80 opened
+
+        • Check that the Gateway VM has the correct time and synchronizing its time automatically to a Network Time Protocol (NTP) server
+
+
+
+
+
+
+------------------------------------------------------ Storage Gateway – Volume Gateway Cache
+
+
+• Cached mode: only the most recent data is stored
+
+• Looking at cache efficiency
+
+        • Look at the CacheHitPercent metric (you want it to be high)
+
+        • Look at the CachePercentUsed (you don’t want it to be too high)
+
+
+• Create a larger cache disk
+
+        • Use the cached volume to clone a new volume of a larger size
+
+        • Select the new disk as the cached volume
+
+
+
+
+
+
+
+
+
+========================================================  Amazon CloudFront  ========================================================
+
+
+
+
+
+
+• Content Delivery Network (CDN)
+
+• Improves read performance, content is cached at the edge
+
+• Improves users experience
+
+• 216 Point of Presence globally (edge locations)
+
+• DDoS protection (because worldwide), integration with Shield, AWS Web Application Firewall
+
+
+-- it is global servie 
+
+-- Amazon CloudFront is a fast content delivery network (CDN) service that securely delivers data, videos, applications, and APIs to customers globally with low latency, high transfer speeds, all within a developer-friendly environment.
+
+-- Amazon CloudFront points of presence (POPs) (edge locations) make sure that popular content can be served quickly to your viewers.
+
+-- CloudFront also has regional edge caches that bring more of your content closer to your viewers, even when the content is not popular enough to stay at a POP, to help improve performance for that content.
+
+-- Regional edge caches help with all types of content, particularly content that tends to become less popular over time. Examples include user-generated content, such as video, photos, or artwork; e-commerce assets such as product photos and videos; and news and event-related content that might suddenly find new popularity.
+
+-- we can put it in front of our Auto Scaling group and leverage a Global Caching feature that will help us distribute the content reliably with dramatically reduced costs (the ASG won't need to scale as much).
+
+--  here u have s3 bucket which have static website in it 
+
+-- if ur user in U.S , the user connect to our website through edge Location not directly to our website , if he cnnect direct from our region the latency will be high 
+
+-- we need to setup CloudFront it create distributions and origin is = S3 bucket 
+
+-- from edge Location to website the data is stored through the CDN , it is super speed managed by the AWS Network
+
+-- once u create CF , it give nasty URL 
+
+
+
+
+
+
+
+-------------------------- Amazon CloudFront capabilities on routing, security, and high availability.
+
+
+
+
+
+1 Amazon CloudFront High availability : 
+
+    - Use an origin group with primary and secondary origins to configure Amazon CloudFront for high-availability and failover
+
+EXP : 
+
+-- You can set up Amazon CloudFront with origin failover for scenarios that require high availability. To get started, you create an origin group with two origins: a primary and a secondary. If the primary origin is unavailable or returns specific HTTP response status codes that indicate a failure, CloudFront automatically switches to the secondary origin.
+
+-- To set up origin failover, you must have a distribution with at least two origins. Next, you create an origin group for your distribution that includes two origins, setting one as the primary. Finally, you create or update a cache behavior to use the origin group.
+
+
+2 Amazon CloudFront Routing : 
+
+   - Amazon CloudFront can route to multiple origins based on the content type
+
+EXP : 
+
+-- You can configure a single Amazon CloudFront web distribution to serve different types of requests from multiple origins.
+
+-- For example, if you are building a website that serves static content from an Amazon Simple Storage Service (Amazon S3) bucket and dynamic content from a load balancer, you can serve both types of content from a Amazon CloudFront web distribution.
+
+
+3 Amazon CloudFront security :
+
+  - Use field level encryption in Amazon CloudFront to protect sensitive data for specific content
+
+EXP :
+
+-- Field-level encryption allows you to enable your users to securely upload sensitive information to your web servers. The sensitive information provided by your users is encrypted at the edge, close to the user, and remains encrypted throughout your entire application stack.
+
+-- This encryption ensures that only applications that need the data—and have the credentials to decrypt it—are able to do so.
+
+-- To use field-level encryption, when you configure your Amazon CloudFront distribution, specify the set of fields in POST requests that you want to be encrypted, and the public key to use to encrypt them.
+
+-- You can encrypt up to 10 data fields in a request. (You can’t encrypt all of the data in a request with field-level encryption; you must specify individual fields to encrypt.)
+
+
+
+
+
+
+
+
+------------------------------------------------------ CloudFront – Origins
+
+
+
+
+1 S3 bucket
+
+  • For distributing files and caching them at the edge
+
+  • Enhanced security with CloudFront Origin Access Control (OAC) 
+
+  • OAC is replacing Origin Access Identity(OAI)
+
+  • CloudFront can be used as an ingress (to upload files to S3)
+
+
+
+2 Custom Origin (HTTP)
+
+  • Application Load Balancer
+
+  • EC2 instance
+
+  • S3 website (must first enable the bucket as a static S3 website)
+
+  • Any HTTP backend you want
+
+
+
+
+
+
+------------------------------------------------------ CloudFront hands ON 
+
+
+
+
+-- open S3 and create private Bucket 
+
+-- as u create private bucket , no one can access ur url through the S3 
+
+-- Only access through by Cloud-Front directly coz, it is privtae bucket and we did not enable Static hosting also 
+
+-- go to CF in console 
+
+-- create ditrubtion on CF 
+
+-- Origina Domain = load balancer / S3 -- these are the places wher u can host ur applications 
+
+-- OAC --> Create control settings --> do not change any n create 
+
+-- it is created access from S3 
+
+-- Compress objects automatically : CloudFront can automatically compress certain files that it receives from the origin before delivering them to the viewer. CloudFront compresses files only when the viewer supports it, as specified in the Accept-Encoding header in the viewer request.
+
+
+-- Default root object - optional = index.html  -----> must and should u have to give this , otherwise u won’t get o/p 
+
+
+----- once u create distrubtion , the S3 bucket policy wil gwt generated copy that policy and paste in bucket policy 
+
+-- now ur appn is getting deployed all over the world 
+
+-- through the CF url customers will able to connect ur webiste through the edge locations 
+
+-- once u change the content of ur website and do uploud again n if u do refresh u won't get new content 
+
+-- u have too do "invalidate the Cache" 
+
+-- go to CF and create invalidation for /index.html , it will get latest file from the S3 and give latest content to customers 
+
+-- By default, CloudFront caches files in edge locations for 24 hours. 
+
+
+
+
+
+
+
+-----------------------------------  CloudFront vs S3 Cross Region Replication
+
+
+CloudFront:
+
+  - Global Edge network
+  - Files are cached for a TTL (maybe a day)
+  - Great for static content that must be available everywhere
+
+S3 Cross Region Replication:
+
+  - Must be setup for each region you want replication to happen
+  - Files are updated in near real-time
+  - Read only 
+  - Great for dynamic content that needs to be available at low-latency in few regions
+
+
+
+
+
+
+----------------------------------- CloudFront – ALB or EC2 as an origin
+
+
+
+
+-- EC2 : EC2 Instances Must be Public
+
+user <--> edge locatin <--> Allow Public IP of Edge Locations <--> EC2 Instances Must be Public
+
+-- load balancer
+
+user <--> edge locatin(it has public IP's) <--> Allow Public IP of Edge Locations <--> Application Load Balancer Must be Public <-->Allow Security Group of Load Balance<-->EC2 Instances
+Can be Private .
+
+
+
+
+
+
+------------------------------------------------------ CloudFront Geo Restriction
+
+
+
+• You can restrict who can access your distribution
+
+   • Allowlist: Allow your users to access your content only if they're in one of the countries on a list of approved countries.
+   • Blocklist: Prevent your users from accessing your content if they're in one of the countries on a list of banned countries.
+
+• The “country” is determined using a 3rd party Geo-IP database
+
+• Use case: Copyright Laws to control access to content
+
+
+
+
+------------------------------------------------------ CloudFront Access Logs
+
+
+
+• Logs every request made to CloudFront into a logging S3 bucket
+
+
+
+------------------------------------------------------ CloudFront Reports
+
+
+• It’s possible to generate reports on:
+
+        • Cache Statistics Report
+
+        • Popular Objects Report
+
+        • Top Referrers Report
+
+        • Usage Reports
+
+        • Viewers Report
+
+
+
+• These reports are based on the data from the Access Logs.
+
+
+-- you don't need to enable Access Logs to be sent into S3 to have these reports being generated.
+
+
+
+
+
+
+------------------------------------------------------ CloudFront troubleshooting
+
+
+• CloudFront caches HTTP 4xx and 5xx status codes returned by S3 ( or the origin server)
+
+• 4xx error code indicates that user doesn’t have access to the underlying bucket (403) or the object user is requesting is not found (404)
+
+• 5xx error codes indicates Gateway issues
+
+
+
+
+
+------------------------------------------------------ CloudFront Caching
+
+
+
+• Cache based on
+
+        • Headers
+
+        • Session Cookies
+
+        • Query String Parameters
+
+
+• The cache lives at each CloudFront Edge Location
+
+• You want to maximize the cache hit rate to minimize requests on the origin
+
+• Control the TTL (0 seconds to 1 year), can be set by the origin using the Cache- Control header, Expires header...
+
+• You can invalidate part of the cache using the CreateInvalidation API
+
+
+
+
+
+
+------------------------------------------------------ CloudFront Cache Behaviour for Headers
+
+
+-- so when the client passes an HTTP request to your CloudFront distribution, it passes headers with it.
+
+
+
+GET/image/cat.jpg HTTP/1.1
+Host: pics.mywebsite.com
+User-Agent: Mozilla/5.0 (Mac OS X 10_15_2....) Date: Tue, 28 Jan 2020 17:01:57 GMT Authorization: SAPISIDHASH fdd00ecee39fe.... Keep-Alive: 300
+Accept-Ranges: bytes
+
+
+
+-- So you can configure CloudFront in three ways,
+
+
+1 Forward all headers to your origin 
+
+        • => no caching, every request to origin ,so effectively you're not using CloudFront for caching if you forward all headers.
+
+        • =>TTL must be set to 0 , because you're not doing any caching in CloudFront.
+
+
+2 Forward a whitelist of headers
+
+        • caching based on values in all the specified headers
+
+        - If you forward a whitelist of headers, that means you only forward some headers as part of this request, then the caching is going to be based on all the values in the specified headers.
+
+
+
+
+3 (None) == Forward only the default headers
+
+        • no caching based on request headers
+
+        • Best caching performance
+
+
+
+
+
+
+
+
+------------------------------------------------------ CloudFront Origin Headers vs Cache Behavior
+
+
+
+• Origin Custom Headers:
+
+        • Origin-level setting
+
+        • Set a constant header / header value for all requests to origin
+
+
+• Behavior setting:
+
+        • Cache-related settings
+
+        • Contains the whitelist of headers to forward
+
+
+
+
+
+------------------------------------------------------ CloudFront Caching TTL
+
+
+• “Cache-Control: max-age” is preferred to “Expires” header
+
+• If the origin always sends back the header Cache-Control , then you can set the TTL to be controlled only by that header
+
+• In case you want to set min/max boundaries, you choose “customize” for the Object Caching setting
+
+• In case the Cache-Control header is missing, it will default to “default value”
+
+
+
+
+
+------------------------------------------------------ CloudFront Cache Behaviour for Cookies
+
+
+Cookies is a specific request header
+
+
+
+
+GET/image/cat.jpg HTTP/1.1
+...
+Cookie: username=John Doe; location=uk;
+lang = eng; user_id = 12342 ...
+
+
+
+
+
+1       Default: do not process the cookies 
+                
+                • Caching is not based on cookies
+                • Cookies are not forwarded
+
+
+2    Forward a whitelist of cookies
+
+        • caching based on values in all the specified cookies
+
+
+3    Forward all cookies
+
+        • Worst caching performance
+
+
+
+
+
+
+------------------------------------------------------ CloudFront Cache Behaviour for Query Strings
+
+
+
+GET /image/cat.jpg?border=red&size=large HTTP/1.1
+
+
+
+1  Default: do not process the query strings
+
+        • Caching is not based on query strings
+
+        • Parameters are not forwarded
+
+
+2  Forward a whitelist of query strings
+
+        • Caching based on the parameter whitelist
+
+3  Forward all query strings
+
+        • Caching based on all parameters
+
+
+
+
+
+
+
+
+------------------------------------------------------ CloudFront – Increasing Cache Ratio
+
+
+• Monitor the CloudWatch metric CacheHitRate
+
+• Specify how long to cache your objects: Cache-Control max-age header
+
+• Specify none or the minimally required headers
+
+• Specify none or the minimally required cookies
+
+• Specify none or the minimally required query string parameters
+
+• Separate static and dynamic distributions (two origins)
+
+
+
+
+
+
+------------------------------------------------------ CloudFront with ALB sticky sessions
+
+
+
+-- how to use CloudFront with your ALB when you have enabled sticky sessions.
+
+-- So, say you have an Application Load Balancer and a Target Group, and you've enabled sticky sessions so that you want the same request from the same user to go to the same backend EC2 instances.
+
+-- So, you're set up CloudFront with an Edge Location and you want the two to work together.
+
+        - So, the solution is
+
+        • Must forward / whitelist the cookie that controls the session affinity to the origin to allow the session affinity to work
+
+        • Set a TTL to a value lesser than when the authentication cookie expires
+
+
+
+
+
+
+
+
+
+======================================================== Databases in AWS for SysOps ========================================================
+
+
+
+

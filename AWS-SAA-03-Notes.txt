@@ -9140,6 +9140,9 @@ services/
 
 ================================AWS Transfer Family=========================
 
+
+
+
 -- Fully managed Service for file transer securely 
 
 -- A fully-managed service for file transfers into and out of Amazon S3 or Amazon EFS using the FTP protocol
@@ -9168,6 +9171,9 @@ services/
 -- in FileZilla u can login as with user name 
 
 -- once u create server it will give u endpoint 
+
+
+
 
 -------------------------- practical
 
@@ -9271,6 +9277,7 @@ eg :
 • on-premises cache & low-latency files access
 
 -- Types of Storage Gateway:
+
 • S3 File Gateway
 • FSx File Gateway
 • Volume Gateway
@@ -12204,6 +12211,10 @@ aws cognito-identity get-credentials-for-identity --identity-id us-east-1:456a12
 
 -------------------------- Amazon CloudFront capabilities on routing, security, and high availability.
 
+
+
+
+
 1 Amazon CloudFront High availability : 
 
     - Use an origin group with primary and secondary origins to configure Amazon CloudFront for high-availability and failover
@@ -12301,15 +12312,17 @@ To restrict access to content that you serve from Amazon S3 buckets, you need to
 -----------------------------------  CloudFront vs S3 Cross Region Replication
 
 CloudFront:
-- Global Edge network
-- Files are cached for a TTL (maybe a day)
-- Great for static content that must be available everywhere
+
+  - Global Edge network
+  - Files are cached for a TTL (maybe a day)
+  - Great for static content that must be available everywhere
 
 S3 Cross Region Replication:
-- Must be setup for each region you want replication to happen
-- Files are updated in near real-time
-- Read only 
-- Great for dynamic content that needs to be available at low-latency in few regions
+
+  - Must be setup for each region you want replication to happen
+  - Files are updated in near real-time
+  - Read only 
+  - Great for dynamic content that needs to be available at low-latency in few regions
 
 
 
