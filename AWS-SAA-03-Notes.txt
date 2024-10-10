@@ -9568,10 +9568,18 @@ C : 6 hrs have passed since last modification
 
 ------------------------------------------------ RDS Read Replicas
 
--- Up to 15 Read Replicas
+
+
+-- Up to 15 Read Replicas Within AZ, Cross AZ or Cross Region 
+
 -- Replication is ASYNC, so reads are eventually consistent
+
 -- Replicas can be promoted to their own DB
+
 -- Applications must update the connection string leverage ead replicas 
+
+
+
 
 ----- RDS Read Replicas – Use Cases
 
@@ -9581,6 +9589,9 @@ C : 6 hrs have passed since last modification
 --  The production application is unaffected
 --  IMP : Read replicas are used for SELECT (=read) only kind of statements (not INSERT, UPDATE, DELETE)
 
+
+
+
 ------ RDS Read Replicas – Network Cost
 
 -- In AWS there’s a network cost when data goes from one AZ to another
@@ -9589,6 +9600,9 @@ C : 6 hrs have passed since last modification
 
 
 -----------------------------------------------------MUlTI-AZ / Cluster (RDS Multi AZ (Disaster Recovery))
+
+
+
 
 -- Mutli AZ is used for the High availability 
 
@@ -9694,6 +9708,8 @@ EXP :
 
 
 --------------------------------------RDS – From Single-AZ to Multi-AZ
+
+
 
 -- Zero downtime operation (no need to stop the DB)
 
@@ -9803,6 +9819,8 @@ workflow = Master Db instance --> snapshot is taken --> restore from the snapsho
 
 
 ----------------------------------------------------------------- Amazon Aurora
+
+
 
 -- Aurora is a proprietary technology from AWS (not open sourced)
 

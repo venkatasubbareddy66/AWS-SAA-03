@@ -9977,3 +9977,367 @@ GET /image/cat.jpg?border=red&size=large HTTP/1.1
 
 
 
+• RDS stands for Relational Database Service
+
+• It’s a managed DB service for DB use SQL as a query language.
+
+• It allows you to create databases in the cloud that are managed by AWS
+
+        • Postgres
+        • MySQL
+        • MariaDB
+        • Oracle
+        • Microsoft SQL Server
+        • IBM DB2
+        • Aurora (AWS Proprietary database)
+
+
+
+
+------------------------------------------------------ Advantages over using RDS VS deploy database on ec2 
+
+-- RDS is managed Service
+-- Automated provisioning , Os patching 
+-- continuously backups and restore to specific timestamp (Point in Time Restore)!
+-- monitoring dashboards
+-- read replicas for improving read performance 
+-- Multi AZ setup for disaster recovery
+-- storage backed by EBS(gp2 or io1)
+
+-- BUT you can’t SSH into your instances
+
+
+
+
+
+
+------------------------------------------------------ RDS - storage Auto Scaling 
+
+
+-- helps u to increase storage on ur RDS DB instance dynamically
+
+-- when RDS detects u are running out of free database storage , it scales automatically 
+
+IMP : u have to set Maximum storage threshold 
+
+-- automatically modify if storage is 
+
+A : free storage is < 10% of allocated storage
+B : low storage atleast before 5 min 
+C : 6 hrs have passed since last modification 
+
+-- Useful for applications with unpredictable workloads
+
+-- Supports all RDS database engines
+
+
+
+
+
+
+
+------------------------------------------------------ RDS Read Replicas for read scalability
+
+
+• Up to 15 Read Replicas  Within AZ, Cross AZ or Cross Region 
+
+• Replication is ASYNC, so reads are eventually consistent ,between the main RDS database instance and the two Read Replicas.
+
+• Replicas can be promoted to their own DB
+
+• Applications must update the connection string leverage ead replicas
+
+
+
+
+------------------------------------------------------ RDS Read Replicas – Use Cases
+
+
+
+• You have a production database that is taking on normal load
+
+• You want to run a reporting application to run some analytics
+
+• You create a Read Replica to run the new workload there
+
+• The production application is unaffected
+
+• Read replicas are used for SELECT (=read) only kind of statements (not INSERT, UPDATE, DELETE)
+
+
+
+
+
+------------------------------------------------------ RDS Read Replicas – Network Cost
+
+
+
+• In AWS there’s a network cost when data goes from one AZ to another
+
+• For RDS Read Replicas within the same region, you don’t pay that fee
+
+
+
+
+
+
+------------------------------------------------------ RDS Multi AZ (Disaster Recovery)
+
+
+• SYNC replication
+
+• One DNS name – automatic app failover to standby
+
+• Increase availability
+
+• Failover in case of loss of AZ, loss of network, instance or storage failure
+
+• No manual intervention in apps
+
+• Not used for scaling
+
+• Note:The Read Replicas be setup as Multi AZ for Disaster Recovery (DR)
+
+
+
+
+IMP NOTE : The Read Replicas be setup as Multi AZ for Disaster Recovery (DR)
+
+-- u need to pay Double amount when u have enabled Multi-AZ 
+
+-- if something happens to ur main DB server , the failover happens here , the requests will send to backend server 
+
+-- endpoint won't change even in failover time , One DNS name – automatic app failover to standby
+
+-- DB operations will not have failover(for eg :some one delete table it wont get failover , tese are responsible by us )  , anything realted to network, servers etc will have fail over 
+
+-- RDS DB instances can be reserved 
+
+-- Amazon RDS applies operating system updates by performing maintenance on the standby, then promoting the standby to primary and finally performing maintenance on the old primary, which becomes the new standby
+
+-- Amazon RDS automatically initiates a failover to the standby, in case primary database fails for any reason
+
+
+
+
+
+
+
+------------------------------------------------------ RDS – From Single-AZ to Multi-AZ
+
+
+• Zero downtime operation (no need to stop the DB)
+
+• Just click on “modify” for the database
+
+• The following happens internally:
+
+        • A snapshot is taken
+
+        • A new DB is restored from the snapshot in a new AZ
+
+        • Synchronization is established between the two databases
+
+
+
+
+workflow = Master Db instance --> snapshot is taken --> restore from the snapshot and create new db in new AZ --> standby Db will created , both db instances are in synchronous Replication
+
+
+
+
+------------------------------------------------------ RDS Multi AZ – Failover Conditions
+
+
+
+• The primary DB instance
+
+
+        • Failed
+        • OS is undergoing software patches
+        • Unreachable due to loss of network connectivity 
+        • Modified (e.g., DB instance type changed)
+        • Busy and unresponsive
+        • Underlying storage failure
+
+
+
+
+
+
+
+
+-------------------------------------------------------------- Amazon RDS maintenance 
+
+
+
+
+-- Occasionally, AWS performs maintenance to the hardware, operating system (OS), or database engine version for a DB instance or cluster.
+
+ 1 Hardware maintenance :
+
+  -- Before Amazon RDS schedules maintenance, you receive an email notification about the scheduled maintenance windows. This includes the time of the maintenance and the Availability Zones that are affected. 
+
+  -- During hardware maintenance, Single-AZ deployments are unavailable for a few minutes. 
+
+  -- For Multi-AZ deployments with an affected Availability Zone, your deployment is unavailable for the time it takes the instance to fail over, usually about 60 seconds. 
+
+  -- If maintenance affects only the secondary Availability Zone, then there's no failover or downtime.
+
+
+2 OS maintenance
+
+  -- To postpone scheduled OS maintenance, adjust your preferred maintenance window. Or, you can choose Defer upgrade from the Actions dropdown menu in the Amazon RDS console. 
+
+  -- To minimize downtime, modify the Amazon RDS DB instance to a Multi-AZ deployment. For Multi-AZ deployments, OS maintenance applies to the secondary instance. 
+
+  -- The instance fails over, and then the primary instance updates. The downtime is during failover. 
+  
+  Note: If you upgrade to a Multi-AZ deployment, then you incur higher costs. To determine your costs, use the AWS Pricing Calculator.
+
+
+3  DB engine maintenance
+
+  -- When you upgrade your DB instance's database engine in a Multi-AZ deployment, maintenance occurs on the primary and replica instance at the same time. 
+
+  -- This is also true for non-Amazon Aurora instances in Multi-AZ deployments. Throughout the maintenance window, both the primary and secondary DB instances in the Multi-AZ deployment are unavailable. 
+
+  -- This operation causes downtime until the upgrade is complete. The duration of the downtime varies based on the size of your DB instance.
+
+    NOTE : If the instance is a read replica, then the database engine version upgrade occurs independently from the source instance. By default, maintenance occurs first on the primary instance and then on the replica. 
+
+  
+  -- Upgrades to the database engine level require downtime. Even if your RDS DB instance uses a Multi-AZ deployment, both the primary and standby DB instances upgrade at the same time.
+
+  -- This causes downtime until the upgrade completes, and the duration of the downtime varies based on the size of your DB instance. For more information, 
+
+    NOTE : If you upgrade a SQL Server DB instance in a Multi-AZ deployment, then both the primary and standby instances are upgraded.
+
+          - Amazon RDS performs rolling upgrades, so the outage is only for the duration of a failover.
+
+
+
+
+
+
+
+
+-------------------------------------------------------------- RDS PROXY 
+
+
+
+
+
+-------- Lambda by default
+
+
+        • By default, your Lambda function is launched outside your own VPC (in an AWS-owned VPC)
+
+        • Therefore, it cannot access resources in your VPC (RDS, ElastiCache, internal ELB...)
+
+
+
+-------- Lambda in VPC
+
+        • You must define the VPC ID, the Subnets and the Security Groups
+
+        • Lambda will create an ENI (Elastic Network Interface) in your subnets
+
+        • AWSLambdaVPCAccessExecutionRole
+
+
+
+
+
+-------- RDS Proxy for AWS Lambda
+
+
+        • When using Lambda functions with RDS, it opens and maintains a database connection
+
+        • This can result in a “TooManyConnections” exception
+
+        • With RDS Proxy, you no longer need code that handles cleaning up idle connections and managing connection pools
+
+        • Supports IAM authentication or DB authentication, auto-scaling
+
+        • The Lambda function must have connectivity to the Proxy (public proxy => public Lambda, private proxy => Lambda in VPC)
+
+
+
+
+
+
+
+
+-------------------------------------------------------------- DB Parameter Groups
+
+
+
+• You can configure the DB engine using Parameter Groups
+
+• Dynamic parameters are applied immediately
+
+• Static parameters are applied after instance reboot
+
+• You can modify parameter group associated with a DB (must reboot)
+
+• See documentation for list of parameters for a DB technology
+
+
+• Must-know parameter:
+
+        • PostgreSQL / SQL Server: rds.force_ssl=1 => force SSL connections
+
+        • MySQL / MariaDB: require_secure_transport=1 => force SSL connections
+
+
+
+
+
+
+
+-------------------------------------------------------------- RDS Backup vs. Snapshots
+
+
+
+                Backups                                                                 Snapshots
+
+• Backups are “continuous” and allow point in time recovery                     • Snapshots takes IO operations and can stop the database from seconds to minutes
+
+• Backups happen during maintenance windows                                     • Snapshots taken on Multi AZ DB don’t impact the master – just the standby
+
+• When you delete a DB instance, you can retain automated backups               • Snapshots are incremental after the first snapshot (which is full)
+
+• Backups have a retention period you set between 0 and 35 days                 • You can copy & share DB Snapshots across accounts 
+
+• To disable backups, set retention period to 0                                 • Manual Snapshots don’t expire
+
+                                                                                • You can take a “final snapshot” when you delete your DB
+
+
+
+
+
+
+-- Restoring from Automated Backups or DB Snapshots creates a new DB Instance
+
+
+
+
+
+
+
+-------------------------------------------------------------- RDS Snapshots Sharing
+
+
+-- u can't share backups 
+
+
+• Manual snapshots: can be shared with AWS accounts
+
+• Automated snapshots: can’t be shared, copy first
+
+• You can only share unencrypted snapshots and snapshots encrypted with a customer managed key
+
+• If you share an encrypted snapshots, you must also share any customer managed keys used to encrypt them
+
