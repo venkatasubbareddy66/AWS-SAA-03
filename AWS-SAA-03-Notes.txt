@@ -6793,6 +6793,9 @@ EPV : AWS CloudTrail cannot stream data to Amazon Kinesis. Amazon S3 buckets and
 
 =============================================================== AWS Config ===============
 
+
+
+
 -- AWS Config Record and evaluate configurations of your AWS resources
 
 -- AWS Config provides a detailed view of the resources associated with your AWS account, including how they are configured, how they are related to one another, and how the configurations and their relationships have changed over time.
@@ -9895,6 +9898,7 @@ Features
 Aurora Replicas have two main purposes. 
 
     - You can issue queries to them to scale the read operations for your application. You typically do so by connecting to the reader endpoint of the cluster. That way, Aurora can spread the load for read-only connections across as many Aurora Replicas as you have in the cluster. 
+
     - Aurora Replicas also help to increase availability. If the writer instance in a cluster becomes unavailable, Aurora automatically promotes one of the reader instances to take its place as the new writer.
 
 
@@ -9911,6 +9915,10 @@ Features
 - Automated failover                         =  No
 - Support for user-defined replication delay =  NO
 - Support for different data or schema vs. primary = Yes
+
+
+
+
 
 
 -------------------- Aurora DB Cluster
@@ -9945,6 +9953,8 @@ NOTE : Load balancing happens at the connections level , not the statement level
 
 ------------------- Aurora Replicas - Auto Scaling
 
+
+
 -- whenever too many request for the read replicas , it has more CPU usage inuse , so here the automatic scaling will  happens in aurora and add more read replicas this will bring down CPU usage , this is replcia auto scaling 
 
 
@@ -9952,6 +9962,8 @@ NOTE : Load balancing happens at the connections level , not the statement level
 
 
 --------------------------------------------Aurora Serverless
+
+
 
 -- Automated database instantiation and auto-scaling based on actual usage
 
@@ -10265,6 +10277,7 @@ AUrora and MYSql
 
 
 ------------------- ElastiCache Solution Architecture - DB Cache
+
 
 -- Applications queries ElastiCache, if not available, get from RDS and store in ElastiCache.
 

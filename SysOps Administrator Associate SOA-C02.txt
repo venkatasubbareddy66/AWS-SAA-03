@@ -10341,3 +10341,2809 @@ workflow = Master Db instance --> snapshot is taken --> restore from the snapsho
 
 • If you share an encrypted snapshots, you must also share any customer managed keys used to encrypt them
 
+
+
+
+
+
+-------------------------------------------------------------- RDS Events & Event Subscriptions
+
+
+
+• RDS keeps record of events related to:
+
+        • DB instances
+
+        • Snapshots
+
+        • Parameter groups, security groups ...
+
+
+• Example: DB state changed from pending to running
+
+
+• RDS Event Subscriptions
+
+        • Subscribe to events to be notified when an event occurs using SNS
+
+        • Specify the Event Source (instances, SGs, ...) and the Event Category (creation, failover, ...)
+
+
+• RDS delivers events to EventBridge
+
+
+
+
+
+
+
+-------------------------------------------------------------- RDS Database Log Files
+
+
+
+
+DB Instance ---> Store Logs: -----------> CW Logs ------> CW Alarm --------(Alert)------> Amazon SNS ---------(notification)-------> DB Admin
+
+                - General
+                - Audit
+                - Error
+                - Slow Query
+
+
+
+
+-- see events and subscription in rds console 
+
+
+
+
+
+
+-------------------------------------------------------------- RDS with CloudWatch
+
+
+• CloudWatch metrics associated with RDS (gathered from the hypervisor):
+
+        • DatabaseConnections
+
+        • SwapUsage
+
+        • ReadIOPS / WriteIOPS
+
+        • ReadLatency / WriteLatency
+
+        • ReadThroughPut / WriteThroughPut
+
+        • DiskQueueDepth
+
+        • FreeStorageSpace
+
+
+• Enhanced Monitoring (gathered from an agent on the DB instance)
+
+        • Useful when you need to see how different processes or threads use the CPU
+
+        • Access to over 50 new CPU, memory, file system, and disk I/O metrics
+
+
+
+
+--> rds database --> modify --> monitoring --> u will find enhnace monitoring option 
+
+
+
+
+
+
+
+
+-------------------------------------------------------------- RDS Performance Insights
+
+
+
+• Visualize your database performance and analyze any issues that affect it
+
+• With the Performance Insights dashboard, you can visualize the database load and filter the load:
+
+
+        • By Waits => find the resource that is the bottleneck (CPU, IO, lock, etc...) 
+
+        • By SQL statements => find the SQL statement that is the problem
+
+        • By Hosts => find the server that is using the most our DB
+
+        • By Users => find the user that is using the most our DB
+
+
+
+• DBLoad = the number of active sessions for the DB engine
+
+• You can view the SQL queries that are putting load on your database
+
+
+
+--  Performance Insights is not supported right now on db.t2 instance classes, 
+
+
+
+
+
+
+-------------------------------------------------------------- Amazon Aurora
+
+
+
+-- Aurora is a proprietary technology from AWS (not open sourced)
+
+-- Postgres and MySQL are both supported as Aurora DB (that means your drivers will work as if Aurora was a Postgres or MySQL database)
+
+-- Aurora is “AWS cloud optimized” and claims 5x performance improvement over MySQL on RDS, over 3x the performance of Postgres on RDS
+
+-- Aurora storage automatically grows in increments of 10GB, up to 128 TB.
+
+-- Aurora can have up to 15 replicas and the replication process is faster than MySQL (sub 10 ms replica lag)
+
+-- Failover in Aurora is instantaneous (happens immediately, without any delay). It’s HA (High Availability) native.
+
+-- Aurora costs more than RDS (20% more) – but is more efficient
+
+-- There are no standby instances in Aurora. Aurora performs an automatic failover to a read replica when a problem is detected.
+
+
+-- Create a replica Aurora instance in another Availability Zone to improve the availability as the replica can serve as a failover target
+
+   - If the primary instance in a DB cluster using single-master replication fails, Aurora automatically fails over to a new primary instance in one of two ways:
+     
+      1 By promoting an existing Aurora Replica to the new primary instance
+
+      2 By creating a new primary instance
+
+
+
+
+
+
+-------------------------------------------------------------- Aurora High Availability and Read Scaling
+
+
+
+----- 6 copies of your data across 3 AZ:
+
+
+- 4 copies out of 6 needed for writes
+- 3 copies out of 6 need for reads
+- Self healing with peer-to-peer replication
+- Storage is striped across 100s of volumes
+
+-- One Aurora Instance takes writes (master)
+
+-- Automated failover for master in less than 30 seconds
+
+-- Master + up to 15 Aurora Read Replicas serve reads
+
+-- Support for Cross Region Replication
+
+
+
+
+
+
+
+
+--------------------------------------------------------------  difference b/w Aurora read replicas and MySQL Replicas 
+
+
+
+
+1 Aurora read replicas :
+
+Features 
+
+- Number of replicas                         =  Up to 15
+- Replication type                           =  Asynchronous (milliseconds)
+- Performance impact on primary              =  Low
+- Replica location                           =  In-region
+- Act as failover target                     =  Yes (no data loss)
+- Automated failover                         =  Yes
+- Support for user-defined replication delay =  NO
+- Support for different data or schema vs. primary = No 
+
+
+- When you create a second, third, and so on DB instance in an Aurora-provisioned DB cluster, Aurora automatically sets up replication from the writer DB instance to all the other DB instances. 
+
+- These other DB instances are read-only and are known as Aurora Replicas.
+
+Aurora Replicas have two main purposes. 
+
+    - You can issue queries to them to scale the read operations for your application. You typically do so by connecting to the reader endpoint of the cluster. That way, Aurora can spread the load for read-only connections across as many Aurora Replicas as you have in the cluster. 
+    
+    - Aurora Replicas also help to increase availability. If the writer instance in a cluster becomes unavailable, Aurora automatically promotes one of the reader instances to take its place as the new writer.
+
+
+
+2 MySQL Read Replicas
+
+
+Features 
+
+- Number of replicas                         =  Up to 5
+- Replication type                           =  Asynchronous (seconds)
+- Performance impact on primary              =  High
+- Replica location                           =  cross-region
+- Act as failover target                     =  Yes (potentially minutes of data loss)
+- Automated failover                         =  No
+- Support for user-defined replication delay =  NO
+- Support for different data or schema vs. primary = Yes
+
+
+
+
+
+
+
+-------------------------------------------------------------- Aurora DB Cluster
+
+
+
+
+-- client has WEP and REP 
+
+-- we have Writer endPoint (WEP), which is used  when ever the master fails ,still the client able to communicate and it is automatically redirected to right instance 
+
+-- we have Reader endPoint (REP), it is difficult to connect which replica to the client , to avoid this confusion we have REP , it hs same features of WRP , it connects with load balancer and it connects automatically to all read replicas
+
+NOTE : Load balancing happens at the connections level , not the statement level
+
+
+
+
+-- u can't disable Aurora DB Cluster Backups 
+
+
+
+
+-------------------------------------------------------------- Features of Aurora
+
+
+
+- Automatic fail-over
+
+- Backup and Recovery
+
+- Isolation and security
+
+- Industry compliance
+
+- Push-button scaling
+
+- Automated Patching with Zero Downtime
+
+- Advanced Monitoring
+
+- Routine Maintenance
+
+- Backtrack: restore data at any point of time without using backups
+
+
+
+
+
+
+
+
+-------------------------------------------------------------- Backups, Backtracking & Restores in Aurora
+
+
+
+
+• Automatic Backups
+
+        • Retention period 1-35 days (can’t be disabled)
+
+        • PITR, restore your DB cluster within 5 minutes of the current time
+
+        • Restore to a new DB cluster
+
+
+• Aurora Backtracking
+
+        • Rewind the DB cluster back and forth in time (up to 72 hours)
+
+        • Doesn’t create a new DB cluster (in-place restore)
+
+        • Supports Aurora MySQL only
+
+
+• Aurora Database Cloning
+
+        • Creates a new DB cluster that uses the same DB cluster volume as the original cluster
+
+        • Uses copy-on-write protocol (use the original/single copy of the data and allocate storage only when changes made to the data)
+
+        • Example: create a test environment using your production data
+
+
+
+
+
+
+
+-------------------------------------------------------------- RDS & Aurora Security
+
+
+
+• At-rest encryption:
+
+        • Database master & replicas encryption using AWS KMS – must be defined as launch time
+
+        • If the master is not encrypted, the read replicas cannot be encrypted
+
+        • To encrypt an un-encrypted database, go through a DB snapshot & restore as encrypted
+
+
+• In-flightencryption: TLS-ready by default,use the AWS TLS root certificates client-side
+
+• IAM Authentication: IAM roles to connect to your database (instead of username/pw)
+
+• Security Groups: Control Network access to your RDS / Aurora DB
+
+• No SSH available except on RDS Custom
+
+• Audit Logs can be enabled and sent to CloudWatch Logs for longer retention
+
+
+
+
+
+-------------------------------------------------------------- Aurora for SysOps
+
+
+
+• You can associate a priority tier (0-15) on each Read Replica
+
+        • Controls the failover priority
+
+        • RDS will promote the Read Replica with the highest priority (lowest tier)
+
+        • If replicas have the same priority, RDS promotes the largest in size
+
+        • If replicas have the same priority and size, RDS promotes arbitrary replica (randomly)
+
+
+• You can migrate an RDS MySQL snapshot to Aurora MySQL Cluster
+
+
+
+
+
+
+-------------------------------------------------------------- Aurora: CloudWatch metrics
+
+
+
+• AuroraReplicaLag: amount of lag when replicating updates from the primary instance
+
+• AuroraReplicaLagMaximum: max. amount of lag across all DB instances in the cluster
+
+• AuroraReplicaLagMinimum: min. amount of lag across all DB instances in the cluster
+
+• If replica lag is high, that means the users will have a different experience based on which replica they get the data from (due to eventual consistency)
+
+• DatabaseConnections: current number of connections to a DB instance
+
+• InsertLatency: average duration of insert operations
+
+
+
+
+
+
+-------------------------------------------------------------- Amazon ElastiCache Overview
+
+
+
+
+• The same way RDS is to get managed Relational Databases...
+
+• ElastiCache is to get managed Redis or Memcached
+
+• Caches are in-memory databases with really high performance, low latency
+
+• Helps reduce load off of databases for read intensive workloads
+
+• Helps make your application stateless
+
+• AWS takes care of OS maintenance / patching, optimizations, setup, configuration, monitoring, failure recovery and backups
+
+• Using ElastiCache involves heavy application code changes
+
+
+
+
+-- it is developer resource mainly
+
+-- it is regional 
+
+-- it is also data base only 
+
+-- Amazon ElastiCache can be used as a distributed in-memory cache for session management.
+
+-- In-memory data base caching Service , high performance, low latency
+
+-- Helps reduce load off of databases for read intensive workloads
+
+-- Cache : all frquently accessed data is stored at this place 
+
+-- it is used for Read Purpose 
+
+-- it can handled Session data(cookies) 
+
+-- it supports Encryption ( IN-TRANSIT and DATA at rest) 
+
+-- Helps make your application stateless
+
+-- Amazon ElastiCache allows you to seamlessly set up, run, and scale popular open-Source compatible in-memory data stores in the cloud. Session stores can be set up using both Memcached or Redis for ElastiCache.
+
+
+
+
+
+
+-------------------------------------------------------------- ElastiCache Solution Architecture - DB Cache
+
+
+
+
+• Applications queries ElastiCache, if not available, get from RDS and store in ElastiCache.
+
+• Helps relieve load in RDS
+
+• Cache must have an invalidation strategy to make sure only the most current data is used in there.
+
+
+
+
+-------------------------------------------------------------- ElastiCache Solution Architecture – User Session Store
+
+
+• User logs into any of the application
+
+• The application writes the session data into ElastiCache
+
+• The user hits another instance of our application
+
+• The instance retrieves the data and the user is already logged in
+
+
+
+
+
+-------------------- it supports two Engines 
+
+
+
+1 Redis : permannent
+
+-- it hs 2 types of modes 
+
+-- it is like NoSQL database 
+
+1  Cluster Mode Enabled  
+
+-- Cluster = Collection of Shards
+
+-- Shard = Collection of Nodes/Server
+
+-- Each Shard has 6 nodes = 1 Primary Node , 5 Replica Node
+
+-- u can have 500 Shards per cluster 
+
+
+2  Cluster Mode disabled
+
+-- it has ony one shard = 1 primary and 5 replias 
+
+
+
+
+- it supports HA, failover and backups
+
+- Data is Persistent 
+
+- Multi AZ with Auto-Failover
+
+- Read Replicas to scale reads and have high availability
+
+- Data Durability using AOF(Append Only File) persistence
+
+- Backup and restore features
+
+- Supports Sets and Sorted Sets
+
+- Replication
+
+- Amazon ElastiCache for Redis is a great choice for real-time transactional and analytical processing use cases such as caching, chat/messaging, gaming leaderboards, geospatial, machine learning, media streaming, queues, real-time analytics, and session store.
+
+- In addition to strings, Redis supports lists, sets, sorted sets, hashes, bit arrays, and hyperlog logs.
+
+- Applications can use these more advanced data structures to support a variety of use cases. 
+
+- For example, you can use Redis Sorted Sets to easily implement a game leaderboard that keeps a list of players sorted by their rank.
+
+
+
+
+
+2 MemcacheD --temporary 
+
+- it not supports HA, failover and backups
+
+- Data not Persistent 
+
+- Multi-node for partitioning of data (sharding)
+
+- No high availability (replication)
+
+- No backup and restore
+
+- Multi-threaded architecture
+
+- sharding(pieces)
+
+- Amazon ElastiCache for Memcached is a Memcached-compatible in-memory key-value store service that can be used as a cache or a data store. Session stores are easy to create with Amazon ElastiCache for Memcached.
+
+
+
+
+
+
+-------------------------------------------------------------- ElastiCache – Redis vs Memcached
+
+
+
+        REDIS                                                                                    MEMCACHED
+
+• Multi AZ with Auto-Failover                                                    • Multi-node for partitioning of data (sharding)
+
+• Read Replicas to scale reads and have high availability                        • No high availability (replication)
+
+• Data Durability using AOF persistence                                          • Non persistent
+
+• Backup and restore features                                                    • No backup and restore
+
+• Supports Sets and Sorted Sets                                                  • Multi-threaded architecture
+
+
+
+
+
+
+------------------------------ Choosing between Redis and Memcached
+
+
+-- Redis and Memcached are popular, open-source, in-memory data stores. Although they are both easy to use and offer high performance, there are important differences to consider when choosing an engine.
+
+--  Memcached is designed for simplicity while Redis offers a rich set of features that make it effective for a wide range of use cases. Understand your requirements and what each engine offers to decide which solution better meets your needs.
+
+
+                                                               Memcached                         Redis
+
+      
+Sub-millisecond latency	                                         Yes                               Yes
+
+Developer ease of use                                            Yes                               Yes      
+
+Data partitioning	                                               Yes                               Yes   
+
+Support for a broad set of programming languages	               Yes                               Yes 
+
+Advanced data structures	                                        -                                Yes
+
+Multithreaded architecture	                                     yes                                -
+
+Snapshots	                                                        -                                Yes
+
+Replication	                                                      -                                Yes
+
+Transactions                                                      -                                Yes
+
+Pub/Sub	                                                          -                                Yes
+
+Lua scripting	                                                    -                                Yes
+
+Geospatial support	                                              -                                Yes
+       
+   
+
+
+EXP :
+
+Sub-millisecond latency
+  
+  - Both Redis and Memcached support sub-millisecond response times. By storing data in-memory they can read data more quickly than disk based databases.
+
+Developer ease of use
+
+  - Both Redis and Memcached are syntactically easy to use and require a minimal amount of code to integrate into your application.
+
+Data partitioning
+  
+   - Both Redis and Memcached allow you to distribute your data among multiple nodes. This allows you to scale out to better handle more data when demand grows.
+
+Support for a broad set of programming languages
+ 
+   - Both Redis and Memcached have many open-source clients available for developers. Supported languages include Java, Python, PHP, C, C++, C#, JavaScript, Node.js, Ruby, Go and many others.
+
+Advanced data structures
+ 
+   - In addition to strings, Redis supports lists, sets, sorted sets, hashes, bit arrays, and hyperloglogs. Applications can use these more advanced data structures to support a variety of use cases. For example, you can use Redis Sorted Sets to easily implement a game leaderboard that keeps a list of players sorted by their rank.
+
+Multithreaded architecture
+
+   - Since Memcached is multithreaded, it can make use of multiple processing cores. This means that you can handle more operations by scaling up compute capacity.
+
+Snapshots
+
+   - With Redis you can keep your data on disk with a point in time snapshot which can be used for archiving or recovery.
+
+Replication
+ 
+   - Redis lets you create multiple replicas of a Redis primary. This allows you to scale database reads and to have highly available clusters.
+
+Transactions
+
+   - Redis supports transactions which let you execute a group of commands as an isolated and atomic operation.
+
+Pub/Sub
+
+   - Redis supports Pub/Sub messaging with pattern matching which you can use for high performance chat rooms, real-time comment streams, social media feeds, and server intercommunication.
+
+Lua scripting
+ 
+   - Redis allows you to execute transactional Lua scripts. Scripts can help you boost performance and simplify your application.
+
+Geospatial support
+
+   - Redis has purpose-built commands for working with real-time geospatial data at scale. You can perform operations like finding the distance between two elements (for example people or places) and finding all elements within a given distance of a point.
+
+
+
+
+
+
+
+
+
+-------------------------------------------------------------- ElastiCache Replication: Cluster Mode Disabled
+
+
+
+• One primary node, up to 5 replicas
+
+• Asynchronous Replication
+
+• The primary node is used for read/write
+
+• The other nodes are read-only
+
+• One shard, all nodes have all the data
+
+• Guard against data loss if node failure
+
+• Multi-AZ enabled by default for failover
+
+• Helpful to scale read performance
+
+
+
+
+
+-------------------------------------------------------------- Redis Scaling – Cluster Mode Disabled
+
+
+
+• Horizontal:
+
+        • Scale out/in by adding/removing read replicas (max. 5 replicas)
+
+
+• Vertical:
+
+        • Scale up/down to larger/smaller node type
+
+        • ElastiCache will internally create a new node group, then data replication and DNS update
+ 
+
+
+
+
+ -------------------------------------------------------------- ElastiCache Replication: Cluster Mode Enabled
+
+
+
+ • Data is partitioned across shards (helpful to scale writes)
+
+ • Each shard has a primary and up to 5 replica nodes (same concept as before)
+
+ • Multi-AZ capability
+
+ • Up to 500 nodes per cluster:
+
+        • 500 shards with single master
+
+        • 250 shards with 1 master and 1 replica
+
+        • 83 shards with one master and 5 replicas
+
+
+
+
+
+-------------------------------------------------------------- ElastiCache for Redis – Auto Scaling
+
+
+
+• Automatically increase/decrease the desired shards or replicas
+
+• Supports both Target Tracking and Scheduled Scaling Policies
+
+• Works only for Redis with Cluster Mode Enabled
+
+
+
+
+
+
+-------------------------------------------------------------- ElastiCache – Redis Connection Endpoints
+
+
+• Standalone Node
+
+        • One endpoint for read and write operations
+
+
+• Cluster Mode Disabled Cluster
+
+        • Primary Endpoint – for all write operations
+
+        • Reader Endpoint – evenly split read operations across all read replicas
+
+        • Node Endpoint – for read operations
+
+
+• Cluster Mode Enabled Cluster
+
+        • Configuration Endpoint – for all read/write operations that support Cluster Mode Enabled commands
+
+        • Node Endpoint – for read operations
+
+
+
+
+
+
+-------------------------------------------------------------- ElastiCache – Redis for SysOps
+
+
+
+------------------- Redis Scaling – Cluster Mode Enabled
+
+
+
+
+
+• Horizontal:
+
+        • Scale out/in by adding/removing read replicas (max. 5 replicas)
+
+
+• Vertical:
+
+        • Scale up/down to larger/smaller node type
+
+        • ElastiCache will internally create a new node group, then data replication and DNS update
+ 
+
+
+
+
+
+------------------- Redis Scaling – Cluster Mode Enabled (complicated)
+
+
+
+• Two Modes:
+
+        • Online Scaling: continue serving requests during the scaling process (no downtime, some degradation in performance)
+
+        • Offline Scaling: unable to serve requests during the scaling process (backup and restore).Additional configurations supported (change node type,upgrade engine version, ...)
+
+
+• Horizontal: (Resharding and Shard Rebalancing)
+
+        • Resharding: scale out/in by adding/removing shards
+
+        • Shard Rebalancing: equally distribute the keyspaces among the shards as possible
+
+        • Supports Online and Offline Scaling
+
+
+• Vertical: (change read/write capacity)
+
+        • Scale up/down to larger/smaller node type
+
+        • Supports Online Scaling
+
+
+
+
+
+
+
+-------------------------------------------------------------- Redis Metrics to Monitor
+
+
+
+• Evictions: the number of non-expired items the cache evicted to allow space for new writes (memory is overfilled). 
+
+Solution:
+
+        • Choose an eviction policy to evict expired items (e.g., evict least recently used (LRU) items)
+
+        • Scale up to larger node type (more memory) or scale out by adding more nodes
+
+
+• CPUUtilization: monitor CPU utilization for the entire host
+
+        • Solution: scale up to larger node type (more memory) or scale out by adding more nodes
+
+
+• SwapUsage: should not exceed 50 MB
+
+        • Solution: verify that you have configured enough reserved memory
+
+
+
+• CurrentConnections: the number of concurrent and active connections
+
+        • Solution: investigate application behavior to address the issue
+
+
+• DatabaseMemoryUsagePercentage: the percentage of memory utilization
+
+• NetworkBytesIn/Out & NetworkPacketsIn/Out
+
+• ReplicationBytes: the volume of data being replicated
+
+• ReplicationLag: how far behind the replica is from the primary node
+
+
+
+
+
+
+
+-------------------------------------------------------------- ElastiCache – MemcacheD for SysOps
+
+
+
+--------------- Memcached Scaling
+
+
+• Memcached Clusters can have 1-40 nodes (soft limit)
+
+• Horizontal:
+
+        • Add/remove nodes from the cluster
+
+        • Auto-discovery allow your app to find nodes
+
+
+• Vertical:
+
+        • Scale up/down to larger/smaller node type
+
+        • Scale up process:
+
+                • Create a new cluster with the new node type
+
+                • Update your application to use the new cluster’s endpoints
+
+                • Delete the old cluster
+
+        • Memcached clusters/nodes start out empty        
+
+
+
+
+
+--------------- Memcached Auto Discovery
+
+
+• Typically you need to manually connect to individual cache nodes in the cluster using its DNS endpoints
+
+• Auto Discovery automatically identifies all of the nodes
+
+• All the cache nodes in the cluster maintain a list of metadata about all other nodes
+
+• This is seamless from a client perspective
+
+
+
+
+--------------- Memcached Metrics to Monitor
+
+
+
+• Evictions: the number of non-expired items the cache evicted to allow space for new writes (memory is overfilled). Solution:
+
+        • Choose an eviction policy to evict expired items (e.g., LRU items)
+
+        • Scale up to larger node type (more memory) or scale out by adding more nodes
+
+
+• CPUUtilization
+
+        • Solution: scale up to larger node type or scale out by adding more nodes
+
+
+• SwapUsage: should not exceed 50 MB
+
+• CurrConnections: the number of concurrent and active connections
+
+        • Solution: investigate application behavior to address the issue
+
+• FreeableMemory: amount of free memory on the host        
+
+
+
+
+
+
+
+
+=============================================================== AWS Monitoring, Audit & Performance ===============================================================
+
+
+
+
+
+
+-------------------------------------------------------------- AWS CloudWatch Metrics
+
+
+
+
+• CloudWatch provides metrics for every services in AWS
+
+• Metric is a variable to monitor (CPUUtilization, NetworkIn...)
+
+• Metrics belong to namespaces
+
+• Dimension is an attribute of a metric (instance id, environment, etc...).
+
+• Up to 30 dimensions per metric
+
+• Metrics have timestamps
+
+• Can create CloudWatch dashboards of metrics
+
+
+
+
+
+-- CloudWatch is all about Alarms,Events and Logs
+
+-- it is regional only 
+
+-- CW is used to monitor performance of all as resource 
+
+-- to monitor the resource , CW need Host level metrics also known as default metrics 
+
+     1 CPU 
+
+     2 Network 
+
+     3 Disk --- volume 
+
+     4 Status Check 
+
+-- memory not comes under HLM 
+
+-- memory is custom metrics 
+
+-- 2 types of moitoring 
+
+     1 Basic and 
+     2 Detailed Moitoiring 
+
+-- Basic is free and it will take every 5 min data
+
+-- deatiled monitoiring : every 1 min data points , billable
+
+
+-- u can create alaram in CW 
+
+-- alarms can do actions like (terminate , reboot ,stop , recover ) 
+
+-- Alarm has 3 States : 
+
+     1 In Alarm : > 90 
+
+     2 OK : < 90
+
+     3 Insufficient : ec2 stopped due to some reasons
+
+
+
+-- we also have concept called " Composite Alarms"
+
+- CW alarms are single metric
+
+- Composite Alarms are monitoring the states of multiple alarms 
+
+ eg: AND or OR conditions 
+
+
+
+
+IMP : In CloudWatch Logs, Log Retention Policy defined at ........................... level.
+
+
+ANS : Log Groups 
+
+
+---------------------------------------- some  terminologies to understand for the Cloudwatch 
+
+
+1  NameSpaces : Containers for monitoring data , it is a way to keep things seperate 
+
+      -- NameSpace has got a name , it can be anythng as long as it stays within the rule set 
+
+      -- All aws data goes to aws namespace ---> AWS/Service
+
+      -- Namespace contains related metric 
+
+
+2  Metric : it is a collection of related Data Points , in the time ordered structures 
+
+      Eg: cpu usage network IN/OUT 
+
+
+3  Data Point : let us say we have metric called CPU Utilization , everytime any server measures its utilization and send it into cloudwatch that goes into the CPU utilization metrics and each one of those measures so everytime the server reports the cpu that measure is called "Data Point" 
+
+
+     --it has 2 components 
+
+     1 timestamp 
+
+     2 value 
+
+
+Note : CPU utilization metric could contain data from many servers ,so how do we seperate data for this? so use " Dimesions"
+
+
+4  Dimensions : these are Name Value Pairs that seperate data point for different things or perspective withn the same metric 
+
+
+      -- while sending data points to cloud watch ,AWS also send in , these two 
+
+      A  Name = InstanceID , Value =I-xxxx
+
+      B  name = InstanceType , value =t2.micro.......
+
+
+5  ALARM : CW also allows to take actions based on metrics which is done using Alarms 
+
+      -- two states 
+
+      A  OK --> Everything is working fine 
+
+      B  ALARM --> Something bad has happened 
+
+      C insufficient Data ---> instance has stopped or not exists
+
+
+
+
+REF : https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/cloudwatch_concepts.html
+
+
+
+
+
+
+
+
+
+
+---------------------------------------- EC2 Detailed monitoring 
+
+
+• EC2 instance metrics have metrics “every 5 minutes”
+
+• With detailed monitoring (for a cost), you get data “every 1 minute”
+
+• Use detailed monitoring if you want to scale faster for your ASG! , it gives you some benefits for your ASG, if you want to scale out and in faster.
+
+• The AWS Free Tier allows us to have 10 detailed monitoring metrics
+
+
+• Note: EC2 Memory usage is by default not pushed (must be pushed from inside the instance as a custom metric)
+
+
+
+
+
+
+
+
+---------------------------------------- CloudWatch Custom Metrics
+
+
+• Possibility to define and send your own custom metrics to CloudWatch
+
+• Example: memory (RAM) usage, disk space, number of logged in users ...
+
+• Use API call "PutMetricData"
+
+• Ability to use dimensions (attributes) to segment metrics
+
+     • Instance.id
+     • Environment.name
+
+IMP • Metric resolution (StorageResolution API parameter – two possible value):
+
+      • Standard: 1 minute (60 seconds)
+      • High Resolution: 1/5/10/30 second(s) – Higher cost
+
+
+• Important: Accepts metric data points two weeks in the past and two hours in the future (make sure to configure your EC2 instance time correctly)
+
+     - Something good to know is that with custom metrics, when you push a metric in the past or in the future, this works as well.
+
+     - So this is a very important exam point.
+
+     - So if you are pushing a metric up to two weeks in the past or two hours in the future, you're not going to get an error from CloudWatch,
+
+     - This is going to accept your metric as is. And so that means you need to make sure that your EC2 instance time is currently configured. If you want the metrics to be synchronized with the actual time from AWS.
+
+    - See Timestamp in documentation
+
+
+-- for more custom metrics examples 
+
+REF : https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/publishingMetrics.html
+
+
+
+
+
+----------------------------------------  LAB for custom metrics (Memory)
+
+
+Expore topic : till now we only see Host level metrics , now find how to get metrics for memory 
+
+- By default, we cannot monitor Memory metrics on EC2 Instances.
+
+- https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/monitoring-scripts-intro.html
+
+- use this link for the documentation 
+
+or u can do in another process
+
+- create ec2 instance 
+
+- crate one role and attach policies 
+
+-  attach policies cloudwatchfullacces and AmazonSSMFullAccess
+
+-  why SSM? 
+
+ANs: i have to store particular value(json document which is used to fetch the memory utilixation from aws ec2 and send it to AWS cloudwatch ) in ssm
+
+-  create a parameter in the system manager(system manager --> application --> parameter) with the name (u can give any name) 
+
+eg :  /alarm/AWS-CWAgentLinConfig 
+
+- go system manager -->paramter store --> give name --> in the value place copy json script 
+
+{
+	"metrics": {
+		"append_dimensions": {
+			"InstanceId": "${aws:InstanceId}"
+		},
+		"metrics_collected": {
+			"mem": {
+				"measurement": [
+					"mem_used_percent"
+				],
+				"metrics_collection_interval": 60
+			}
+		}
+	}
+}
+
+
+-- ceate ec2 and attach role to ec2 and create with userdata with cloudwatch agent to install
+
+userdata: 
+
+#!/bin/bash
+wget https://s3.amazonaws.com/amazoncloudwatch-agent/linux/amd64/latest/AmazonCloudWatchAgent.zip
+unzip AmazonCloudWatchAgent.zip
+sudo ./install.sh
+sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c ssm:/alarm/AWS-CWAgentLinConfig -s
+
+
+-- check whether clouwtch agent is instaled or not by using 
+
+-- sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -m ec2 -a status
+
+-- if it is running it is success , after one minute
+
+-- now go to CLoudwatch and --> all metrics --> CW Agent --> give instacne id and chck logs of memory
+
+
+
+
+
+
+
+
+---------------------------------------- CloudWatch Dashboards
+
+
+
+• Great way to setup custom dashboards for quick access to key metrics and alarms
+
+• Dashboards are global
+
+• Dashboards can include graphs from different AWS accounts and regions
+
+• You can change the time zone & time range of the dashboards
+
+• You can setup automatic refresh (10s, 1m, 2m, 5m, 15m)
+
+• Dashboards can be shared with people who don’t have an AWS account (public, email address, 3rd party SSO provider through Amazon Cognito)
+
+• Pricing:
+
+        • 3 dashboards (up to 50 metrics) for free 
+
+        • $3/dashboard/month afterwards
+
+
+
+
+
+---------------------------------------- CloudWatch Dashboards hands on 
+
+
+
+-- go to CW --> dashboard --> create dashboard --> 
+
+- you can add many different things. You can add a line, a stacked area, a number, some texts, some logs table, alarm status, and so on
+
+- u can selelct any metric as u want to push your custom Dashboard 
+
+- metrics can come from different regions in the same CloudWatch dashboard, which is quite handy.
+
+- once you done , you can save and you can also share the Dashboards
+
+
+
+
+
+  
+---------------------------------------- CloudWatch Logs
+
+
+-- So CloudWatch Logs is the perfect place to store your application logs in AWS.
+
+-- And to do so, you must first define log groups.
+
+• Log groups: arbitrary name, usually representing an application
+
+• Log stream: instances within application / log files / containers
+
+• Can define log expiration policies (never expire, 1 day to 10 years...)
+
+• CloudWatch Logs can send logs to:
+
+     • Amazon S3 (exports)
+     • Kinesis Data Streams
+     • Kinesis Data Firehose
+     • AWS Lambda
+     • OpenSearch
+
+• Logs are encrypted by default
+
+• you Can setup KMS-based encryption with your own keys
+
+
+
+
+
+
+---------------------------------- what types of logs can go into CloudWatch Logs? (CloudWatch Logs - Sources)
+
+
+• we can send the logs using the SDK, CloudWatch Logs Agent, CloudWatch Unified Agent
+
+• Elastic Beanstalk: which is used to collect logs from the application directly into CloudWatch.
+
+• ECS: ECS will send the logs directly from the containers into CloudWatch.
+
+• AWS Lambda: collection from function logs , will send logs from the functions themselves.
+
+• VPC Flow Logs: will send logs specific to your VPC metadata network traffic.
+
+• API Gateway : will send all the requests made to the API Gateway into CloudWatch Logs.
+
+• CloudTrail : you can send the logs directly based on the filter.
+
+• Route53: will log all the DNS queries made to its service.
+
+
+
+
+
+
+---------------------------------------- what if you wanted to query the logs in CloudWatch Logs? (CloudWatch Logs Insights)
+
+
+-- So, it's a querying capability within CloudWatch Logs which allows you to write your query.
+
+-- You specify the timeframe you want to apply your query to and then automatically you're going to get a result as a visualization.
+
+-- This visualization can also be exported either as a result or added to a dashboard for being able to return it whenever you want.
+
+• Search and analyze log data stored in CloudWatch Logs
+
+• Example: find a specific IP inside a log, count occurrences of “ERROR” in your logs...
+
+      - So there are lots of simple queries provided as part of the console for CloudWatch Logs Insights. 
+
+      - For example, you can find the most 25 most recent events, or you can have a look at how many events had exceptions or errors in your logs, or you can look for a specific IP and so on ..
+ 
+
+• Provides a purpose-built query language
+
+      • Automatically discovers fields from AWS services and JSON log events
+
+      • Fetch desired event fields, filter based on conditions, calculate aggregate statistics, sort events, limit number of events...
+
+      • Can save queries and add them to CloudWatch Dashboards
+
+
+• Can query multiple Log Groups in different AWS accounts
+
+• It’s a query engine, not a real-time engine
+
+
+
+
+
+
+
+
+---------------------------------------- CloudWatch Logs – S3 Export
+
+
+-- CloudWatch Logs can be exported into several destinations.
+
+
+1 CloudWatch Logs – S3 Export
+
+     • Log data can take up to 12 hours to become available for export
+
+        - So this is for a batch export to send all your logs into Amazon S3, and this export can take up to 12 hours to be completed.
+
+     • The API call to initiate this export is called CreateExportTask.
+
+     • So because this is a batch export, this is Not near-real time or real-time... use Logs Subscriptions instead
+
+
+
+
+
+
+
+---------------------------------------- CloudWatch Logs Subscriptions
+
+
+• Get a real-time log events from CloudWatch Logs for processing and analysis
+
+• Send to Kinesis Data Streams, Kinesis Data Firehose, or Lambda
+
+• Subscription Filter – filter which logs are events delivered to your destination
+
+      - So, the subscription filter can send data into Kinesis Data Streams. This would be a great choice if you wanted to use, for example, the integration with Kinesis Data Firehose, Kinesis Data Analytics, or Amazon EC2, or Lambda.
+
+      - You can also directly send it into Kinesis Data Firehose. From there, you can send it in near real-time fashion into Amazon S3 or the OpenSearch Service,
+
+      - So you can write your own custom Lambda function, or you can use a managed Lambda function that is sending data in real-time into the OpenSearch Service.
+
+
+
+
+
+
+---------------------------------------- CloudWatch Logs Aggregation Multi-Account & Multi Region
+
+
+-- thanks to these subscription filters, it is possible for you to aggregate data from different CloudWatch Logs into different accounts and different regions into a common destination such as the Kinesis Data Stream in one specific accounts. And then Kinesis Data Firehose. And then in near real-time into Amazon S3.
+
+-- So that is very possible, and that is a way for you to perform log aggregation.
+
+
+
+---------------------------------------- Cross-Account Subscription
+
+
+• Cross-Account Subscription – send log events to resources in a different AWS account (KDS, KDF)
+
+-- So, let's say you have a sender account and the recipient accounts.
+
+-- So you create a CloudWatch Log subscription filter in sender account , and then this gets sent into a subscription destination, which is a virtual representant of the Kinesis Data Stream in the recipient accounts.
+
+-- Then you attach a destination access policy to allow the first account to actually send data into this destination.
+
+-- Then you create an IAM role in the recipient account, which has the permission to send records into your Kinesis Data Stream, and you make sure that this role can be assumed by the first account.
+
+-- when you have all these things in place, then it is possible for you to send data from CloudWatch Logs in one account into a destination in another account.
+
+
+
+
+
+----------------------------------------  Live Tail
+
+
+-- So first let's create a log group
+
+-- go to log group --> create log stream called demostream 
+
+-- go to demostream  , we have option called tailing  , do tailing 
+
+-- select log group as u want and select Select log streams , apply filter 
+
+-- So that means that as events are being posted into Cloudwatch logs, they are going to appear here in our Live Tail,
+
+-- now go to demostream  --> actions --> create log event (Hello world)
+
+-- now check in live tail , it will be there 
+
+-- So this is quite a nice way because if you have log streaming very fast, it can all appear here. And then from this we can get more information around when this happened, the group and so on.
+
+-- So it's just a very cool, very easy feature to debug your CloudWatch logs. And from a pricing perspective,
+
+-- you only get a few hours a day, so maybe one hour a day of free usage of Live Tail. So please make sure to cancel and close your lifetail session so that you don't have any cost, but you have one hour of free every day.
+
+
+
+
+
+
+
+---------------------------------------- CloudWatch Alarms
+
+
+• Alarms are used to trigger notifications for any metric
+
+• Various options (sampling, %, max, min, etc...)
+
+• Alarm States:
+
+    • OK :  means that it's not triggered.
+
+    • INSUFFICIENT_DATA  : means that there's not enough data for the alarm to determine a state.
+
+    • ALARM : which is that your threshold has been breached and therefore a notification will be sent.
+
+
+• Period:
+
+    • Length of time in seconds to evaluate the metric
+
+    • High resolution custom metrics: 10 sec, 30 sec or multiples of 60 sec
+
+
+
+
+Question : A CloudWatch Alarm set on a High-Resolution Custom Metric can be triggered as often as ......................
+
+ANS : 10 sec
+
+EXP : If you set an alarm on a high-resolution metric, you can specify a high-resolution alarm with a period of 10 seconds or 30 seconds, or you can set a regular alarm with a period of any multiple of 60 seconds.
+
+
+
+
+
+
+
+---------------------------------------- CloudWatch Alarm Targets 
+
+
+-- alarms have three main targets.
+
+
+1 • Stop,Terminate, Reboot, or Recover an EC2 Instance
+
+2 • Trigger Auto Scaling Action
+
+3 • Send notification to SNS (from which you can do pretty much anything)
+
+
+
+
+
+
+---------------------------------------- CloudWatch Alarms – Composite Alarms
+
+
+• CloudWatch Alarms are on a single metric
+
+-- but then if you wanted to have multiple metrics, use Composite Alarms
+
+• Composite Alarms are monitoring the states of multiple other alarms
+
+-- So the composite alarm is the action of combining all these other alarms together.
+
+• you can use AND and OR conditions to be able to be very flexible in terms of the condition you're checking for.
+
+• Helpful to reduce “alarm noise” by creating complex composite alarms
+
+   - it's very helpful to reduce alarm noise because you can create complex composite alarms and saying, 
+   
+   - for example, if the CPU is high and the network is high, then don't alert me because I only wanna know when the CPU is high and the network is low, this kind of things.
+
+
+
+
+
+
+---------------------------------------- EC2 Instance Recovery
+
+
+• Status Check:
+
+     • Instance status = check the EC2 VM
+
+     • System status = check the underlying hardware
+
+
+• Recovery: Same Private, Public, Elastic IP, metadata, placement group
+
+
+
+
+
+
+
+---------------------------------------- CloudWatch Alarm: good to know
+
+
+• Alarms can be created based on CloudWatch Logs Metrics Filters
+
+• To test alarms and notifications, set the alarm state to Alarm using CLI
+
+    aws cloudwatch set-alarm-state --alarm-name "myalarm" --state-value ALARM --state-reason "testing purposes"
+
+
+
+
+
+---------------------------------------- CloudWatch Alarms Hands On
+
+
+-- create once ec2 instance , it will take 5 minutes to get some metrics 
+
+-- go to cw and go to all alaram --> select metric -->choose ec2 --> paste instance is --> choose CPUUtilization -->  CPUUtilization > 90 --> Additional configuration Datapoints to alarm = 3 of 3 --> choose ec2 action as u want --> create alaram
+
+-- So now this alarm obviously does have insufficient data, so we need to wait 15 minutes for it 
+
+-- we could go into the EC2 instance and launch a way to get the CPU very high for 15 minutes, but this would be a very, very long, 
+
+-- or we can use the API call name, Set alarm state, to really see what would happen if this alarm went into the breach phase.
+
+-- open cloushell , go to goole and search for cloudwatch alarm state , enter this below cmd as ur names 
+
+   -  aws cloudwatch set-alarm-state --alarm-name <value> --state-value <value> --state-reason <value>
+
+   eg : aws cloudwatch set-alarm-state --alarm-name terminateec2 --state-value ALARM --state-reason "Testing"
+
+
+-- paste this in cli , it will turn to in alarm state , then as per rule it will going to terminate the ec2 instance 
+
+
+
+
+
+
+
+---------------------------------------- CloudWatch Synthetics Canary
+
+
+• Configurable script that monitor your APIs, URLs, Websites, ...
+
+• Reproduce what your customers do programmatically to find issues before customers are impacted
+
+• Checks the availability and latency of your endpoints and can store load time data and screenshots of the UI
+
+• Integration with CloudWatch Alarms
+
+• Scripts written in Node.js or Python
+
+• Programmatic access to a headless Google Chrome browser
+
+• Can run once or on a regular schedule
+
+
+
+
+
+
+
+
+---------------------------------------- CloudWatch Synthetics Canary Blueprints
+
+
+• Heartbeat Monitor – load URL, store screenshot and an HTTP archive file
+
+• API Canary – test basic read and write functions of REST APIs
+
+• Broken Link Checker – check all links inside the URL that you are testing
+
+• Visual Monitoring – compare a screenshot taken during a canary run with a baseline screenshot
+
+• Canary Recorder – used with CloudWatch Synthetics Recorder (record your actions on a website and automatically generates a script for that)
+
+• GUI Workflow Builder – verifies that actions can be taken on your webpage (e.g., test a webpage with a login form)
+
+
+
+
+
+---------------------------------------- CloudWatch Synthetics Canary Hands On
+
+
+-- cloudwatch ---> application signals or Application logs ----> Synthetics Canaries 
+
+-- create canary with any application link (amazon,google.....) --> use hearbeat canary --> remaing all are default --> create canary and wait for 2-3 minutes 
+
+-- this will gives the info about the application , it is working fine or not 
+
+
+
+
+
+
+
+
+----------------------------------------------------- Amazon EventBridge (formerly CloudWatch Events)
+
+
+
+
+
+-- Amazon EventBridge is a serverless service that uses events to connect application components together, making it easier for developers to build scalable event-driven applications.
+
+-- Event Bridge is an Event Bus that helps in integrating different AWS Services , and custom applications and SAAS Applications 
+
+-- Earlier we have Cloud watch events , the only negative point is that , it did not support SAAS applications and custom applications outside from the AWS 
+
+-- EventBridge was build for the same purpose , u can create effortless event-driven architectures
+
+Eg 1 : u want to receive SNS notification every time production EC2 instance are terminated , this will be done by EventBridge
+
+Eg 2 : automated deployment using code pipelines at 11PM everyday
+
+Eg 3 : if a premier user deactivates himself from ur product , u want to :
+
+- Send and email for feedback 
+- Schedule Customer Representative call
+- Send customised offers for that use 
+
+
+-- these all things will done by the event Bridge and u can schedule the events also 
+
+-- It is fully managed service 
+
+-- pay what u use model 
+
+
+Different Parts in EventBridge:
+
+
+Working flow -----
+
+
+Event Producer --> Event --> Amazon EventBridge event Bus --> Rule ---> AWS Lambda , AWS Kinesis Data Firehose, Amazon Simple Notification Service
+
+
+--  Event producer : AWS Service / Custom applications / Third Party SaaS providers,
+
+--  From the producers the event will generated , this will transform to the bus and it move to rules , in rules there are multiple rules and this rules will send to multiple targets 
+
+-- A single rule may have multiple targets and max target is 5 ,all targets will process in the event in parallel
+
+
+Important terms in EventBridge :
+
+1 Event  : An Event indicated a change in an environment 
+
+2 Rule   : A rule matches incoming events and routes them to targets for processing  
+
+3 Target : target application of ur rule. A target process events 
+
+Targets can include ec2 , lambda functions , kinesis streams , Ecs tasks,  , the target receive events in JSON format 
+
+4 Event Bus : An event bus receives events. When u create a rule , u associate it with a specific event bus and rules is matched only to events received by that event bus 
+
+- rule can not be create standAlone , it should have it's parent as EventBus
+
+Components of EventBridge :
+
+1 EventBridge Rule : A rule matches incoming events and sends them to targets for processing.
+
+2 EventBridge Pipes : A pipe connects an event source to a target with optional filtering and enrichment.
+
+3 EventBridge Schedule : A schedule invokes a target one-time or at regular intervals defined by a cron or rate expression.
+
+4 EventBridge Schema registry : Schema registries collect and organize schemas.
+
+
+EventBus : Usecases
+
+if a premier user deactivates himself from ur product , u want to :
+
+- Send and email for feedback 
+- Schedule Customer Representative call
+- Send customised offers for that use 
+
+
+In the above example , the working flow will be like 
+
+
+User deletes his subscription --> custom event is trigged --> rights custom event would be pass into the EventBus --> rule matching --> then it reaches to the targets , once the rule is matched  here then it sends to targets --> 1 the targets are Feedback service 2 Schedule call service 3 offers service 
+
+
+
+
+
+stepehe note
+
+-- formerly known as CloudWatch Events
+
+• Schedule: Cron jobs (scheduled scripts)
+
+    - Schedule Every hour ----------> Lambda (Trigger script on Lambda function)
+
+
+-- but not just a schedule like every hour, it can also react to an event pattern. 
+
+• Event Pattern: Event rules to react to a service doing something
+
+    - So there are event rules that can react to a service doing something. For example, you can react to the event of IAM root user sign in in the console. 
+    
+    - So when that happens, maybe you want to send a message into an SNS topic and receive an email notification, so that if anyone is using the root account, then you will receive an email,
+
+    - which may be a good security feature for your accounts.
+
+
+          IAM Root User Sign in Event (EVENT)-------------> SNS Topic with Email Notification
+
+
+
+• you have different destinations like Trigger Lambda functions, send SQS/SNS messages...
+
+
+• Event buses can be accessed by other AWS accounts using Resource-based Policies
+
+• You can archive events (all/filter) sent to an event bus (indefinitely or set period)
+
+• Ability to replay archived events ,which is super handy for debugging, super handy for troubleshooting, and for fixing production as well.
+
+
+
+
+
+
+
+----------------------------------------------------- Amazon EventBridge – Schema Registry
+
+
+-- EventBridge receives a lot of events from different places and so therefore, you need to understand what the events are going to look like and remember, these events are in this Json  format we just saw.
+
+• EventBridge can analyze the events in your bus and infer the schema
+
+• The Schema Registry allows you to generate code for your application, that will know in advance how data is structured in the event bus
+
+• Schema can be versioned
+
+
+
+
+
+----------------------------------------------------- Amazon EventBridge – Resource-based Policy
+
+
+• Manage permissions for a specific Event Bus
+
+• Example: allow/deny events from another AWS account or AWS region
+
+• Use case: aggregate all events from your AWS Organization in a single AWS account or AWS region
+
+
+
+
+
+----------------------------------------------------- Amazon EventBridge  hands ON 
+
+
+
+
+-- open CW --> Events (leftside)--> create new event-bus --> enabled Archives and Schema discovery
+
+        - So under Event buses, we have access here to the default event bus. And this event bus is the one that is created by default in your account. And you can already start defining rules on it.
+
+
+-- go to rules --> create rule --> default (event bus) --> Rule with an event pattern --> Event source = AWS events or EventBridge partner events --> sample event = ec2 instance change notification --> Event pattern = AWS service = ec2 --> ec2 instance change notification --> specific state --> sns --> create 
+
+
+
+{
+  "version": "0",
+  "id": "651d5f8b-947c-4c0f-acb7-5ac4e41a1b8a",
+  "detail-type": "EC2 Instance State-change Notification",
+  "source": "aws.ec2",
+  "account": "123456789012",
+  "time": "2015-11-11T21:33:19Z",
+  "region": "us-east-1",
+  "resources": ["arn:aws:ec2:us-east-1:123456789012:instance/i-abcd3333"],
+  "detail": {
+    "instance-id": "i-abcd3333",
+    "state": "stopped"
+  }
+}
+
+
+
+-- So now you could try it out and start to launch an EC2 instance and then terminate it or stop it and make sure you are subscribed into your SNS topic with your email, and then you would receive an email whenever, well, an instance is stopped or terminated,
+
+-- create ec2 instance --> and stopped it u will receive an notification 
+
+
+
+
+
+----------------------------------------------------- Amazon EventBridge Content Filtering hands ON  
+
+
+
+
+-- filtering events can be very helpful in EventBridge because you may want to only react to specific kind of events and not everything that is provided within a specific rule.
+
+-- filter types:
+
+
+        - Prefix matching
+
+        - Prefix matching while ignoring case
+
+        - Suffix matching .. etc 
+
+        https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-create-pattern-operators.html
+
+
+
+-- go to rules --> create rule --> default (event bus) --> Rule with an event pattern --> Sample event = s3 object created --> aws service = s3 --> event type = all events 
+
+
+
+{
+  "version": "0",
+  "id": "17793124-05d4-b198-2fde-7ededc63b103",
+  "detail-type": "Object Created",
+  "source": "aws.s3",
+  "account": "123456789012",
+  "time": "2021-11-12T00:00:00Z",
+  "region": "ca-central-1",
+  "resources": ["arn:aws:s3:::example-bucket"],
+  "detail": {
+    "version": "0",
+    "bucket": {
+      "name": "example-bucket"
+    },
+    "object": {
+      "key": "example-key",
+      "size": 5,
+      "etag": "b1946ac92492d2347c6235b4d2611184",
+      "version-id": "IYV3p45BT0ac8hjHg1houSdS1a.Mro8e",
+      "sequencer": "00617F08299329D189"
+    },
+    "request-id": "N4N7GDK58NMKJ12R",
+    "requester": "123456789012",
+    "source-ip-address": "1.2.3.4",
+    "reason": "PutObject"
+  }
+}
+
+
+
+
+-- in event type u did not find the exact option to select so --> edit pattern --> from the above sample code you can paste what you want exactly
+
+
+eg: 
+
+
+{
+  "source": ["aws.s3"],
+  "detail-type": "Object Created"
+}
+
+        - this is for object created in s3 
+
+
+
+eg 2 : when you want to filter only on specific bucket 
+
+
+{
+  "source": ["aws.s3"],
+  "detail-type": "Object Created",
+   "detail": {
+    "version": "0",
+    "bucket": {
+      "name": "example-bucket"
+    }
+   }
+}
+
+
+
+eg 3 
+
+
+-- But let's say for example, you wanted to match for a prefix of buckets, not just my bucket, but anything that starts with mybuckets.
+
+-- select prefix matching and click on insert , you can also find this from abovve link documentation 
+
+
+
+{
+  "source": ["aws.s3"],
+  "detail-type": "Object Created",
+   "detail": {
+    "version": "0",
+    "bucket": {    
+      "name" : [ { "prefix": "example-bucket" } ]
+    }
+   }
+}
+
+
+-- by this , I want you to match the buckets, whose name has the prefixed, mybuckets. And this is very helpful because now we match many more events.
+
+
+
+eg 4 
+
+
+suffix matching 
+
+
+{
+  "source": ["aws.s3"],
+  "detail-type": "Object Created",
+   "detail": {
+    "version": "0",
+    "bucket": {    
+      "name" : [ { "prefix": "example-bucket" } ]
+    },
+     "object": {
+       "key": [ { "suffix": ".png" } ]
+     }
+   }
+}
+
+
+
+-- like this you have create so many filter thanks to this event pattern, only events matching these conditions will be matched and sent to my targets.
+
+
+
+
+
+
+
+
+
+----------------------------------------------------- Amazon EventBridge Inpput Transformation Hands on 
+
+
+
+
+        - this is what the input event looks like. So we have an id,
+
+{
+  "version": "0",
+  "id": "7bf73129-1428-4cd3-a780-95db273d1602",
+  "detail-type": "EC2 Instance State-change Notification",
+  "source": "aws.ec2",
+  "account": "123456789012",
+  "time": "2015-11-11T21:29:54Z",
+  "region": "us-east-1",
+  "resources": ["arn:aws:ec2:us-east-1:123456789012:instance/i-abcd1111"],
+  "detail": {
+    "instance-id": "i-abcd1111",
+    "state": "pending"
+  }
+}
+
+
+-- So we have an id, we have a detail type, we have a source, an account, a timestamp, we have a region, we have resource which is the instance ID that it supplies to the full ARN. 
+
+-- this is a JSON document and it may look fine, but maybe a downstream application wants to have a specific event type and doesn't want to use this, but instead wants to use a simplified version of it
+
+-- where maybe the instance ID is not under detail but it's just one level up. For whatever reason you may want to transform this.
+
+
+
+
+
+-- we want to have an input, but we want to transform it
+
+
+-- go to rules --> create rule --> default (event bus) --> Rule with an event pattern --> Event source = AWS events or EventBridge partner events --> sample event = ec2 instance change notification --> Event pattern = AWS service = ec2 --> ec2 instance change notification --> target --> CW --> give name aws/events/ ....    \
+
+     Additional settings --> Configure target input = input tranformer --> click on configure input transformer --> pop up will come sample event = ec2 instance change notification --> Target input transformer --> give some inputs to fetch value from the above sample event \
+
+
+
+
+     {
+    "instance": "$.detail.instance-id",
+    "state": "$.detail.state",
+    "timestamp": "$.time",
+    "resource" : "$.resources[0]"
+    }
+
+
+-- in Template section give like this 
+
+        <instance> was launched at <timestamp> with <state>
+
+-- click on generate o/p u will get like this 
+
+        i-abcd1111 was launched at 2015-11-11T21:29:54Z with pending
+
+
+
+-- So everything is working great, but to send stuff into CloudWatch log groups, you need to actually include a JSON document.
+
+-- So we'll include this JSON document, and it's going to be a very simple one.
+
+{
+    "timestamp": <timestamp>,
+    "message" :  "<instance> was launched at <timestamp> in <state> and arn <resource>."
+
+}
+
+
+
+-- genarate o/p 
+
+
+{
+  "timestamp": 2015 - 11 - 11 T21: 29: 54 Z,
+  "message": i - abcd1111 was launched at 2015 - 11 - 11 T21: 29: 54 Z with pending and arn: aws: ec2: us - east - 1: 123456789012: instance / i - abcd1111
+
+}
+
+
+-- now confirm and create rule 
+
+
+-- now lets create one ec2instance , So these instances being launched is going to actually generate some EventBridge data. So EventBridge will send it to CloudWatch log.
+
+-- go to CW --> go to loggroup created by eventBridge --> u will see the logs 
+
+
+EG 
+
+i-0e2f24a0496bb84a2 was launched at 2024-10-11T11:53:30Z in running and arn arn:aws:ec2:ap-south-1:298132369629:instance/i-0e2f24a0496bb84a2.
+
+
+-- So our integration is perfectly working.
+
+-- We have taken an event from EventBridge, we've transformed it, thanks to input transformers. And now it's in CloudWatch logs.
+
+
+
+
+
+
+
+
+
+======================================= practicals for event bridge 
+
+
+Example 1 
+
+1  Schedule AWS Lambda Functions Using EventBridge
+
+
+-- lambda scheduling use cases 
+
+- Automated backups at EOD of ur applications 
+
+- backend cleaning (including logs and temp files )
+
+- consolidated reports after business hours , so lambda can trigger  Athena queries and can run any database queries and send to business stack holders through SNS 
+
+
+- to schedule events u have two options 
+
+1 to schedule  at fixed rate -- for every 1 minute 
+
+2 Cron job (10 * * * * )
+
+-- open console 
+
+-- open lambda --> python 3.9 --> create function 
+
+-- write python code to invoke lambda function
+
+import json
+from datetime import datetime
+
+def lambda_handler(event, context):
+    # TODO implement
+    currentTime = datetime.now()
+    print("Time at which Lambda invoked" + str(currentTime))
+
+
+-- give empty JSON to test {}
+
+-- now go to Amazon eventBridge in console 
+
+-- c.o create rule --> schedule --> continue to create rule --> schedule that run at regular intervals--> select 1 minute --> select lambda function --> create rule 
+
+-- u can check in CloudWatch logs , for invoking is there or not 
+
+--  the logs are generated 
+
+
+-- if u want to monitor ur invocations --> Metrics --> all Metrics --> query --> choose AWS/events --> Myrule name 
+
+- metric name = COUNT(invocation)
+
+- filter by = Rulename = rule name that u have created in lambda function to test the function 
+
+- choose number in right corner to see the no. of invocations 
+
+
+-------------------------------------------
+
+Example 2 : EventBridge with SNS 
+
+
+-- AS we know that EventBridge will use for 2 process 
+
+1 event-event process : when the event has occurred according to our rule then it will trigger to the targets 
+
+2 schedule process : do schedule 
+
+-- in the above example we have seen Schedule event
+
+-- now event to event 
+
+- for example the ec2 is stopped then it will send alert to the subscribers on SNS Topic 
+
+-- open SNS in console --> create one topic --> standard --> create topic --> open topic -->create subscription --> add protocol email or phone number 
+
+-- when ever the instance is getting stooped then I would like send an alert to all the subscribers 
+
+-- this is called event-event process 
+
+-- create one ec2 instance 
+
+-- create rule in event bridge --> name --> rule with an event pattern --> in event pattern = select ec2 --> select event type as u want --> in Target1 choose AWS Service = SNS topic select SNS topic --> create rule 
+
+-- do stop the instance 
+
+-- u will get notification once the instance is get stopped 
+
+
+--------------- now for schedule event 
+
+-- create another rule , that is based on the time to stop the instance 
+
+-- select schedule pattern option --> A schedule that runs at a regular rate, such as every 10 minutes. --> target = terminateinstanceAPI call --> u can also add another target to get notification 
+ 
+
+-- the instance will get terminated after the time that u have specified 
+
+
+-- this is simple basic example for schedule pattern 
+
+
+
+
+
+
+
+
+
+----------------------------------------------------- Service Quotas CloudWatch Alarms
+
+
+
+• Notify you when you’re close to a service quota value threshold
+
+• Create CloudWatch Alarms on the Service Quotas console
+
+• Example:Lambda concurrent executions
+
+        - then if you go over 900, and the limit is 1000 by default, then you should trigger a CloudWatch Alarm. And this will tell us as Administrators that we should probably request a quota increase for the Lambda Concurrency Execution,
+
+• Helps you know if you need to request a quota increase or shutdown resources before limit is reached
+
+
+
+
+----------------------------------------------------- Alternative:Trusted Advisor + CW Alarms
+
+
+• Limited number of Service Limits checks in Trusted Advisor (~50)
+
+• Trusted Advisor publishes its check results to CloudWatch
+
+• You can create CloudWatch Alarms on service quota usage (Service Limits)
+
+
+
+
+
+
+----------------------------------------------------- Service Quotas CloudWatch Alarms Hands ON 
+
+
+
+-- open service quor=ta in console and create alarm as you want to 
+
+
+
+
+
+----------------------------------------------------- AWS CloudTrail
+
+
+
+
+• Provides governance, compliance and audit for your AWS Account
+
+• CloudTrail is enabled by default!
+
+• Get an history of events / API calls made within your AWS Account by:
+
+        • Console
+        • SDK
+        • CLI
+        • AWS Services
+
+
+• Can put logs from CloudTrail into CloudWatch Logs or S3
+
+• A trail can be applied to All Regions (default) or a single Region.
+
+• If a resource is deleted in AWS, investigate CloudTrail first!
+
+
+
+
+
+
+---------------------------------------------------------------- CloudTrail Events
+
+
+
+
+
+1 • Management Events:
+
+     • Operations that are performed on resources in your AWS account
+
+     • Examples:
+
+          • Configuring security (IAM AttachRolePolicy)
+
+          • Configuring rules for routing data (Amazon EC2 CreateSubnet)
+
+          • Setting up logging (AWS CloudTrail CreateTrail)
+
+          • By default, trails are configured to log management events.
+
+          • Can separate Read Events (that don’t modify resources) from Write Events (that may modify resources)
+
+
+
+2 • Data Events:
+
+      • By default, data events are not logged (because high volume operations)
+
+      - So what are Data Events?
+
+      • Amazon S3 object-level activity (ex: GetObject, DeleteObject, PutObject):as you can see, these can be happening a lot on an S3 bucket. so this is why they're not logged by default and u have the option can separate Read and Write Events
+
+      - So a Read Event will be a GetObject whereas a wright Event would be a DeleteObject or a PutObject.
+
+      - Another kind of event you can have in a CloudTrail are AWS Lambda function execution activities.
+
+      • AWS Lambda function execution activity (the Invoke API)
+
+          - So whenever someone uses the Invoke API so you can get insights about how many times your Lambda functions are being evoked.
+
+          - this could be really high volumes, if your Lambda functions are executed a lot.
+
+
+
+
+3  CloudTrail Insights (u have to pay)
+
+
+-- So when we have so many Management Events across all types of services and so many APIs happening very quickly in your accounts, 
+
+-- it can be quite difficult to understand what looks odd, what looks unusual and what doesn't.
+
+-- so this is where CloudTrail Insights comes in.
+
+
+-- So with CloudTrail Insights and you have to enable it and you have to pay for it, it will analyze your events and try to detect unusual activity in your accounts.
+
+• Enable CloudTrail Insights to detect unusual activity in your account:
+
+    EG : 
+    
+    • inaccurate resource provisioning
+
+    • hitting service limits
+
+    • Bursts of AWS IAM actions
+
+    • Gaps in periodic maintenance activity
+
+
+• CloudTrail Insights analyzes normal management events to create a baseline
+
+• And then continuously analyzes write events to detect unusual patterns
+
+    • Anomalies appear in the CloudTrail console
+    • Event is sent to Amazon S3
+    • An EventBridge event is generated (for automation needs)
+
+
+
+
+
+
+
+
+
+---------------------------------------------------------------- CloudTrail Events Retention
+
+
+• Events are stored for 90 days in CloudTrail and then afterwards they're deleted,
+
+• To keep events beyond this period, log them to S3 and use Athena
+
+
+
+---------------------------------------------------------------- LAB 
+
+-- open cloud trail --> event history u can able to see all the events which u have done in the aws account through the root user or normal user 
+
+-- for lab , lets create a new cloud trail 
+
+-- create new s3 bucket , all the API events that will send to s3 and stored in this bucket 
+
+-- Log file SSE-KMS encryption  and Log file validation = uncheck no need for this demo 
+
+-- management events --> create trail that's it 
+
+-- wait for 5 min atleast to see the current time and date iin the trail 
+
+-- after 5 min go n check in the s3 bucket --> it will create log files 
+
+-- in the mean while create one simple ec2 instance for example purpose\
+
+-- check in the history it will shows u the instance running in the trail
+
+-- this is how u will get all the API calls that U have made in ur AWS Account 
+
+
+
+
+
+
+
+------------------------------------------------------- Amazon EventBridge – Intercept API Calls
+
+
+-- A very important cloud trail integration you need to know about is the one with Amazon EventBridge to intercept any API calls.
+
+-- So let's say you wanted to receive an SNS notification, anytime a user would delete a table in DynamoDB by using the DeleteTable API Call.
+
+-- So what happens that whenever we do an API call in AWS, as you know, the API call itself is going to be logged in CloudTrail. That's for any API call.
+
+-- But also  these all these API calls will end up as events as well in Amazon EventBridge.
+
+-- so we can look for that very specific delete table API call, and create a rule out of it. And this rule will have a destination the destination being Amazon SNS and therefore, we can create alerts.
+
+
+
+ User -----------(DeleteTable API Call)------> DynamoDB -----------(Log API call)-----> CloudTrail (any API call) -----------(event)------> Amazon EventBridge -------(alert) ------------> SNS
+
+
+
+
+
+-------------- few more examples on how you can integrate Amazon Eventbridge and CloudTrail.
+
+
+1 
+
+   -- For example, say, you wanted to be notified whenever a user was assuming a role in your accounts.
+
+   -- So the AssumeRole is an API in the IAM service and therefore, is going to be logged by CloudTrail.
+
+   -- And then using EventBridge integration, we can trigger a message into an SNS topic.
+
+
+   User ------ (AssumeRole) ---------> IAM Role --------(API Call logs) ----------> CloudTrail --------(event)---------> EventBridge -------> SNS
+
+
+
+
+
+2 
+
+    -- Similarly, we can also intercept API calls that, for example, change the Security Group inbound rules. So the Security Group call is called AuthorizeSecurityGroupIngress, and it's an EC2 API call.
+
+    -- So these are going to be logged again by CloudTrail and then they will appear in EventBridge and then we can trigger a notification in SNS.
+
+
+
+    User -------------(AuthorizeSecurityGroupIngress)--------> EC2(Security Group) ------------- (API Call logs) -------------> CloudTrail ------------(event)------> EventBridge ---------> SNS
+
+
+
+
+
+
+
+
+
+------------------------------------------------------- CloudTrail – Log File Integrity Validation (CloudTrail for SysOps)
+
+
+
+-- So when you do API calls within AWS, they're going to be logged by CloudTrail and you can have these logs being sent into Amazon S3, okay, every one hour. 
+
+-- But, you can also create what's called a digest file.
+
+• Digest Files:
+
+        • References the log files for the last hour and contains a hash of each
+
+        • Stored in the same s3 bucket as log files (Different folder)
+
+• Helps you determine whether a log file was modified/deleted after CloudTrail delivered it
+
+• Hashing using SHA-256, Digital Signing using SHA- 256 with RSA
+
+• Protect the S3 bucket using bucket policy, versioning, MFA Delete protection, encryption, object lock
+
+• Protect CloudTrail using IAM
+
+
+
+
+
+
+------------------------------------------------------- CloudTrail – Integration with EventBridge
+
+
+
+
+• Used to react to any API call being made in your account
+
+• CloudTrail is not “real-time”:
+
+        • Delivers an event within 15 minutes of an API call
+
+        • Delivers log files to an S3 bucket every 5 minutes
+
+
+-- So this is not a real-time automation on top of API calls, but this is for you a way to get some kind of integration on top of any API calls made within CloudTrail when it is delivered into EventBridge.
+
+
+
+
+
+------------------------------------------------------- CloudTrail – OrganizationsTrails
+
+
+
+• A trail that will log all events for all AWS accounts in an AWS Organization
+
+• Log events for management and member accounts
+
+• Trail with the same name will be created in every AWS account (IAM permissions)
+
+• Member accounts can’t remove or modify the organization trail (view only)
+
+
+
+
+
+
+
+
+
+------------------------------------------------------- AWS Config
+
+
+
+• Helps with auditing and recording compliance of your AWS resources
+
+• Helps record configurations and changes over time
+
+• Questions that can be solved by AWS Config:
+
+        • Is there unrestricted SSH access to my security groups?
+
+        • Do my buckets have any public access?
+
+        • How has my ALB configuration changed over time?
+
+
+• You can receive alerts (SNS notifications) for any changes
+
+• AWS Config is a per-region service
+
+• Can be aggregated across regions and accounts
+
+• Possibility of storing the configuration data into S3 (analyzed by Athena)
+
+
+
+
+
+------------------------------------------------------- Config Rules
+
+
+
+• Can use AWS managed config rules (over 75)
+
+• Can make custom config rules (must be defined in AWS Lambda)
+
+        • Ex: evaluate if each EBS disk is of type gp2
+
+        • Ex: evaluate if each EC2 instance is t2.micro
+
+• Rules can be evaluated / triggered:
+
+        • For each config change
+
+        • And / or: at regular time intervals
+
+
+• AWS Config Rules does not prevent actions from happening (no deny)
+
+
+• Pricing: no free tier, $0.003 per configuration item recorded per region, $0.001 per config rule evaluation per region
+
+
+
+
+
+------------------------------------------------------- Config Rules – Remediations
+
+
+
+
+-- Now, although you cannot deny any action from happening from within the config, you can do remediations of your non-compliant resources using an SSM Automation Documents.
+
+-- So the idea is, for example, you are monitoring whether or not your IAM access keys have expired.
+
+        - For example, they are older than 90 days. In which case you want to mark them as non-compliant.
+
+        - So this will not prevent them from not being compliant, but you can trigger whenever a resource is not compliant, a remediation action.
+
+
+• Use AWS-Managed Automation Documents or create custom Automation Documents
+
+        • Tip: you can create custom Automation Documents that invokes Lambda function
+
+
+• You can set Remediation Retries if the resource is still non-compliant after auto-remediation
+
+
+
+
+
+
+
+
+------------------------------------------------------- Config Rules – Notifications
+
+
+
+• Use EventBridge to trigger notifications when AWS resources are non- compliant
+
+• Ability to send configuration changes and compliance state notifications to SNS (all events – use SNS Filtering or filter at client-side)
+
+
+
+
+
+
+
+------------------------------------------------------- Config  hands On
+
+-- Customize AWS Config to record configuration changes for all supported resource types, or for only the supported resource types that are relevant to you. Globally recorded resources (RDS global clusters and IAM users, groups, roles, and customer managed policies) may be recorded in more than this Region. You are charged based on the number of configuration items recorded. 
+
+-- open AWS config in AWS 
+
+-- this is not free 
+
+-- Recording method = All resource types with customizable overrides
+
+-- choose role created by aws ( u no need to create aws role , aws will create for you)
+
+-- and also bucket will create for you 
+
+-- in rules search for the SSH and select this ssh this will check Checks whether security groups that are in use disallow unrestricted incoming SSH traffic.
+
+-- create config , now config going to monitor the entire AWS environment 
+
+--  changes that made in AWS will send to s3 
+
+-- wait for 1-3 min to get details 
+
+-- u will see the noncomplianct resources on dashboard
+
+-- for me there are 4 noncompliance records are there so , open resources(manage resource) and delete ssh connection in Security groups 
+
+-- now wait 1-2 min and check , now i do not have any noncompliance resources 
+
+-- u can also check resources in left side , u can check time line of the resource when n how the changes happen 
+
+-- it is best for auditing 
+
+
+
+---------------------------------- IMP : once u delete rules in console , it won’t delete and u will get charge , so to delete this 
+
+-- create one instance and connect instance install aws cli and login with ur keys 
+
+-- follow these steps 
+
+1 Turn off Recording for that region using the console
+
+2 Delete the Rule by going to actions, delete rule
+
+3 Use the AWS CLI and delete the default recording by
+
+aws configservice delete-configuration-recorder --configuration-recorder-name default --region <region-name>
+
+4 Delete the service linked role created for AWS Config  ( search for AWSConfigService role in roles)
+
+
+-- Refresh the Config home page to make it appear fresh.
+
+-- If necessary delete the config bucket and its objects.
+
+
+
+
+
+
+
+
+------------------------------------------------------- AWS Config – Aggregators
+
+
+
+-- Well, say you are managing multiple accounts and multiple regions within these accounts. So we have Account A, Account B, and they're called "source accounts", why?
+
+        - Because they all have a deployment of AWS Config.
+
+        - But you want to aggregate all this information into a central AWS account. And this account is called an aggregator account, and this is only in the aggregator account that you're going to create an aggregator
+
+
+• The aggregator is created in one central aggregator account , they're not created in each individual source accounts.
+
+• Aggregates rules, resources, etc... across multiple accounts & regions
+
+• If using AWS Organizations, no need for individual Authorization , You just create your aggregator in your management account in Organization, and the authorizations will happen automatically.
+
+        -- But if you're not using AWS Organizations then you would need to create an authorization in an account A to say "Hey, I authorize the AWS accounts aggregator "to collect data,"
+
+        -- and then you would create a second authorization, obviously in Account B, to do the exact same thing.
+
+        -- Once these authorizations are in place, and this is only, again, if you're not using AWS Organizations, then the aggregator will be able to collect data, to pull data from these targeted accounts and aggregate them.
+
+
+
+• Rules are created in each individual source AWS account
+
+• Can deploy rules to multiple target accounts using CloudFormation StackSets
+
+
+
+
+
+
+------------------------------------------------------- CloudWatch vs CloudTrail vs Config
+
+
+
+
+
+• CloudWatch 
+
+  • Performance monitoring (metrics, CPU, network, etc...) & dashboards
+  • Events & Alerting
+  • Log Aggregation & Analysis
+
+• CloudTrail
+  • Record API calls made within your Account by everyone 
+  • Can define trails for specific resources
+  • Global Service
+
+• Config
+
+ • Record configuration changes
+ • Evaluate resources against compliance rules
+ • Get timeline of changes and compliance
+
+
+
+
+
+------------------------------------ For an Elastic Load Balancer
+
+
+• CloudWatch:
+
+        • Monitoring Incoming connections metric
+
+        • Visualize error codes as a % over time
+
+        • Make a dashboard to get an idea of your load balancer performance
+
+
+• Config:
+
+        • Track security group rules for the Load Balancer
+
+        • Track configuration changes for the Load Balancer
+
+        • Ensure an SSL certificate is always assigned to the Load Balancer (compliance)
+
+
+• CloudTrail:
+
+        • Track who made any changes to the Load Balancer with API calls
+
+
+
+

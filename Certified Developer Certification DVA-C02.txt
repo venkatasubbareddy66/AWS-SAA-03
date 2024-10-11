@@ -7732,7 +7732,7 @@ stepehe note
 ----------------------------------------------------- Amazon EventBridge – Schema Registry
 
 
--- EventBridge receives a lot of events from different places and so therefore, you need to understand what the events are going to look like and remember, these events are in this adjacent format we just saw.
+-- EventBridge receives a lot of events from different places and so therefore, you need to understand what the events are going to look like and remember, these events are in this Json  format we just saw.
 
 • EventBridge can analyze the events in your bus and infer the schema
 
