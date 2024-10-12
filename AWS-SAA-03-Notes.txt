@@ -2135,10 +2135,12 @@ AWS IAM Identity Center is a good choice for organizations that need to manage a
 
   • Could leverage Envelope Encryption
 
-  eg : any storage service Like s3 , FTP 
+ 
 
 
 ========================================== AWS KMS (Key Management Service) ==============================
+
+
 
 • Anytime you hear “encryption” for an AWS service, it’s most likely KMS
 
@@ -2157,16 +2159,20 @@ AWS IAM Identity Center is a good choice for organizations that need to manage a
   • KMS Key Encryption also available through API calls (SDK, CLI)
   • Encrypted secrets can be stored in the code / environment variables
 
+
+
+
 KMS KeysTypes :
 
 • KMS Keys is the new name of KMS Customer Master Key
 
-• Symmetric (AES-256 keys)
+ • Symmetric (AES-256 keys)
  • Single encryption key that is used to Encrypt and Decrypt
  • AWS services that are integrated with KMS use Symmetric CMKs
  • You never get access to the KMS Key unencrypted (must call KMS API to use)
 
 • Asymmetric (RSA & ECC key pairs)
+
   • Public (Encrypt) and Private Key (Decrypt) pair
   • Used for Encrypt/Decrypt, or Sign/Verify operations
   • The public key is downloadable, but you can’t access the Private Key unencrypted
@@ -2187,6 +2193,8 @@ KMS KeysTypes :
   • Customer-managed KMS Key: (must be enabled) automatic every 1 year
   • Imported KMS Key: only manual rotation possible using alias
 
+
+
 ----------------------- KMS Key Policies
 
 • Control access to KMS keys, “similar” to S3 bucket policies
@@ -2194,10 +2202,12 @@ KMS KeysTypes :
 • Difference: you cannot control access without them
 
 • Default KMS Key Policy:
+
   • Created if you don’t provide a specific KMS Key Policy
   • Complete access to the key to the root user = entire AWS account
 
 • Custom KMS Key Policy:
+
   • Define users, roles that can access the KMS key
   • Define who can administer the key
   • Useful for cross-account access of your KMS key
@@ -2279,6 +2289,8 @@ EPV :
 
 
 =========================================== AWS Certificate Manager (ACM) ==================================
+
+
 
 • Easily provision, manage, and deploy TLS Certificates
 
@@ -2377,6 +2389,8 @@ EPV : If you want to allow or block web requests based on the IP addresses that 
 
 ---------------- WAF – Fixed IP while using WAF with a Load Balancer
 
+
+
 • WAF does not support the Network Load Balancer (Layer 4)
 
 • We can use Global Accelerator for fixed IP and WAF on the ALB
@@ -2409,6 +2423,9 @@ ANS : Use an AWS Web Application Firewall (AWS WAF) and setup a rate-based rule
 
 
 ================================================== AWS Shield: protect from DDoS attack =================
+
+
+
 
 • DDoS: Distributed Denial of Service – many requests at the same time
 
@@ -2500,6 +2517,8 @@ optional features = / S3 Logs / EBS Volumes / RDS & Aurora Login Activity / Lamb
 
 
 =========================================================== Amazon Inspector ===================================
+
+
 
 • Automated Security Assessments
 
@@ -9141,7 +9160,7 @@ services/
 
 
 
-================================AWS Transfer Family=========================
+================================ AWS Transfer Family =========================
 
 
 
@@ -9237,17 +9256,23 @@ eg :
 
 ======================================== AWS DataSync ==================
 
+
+
+
 -- Move large amount of data to and from
+
 • On-premises / other cloud to AWS (NFS, SMB, HDFS, S3 API...) – needs agent
+
 • AWS to AWS (different storage services) – no agent needed
 
 -- You can use AWS DataSync to migrate data located on-premises, at the edge, or in other clouds to Amazon S3, Amazon EFS, Amazon FSx for Windows File Server, Amazon FSx for Lustre, Amazon FSx for OpenZFS, and Amazon FSx for NetApp ONTAP.
 
 
 -- Can synchronize to:
-• Amazon S3 (any storage classes – including Glacier)
-• Amazon EFS
-• Amazon FSx (Windows, Lustre, NetApp, OpenZFS...)
+
+  • Amazon S3 (any storage classes – including Glacier)
+  • Amazon EFS
+  • Amazon FSx (Windows, Lustre, NetApp, OpenZFS...)
 
 -- Replication tasks can be scheduled hourly, daily, weekly
 
@@ -15262,6 +15287,8 @@ from % to $ = DOWN TIME
 
 ============================================================= AWS Backup ============================
 
+
+
 • Fully managed service
 
 • Centrally manage and automate backups across AWS services
@@ -15317,6 +15344,7 @@ AWS Backup ----------Create Backup Plan (frequency, retention policy) -------> A
 • Enforce a WORM (Write Once Read Many) state for all the backups that you store in your AWS Backup Vault
 
 • Additional layer of defense to protect your backups against:
+
    • Inadvertent or malicious delete operations
    • Updates that shorten or alter retention Periods
 

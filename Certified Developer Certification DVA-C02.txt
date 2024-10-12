@@ -21411,7 +21411,7 @@ ANS : Well, because we're sending data over a network and sometimes a public net
 ---------------------------------------------------------- Copying Snapshots across accounts
 
 
-1. Create a Snapshot, encr ypted with your own KMS Key (Customer Managed Key)
+1. Create a Snapshot, encrypted with your own KMS Key (Customer Managed Key)
 
 2. Attach a KMS Key Policy to authorize cross-account access
 
@@ -21423,6 +21423,22 @@ ANS : Well, because we're sending data over a network and sometimes a public net
 
 
 
+
+------------------------- KMS Multi-Region Keys
+
+• Identical KMS keys in different AWS Regions that can be used interchangeably
+
+• Multi-Region keys have the same key ID, key material, automatic rotation...
+
+• Encrypt in one Region and decrypt in other Regions
+
+• No need to re-encrypt or making cross-Region API calls
+
+• KMS Multi-Region are NOT global (Primary + Replicas)
+
+• Each Multi-Region key is managed independently
+
+• Use cases: global client-side encryption, encryption on Global DynamoDB, Global Aurora
 
 
 

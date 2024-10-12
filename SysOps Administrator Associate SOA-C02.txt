@@ -13147,3 +13147,2571 @@ aws configservice delete-configuration-recorder --configuration-recorder-name de
 
 
 
+
+
+
+
+======================================================== AWS Account Management ========================================================
+
+
+
+
+
+
+
+
+------------------------------------------------------- AWS Health Dashboard - Service History
+
+
+
+• Shows all regions, all services health
+
+• Shows historical information for each day
+
+• Has an RSS feed you can subscribe to
+
+• Previously called AWS Service Health Dashboard
+
+
+
+
+
+------------------------------------------------------- AWS Health Dashboard – Your Account
+
+
+• Previously called AWS Personal Health Dashboard (PHD)
+
+• AWS Account Health Dashboard provides aler ts and remediation guidance when AWS is experiencing events that may impact you.
+
+• While the Service Health Dashboard displays the general status of AWS services,Account Health Dashboard gives you a personalized view into the performance and availability of the AWS services underlying your AWS resources.
+
+• The dashboard displays relevant and timely information to help you manage events in progress and provides proactive notification to help you plan for scheduled activities.
+
+• Can aggregate data from an entire AWS Organization
+
+• Global service
+
+• Shows how AWS outages directly impact you & your AWS resources
+
+• Alert, remediation, proactive, scheduled activities
+
+
+
+-- click on Bell symbol in console --> see all health events 
+
+
+
+
+
+
+------------------------------------------------------- Health Event Notifications
+
+
+
+• Use EventBridge to react to changes for AWS Health events in your AWS account
+
+• Example: receive email notifications when EC2 instances in your AWS account are scheduled for updates
+
+• This is possible for Account events (resources that are affected in your account) and Public Events (Regional availability of a service)
+
+• Use cases: send notifications, capture event information, take corrective action...
+
+
+
+
+
+------------------------------------------------------- AWS Organizations
+
+
+
+
+---- Organizational Units (OU) , 
+
+-- In organzations u can create seperate units for different lify cycles for eg : Bussiness unit , environmental lifecycle , project based 
+
+AWS Organizations :
+
+ • Global service
+
+ • Allows to manage multiple AWS accounts
+
+ • The main account is the management account
+
+ • Other accounts are member accounts
+
+ • Member accounts can only be part of one organization -- IMP for Exam
+
+ • Consolidated Billing across all accounts - single payment method
+
+ • Pricing benefits from aggregated usage (volume discount for EC2, S3...) 
+
+ • Shared reserved instances and Savings Plans discounts across accounts
+
+        - So if a reserved instance is unused in one account, another account can benefit from it and therefor the discounts apply across the entire organization, which is really good for cost savings.
+
+ • API is available to automate AWS account creation
+
+
+
+
+
+
+ --------------------- Advantages
+
+ • Multi Account vs One Account Multi VPC
+
+ • Use tagging standards for billing purposes
+
+ • Enable CloudTrail on all accounts, send logs to central S3 account
+
+ • Send CloudWatch Logs to central logging account
+
+ • Establish Cross Account Roles for Admin purposes
+
+
+
+
+
+------------------ Security:  Service Control Policy (SCP)
+
+• IAM policies applied to OU or Accounts to restrict Users and Roles
+
+• They do not apply to the management account (full admin power)
+
+• Must have an explicit allow (does not allow anything by default – like IAM)
+
+--  Service control policy (SCP) is one type of policy that you can use to manage your organization.
+
+--  SCPs offer central control over the maximum available permissions for all accounts in your organization, allowing you to ensure your accounts stay within your organization’s access control guidelines.
+
+-- SCPs are available only in an organization that has all features enabled. 
+
+-- SCPs aren't available if your organization has enabled only the consolidated billing features.
+
+-- Attaching an SCP to an AWS Organizations entity (root, OU, or account) defines a guardrail for what actions the principals can perform. 
+
+
+
+
+
+
+
+------------------------------------------------------- AWS Organizations – Reserved Instances (for SysOps)
+
+
+
+
+• For billing purposes, the consolidated billing feature of AWS Organizations treats all the accounts in the organization as one account.
+
+• This means that all accounts in the organization can receive the hourly cost benefit of Reserved Instances that are purchased by any other account.
+
+• The payer account (master account) of an organization can turn off Reserved Instance (RI) discount and Savings Plans discount sharing for any accounts in that organization, including the payer account
+
+• This means that RIs and Savings Plans discounts aren't shared between any accounts that have sharing turned off.
+
+• To share an RI or Savings Plans discount with an account, both accounts must have sharing turned on.
+
+
+
+
+
+------------------------------------------------------- AWS Organizations – IAM Policies
+
+
+
+• Use aws:PrincipalOrgID condition key in your resource-based policies to restrict access to IAM principals from accounts in an AWS Organization
+
+        - to allow access from any, IAM principles from all the accounts in your organization.
+
+        - So, say you have an organization with a management account and two member accounts with different IAM users.
+
+        - If you set up an extra bucket and you're using the bucket policy, the aws:PrincipalOrgID condition, then you're giving access automatically to any user or any roles within your organization to this extra buckets.
+
+        - So, it's a good way for you to not have to specify every individual accounts, but instead reference only the leading organization of your accounts.
+
+
+
+
+
+
+------------------------------------------------------- AWS Organizations – Tag Policies
+
+
+
+
+
+https://aws.amazon.com/blogs/mt/implement-aws-resource-tagging-strategy-using-aws-tag-policies-and-service-control-policies-scps/
+
+
+• Helps you standardize tags across resources in an AWS Organization
+
+• Ensure consistent tags, audit tagged resources, maintain proper resources categorization, ...
+
+• You define tag keys and their allowed values
+
+• Helps with AWS Cost Allocation Tags and Attribute-based Access Control
+
+• Prevent any non-compliant tagging operations on specified services and resources (has no effect on resources without tags)
+
+• Generate a report that lists all tagged/non-compliant resources
+
+• Use CloudWatch Events to monitor non-compliant tags
+
+
+
+
+ExampleInc-CostAllocation.json
+
+The following is an example of a tag policy that reports on Cost Allocation tags:
+
+
+{
+  "tags": {
+    "example-inc:cost-allocation:ApplicationId": {
+      "tag_key": {
+        "@@assign": "example-inc:cost-allocation:ApplicationId"
+      },
+      "tag_value": {
+        "@@assign": [
+          "DataLakeX",
+          "RetailSiteX"
+        ]
+      }
+    },
+    "example-inc:cost-allocation:BusinessUnitId": {
+      "tag_key": {
+        "@@assign": "example-inc:cost-allocation:BusinessUnitId"
+      },
+      "tag_value": {
+        "@@assign": [
+          "Architecture",
+          "DevOps",
+          "FinanceDataLakeX"
+        ]
+      }
+    },
+    "example-inc:cost-allocation:CostCenter": {
+      "tag_key": {
+        "@@assign": "example-inc:cost-allocation:CostCenter"
+      },
+      "tag_value": {
+        "@@assign": [
+          "123-*"
+        ]
+      }
+    }
+  }
+}
+
+
+
+
+2 ExampleInc-DisasterRecovery.json
+
+
+
+The following is an example of a tag policy that reports on Disaster Recovery tags:
+
+
+{
+    "tags": {
+        "example-inc:disaster-recovery:rpo": {
+            "tag_key": {
+                "@@assign": "example-inc:disaster-recovery:rpo"
+            },
+            "tag_value": {
+                "@@assign": [
+                    "6h",
+                    "24h"
+                ]
+            }
+        }        
+    }
+}
+
+
+
+
+
+
+
+
+------------------------------------------------------- AWS Control Tower
+
+
+
+• Easy way to set up and govern a secure and compliant multi-account AWS environment based on best practices
+
+• Benefits:
+
+        • Automate the set up of your environment in a few clicks
+
+        • Automate ongoing policy management using guardrails
+
+        • Detect policy violations and remediate them
+
+        • Monitor compliance through an interactive dashboard
+
+
+• AWS Control Tower runs on top of AWS Organizations:
+
+        • It automatically sets up AWS Organizations to organize accounts and implement SCPs (Service Control Policies)
+
+
+
+
+
+
+------------------------------------------------------- AWS Service Catalog
+
+
+
+• Users that are new to AWS have too many options, and may create stacks that are not compliant / in line with the rest of the organization
+
+• Some users just want a quick self-service portal to launch a set of authorized products pre-defined by admins
+
+• Includes: virtual machines, databases, storage options, etc...
+
+• Enter AWS Service Catalog!
+
+
+
+
+------------------------------------------------------- Service Catalog diagram
+
+
+
+ADMIN TASKS 
+
+        - So your admins are going to create products, and products are a short name for CloudFormation templates.
+
+        - Then we build a portfolio, which is a collection of products, (a collection of CloudFormation templates.)
+
+        - then we define controls such as IAM Permissions, for who can access this portfolio.
+
+
+USER TASKS 
+
+        - Now your users on the other side, they will have a product list available to them, and they will see that list, thanks to the IAM Permissions we have defined from before.
+
+        - if they're happy with the product, they will launch it, and then the product will be provisioned, which is ready to use, properly configured, and properly typed.
+
+        - So the idea is that here, we allow our users to pick and choose from a list of CloudFormation templates, organizing portfolios, and launch them safely.
+
+        - So our users may not have access to AWS at all, but only to the Service Catalog, and they can launch full stacks, without directly accessing CloudFormation, only by using the CloudFormation templates authorized in the Service Catalog.
+
+
+
+
+
+------------------------------------------------------- AWS Service Catalog – Sharing Catalogs
+
+
+
+• Share portfolios with individual AWS accounts or AWS Organizations
+
+• Sharing options: 2 options 
+
+        1 • Share a reference of the portfolio, then import the shared portfolio in the recipient account (stays in-sync with the original portfolio)
+
+        2 • Deploy a copy of the portfolio into the recipient account (must re-deploy any updates)
+
+
+• Ability to add products from the imported portfolio to the local portfolio
+
+
+
+
+------------------------------------------------------- AWS Service Catalog – TagOptions Library
+
+
+
+• Easily manage tags on provisioned products
+
+• TagOption:
+
+        • Key-value pair managed in AWS Service Catalog
+
+        • Used to create an AWS Tag
+
+        - For example, we can associate the TagOption environment with the key and value prod,We associate it with portfolio A,
+
+        - that means at any time we launch a stack from a product in portfolio A, then it will inherit the tags, key environment and value prod, 
+
+        
+
+
+• Can be associated with Portfolios and Products
+
+• Use cases: proper resources tagging, defined allowed tags, ...
+
+• Can be shared with other AWS accounts and AWS Organizations
+
+
+
+
+
+
+------------------------------------------------------- AWS Service Catalog Hands ON 
+
+
+-- open  AWS Service Catalog --> Administration --> product list --> create product --> Choose CF --> owner = give name of urs --> upload any CF file --> create product 
+
+-- Now, you need to add this product into a portfolio.
+
+-- go to portfolio --> owner name --> create 
+
+-- open  portfolio --> we can add products --> add product that we have created
+
+-- so now we want to provide access to this portfolio.
+
+-- go to access tab in portfolio --> grant access --> So let's use IAM principle, and you have to choose which groups or which users should have access to our portfolio.--> add as your wish 
+
+-- now login with the users wich u have provide access --> go to service catalog --> products --> able to see the CF stacks to launch --> launch product 
+
+-- it will create CF template , eventhough user do not have access to CF , they can launch CF templates from users side 
+
+
+
+
+
+
+------------------------------------------------------- AWS Billing Alarms
+
+
+• Billing data metric is stored in CloudWatch us-east-1
+
+• Billing data are for overall worldwide AWS costs
+
+• It’s for actual cost, not for project costs
+
+
+
+
+
+------------------------------------------------------- AWS Billing Alarms Hands ON 
+
+
+
+-- you need to go on the left-hand side into Alarms and then Billing. So this only appears in us-east-1.
+
+ --> go to billing section --> Preferences and Settings = Billing Preferences -->  Alert preferences = select and give email 
+
+ -- create alarm --> select billing as metric --> byservice --> Total Estimated Charge--> select metric --> give threshlod value --> 
+
+ -- this is how you can create alarms for aws billing
+
+
+
+
+------------------------------------------------------- Cost Explorer
+
+
+ • Visualize, understand, and manage your AWS costs and usage over time
+
+ • Create custom reports that analyze cost and usage data.
+
+ • Analyze your data at a high level: total costs and usage across all accounts
+
+ • Or Monthly, hourly, resource level granularity
+
+ • Choose an optimal Savings Plan (to lower prices on your bill)
+
+ • Forecast usage up to 12 months based on previous usage
+
+
+
+
+
+------------------------------------------------------- AWS Budgets
+
+
+
+• Create budget and send alarms when costs exceeds the budget
+
+• 4 types of budgets: Usage, Cost, Reservation, Savings Plans
+
+• For Reserved Instances (RI)
+
+        • Track utilization
+
+        • Supports EC2, ElastiCache, RDS, Redshift
+
+
+• Up to 5 SNS notifications per budget
+
+• Can filter by: Service, Linked Account,Tag, Purchase Option, Instance Type, Region, Availability Zone, API Operation, etc...
+
+• Same options as AWS Cost Explorer!
+
+• 2 budgets are free, then $0.02/day/budget
+
+
+
+-- see in console 
+
+
+
+------------------------------------------------------- Cost Allocation Tags
+
+
+• Use cost allocation tags to track your AWS costs on a detailed level
+
+• AWS generated tags
+
+        • Automatically applied to the resource you create
+
+        • Starts with Prefix aws: (e.g. aws: createdBy)
+
+
+• User-defined tags
+
+        • Defined by the user
+
+        • Starts with Prefix user:
+
+
+
+-- see in console         
+
+
+
+
+
+------------------------------------------------------- Cost and Usage Reports
+
+
+
+• Dive deeper into your AWS costs and usage
+
+• The AWS Cost & Usage Report contains the most comprehensive set of AWS cost and usage data available
+
+• Includes additional metadata about AWS services, pricing, and reservations (e.g., Amazon EC2 Reserved Instances (RIs))
+
+• The AWS Cost & Usage Report lists AWS usage for each:
+
+        • service category used by an account
+
+        • in hourly or daily line items
+
+        • any tags that you have activated for cost allocation purposes
+
+
+• Can be configured for daily exports to S3
+
+• Can be integrated with Athena, Redshift or QuickSight
+
+
+-- see in console 
+
+
+
+
+
+
+
+------------------------------------------------------- AWS Compute Optimizer
+
+
+
+• Reduce costs and improve performance by recommending optimal AWS resources for your workloads
+
+• Helps you choose optimal configurations and right- size your workloads (over/under provisioned)
+
+• Uses Machine Learning to analyze your resources’ configurations and their utilization CloudWatch metrics
+
+• Supported resources
+
+        • EC2 instances
+
+        • EC2AutoScalingGroups
+
+        • EBS volumes
+
+        • Lambda functions
+
+
+• Lower your costs by up to 25%
+
+• Recommendations can be exported to S3
+
+
+
+
+
+
+
+
+======================================================= Disaster Recovery ================================================================================
+
+
+
+
+
+------------------------------------------------------- AWS DataSync
+
+
+• Move large amount of data to and from
+
+        • On-premises / other cloud to AWS (NFS, SMB, HDFS, S3 API...) – needs agent
+
+        • AWS to AWS (different storage services) – no agent needed
+
+
+• Can synchronize to:
+
+        • Amazon S3 (any storage classes – including Glacier)
+
+        • Amazon EFS
+
+        • Amazon FSx (Windows, Lustre, NetApp, OpenZFS...)
+
+
+• Replication tasks can be scheduled hourly, daily, weekly
+
+• File permissions and metadata are preserved (NFS POSIX, SMB...)
+
+• One agent task can use 10 Gbps, can setup a bandwidth limit
+
+
+
+-- AWS DataSync fully automates the data transfer. It comes with retry and network resiliency mechanisms, network optimizations, built-in task scheduling, monitoring via the AWS DataSync API and Console, and Amazon CloudWatch metrics, events, and logs that provide granular visibility into the transfer process. 
+
+-- AWS DataSync performs data integrity verification both during the transfer and at the end of the transfer.
+
+
+
+
+
+
+
+
+
+------------------------------------------------------- diff b/w storage gateway and data sync 
+
+
+
+1 Description :
+
+DataSync : AWS DataSync is an online data transfer service that simplifies, automates, and accelerates the process of copying large amounts of data to and from AWS storage services over the Internet or over AWS Direct Connect.
+
+Storage Gateway : AWS Storage Gateway is a hybrid cloud storage service that gives you on-premises access to virtually unlimited cloud storage by linking it to S3. Storage Gateway provides 3 types of storage interfaces for your on-premises applications: file, volume, and tape
+
+
+2  How it Work ?
+
+DataSync : Uses an agent which is a virtual machine (VM) that is owned by the user and is used to read or write data from your storage systems. You can activate the agent from the Management Console. The agent will then read from a source location, and sync your data to Amazon S3, Amazon EFS, or Amazon Fsx for Windows File Server.
+
+Storage Gateway : Uses a Storage Gateway Appliance – a VM from Amazon – which is installed and hosted on your data center. After the setup, you can use the AWS console to provision your storage options: File Gateway, Cached Volumes, or Stored Volumes, in which data will be saved to Amazon S3.
+- You can also purchase the hardware appliance to facilitate the transfer instead of installing the VM
+
+3  Protocols 
+
+DataSync :  AWS DataSync can copy data between Network File Systems (NFS), SMB file servers or self-managed object storages. It can also move data between your on-premises storage and AWS Snowcone, Amazon S3, Amazon EFS, or Amazon FSx,
+
+Storage Gateway : File Gateway enables you to store and retrieve objects in Amazon S3 using file protocols such as NFS and SMB.
+- Volume Gateway stores your data locally in the gateway and syncs them to Amazon S3. It also allows you to take point-in-time copies of your volumes with EBS snapshots which you can restore and mount to your appliance as iSCSI device. 
+- Tape Gateway data is immediately stored in Amazon S3 and can be archived to Amazon S3 Glacier or Amazon S3 Glacier Deep Archive.
+
+4  Pricing 
+
+DataSync : You are charged standard request, storage, and data transfer rates to read from and write to AWS services, such as Amazon S3, Amazon EFS, AmazonFSx for Windows File Server, and AWS KMS.
+
+Storage Gateway :  You are charged based on the type and amount of storage you use, the requests you make, and the amount of data transferred out of AWS.
+
+
+combination : You can use a combination of DataSync and File Gateway to minimize your on-premises’ operational costs while seamlessly connecting on-premises applications to your cloud storage. AWS DataSync enables you to automate and accelerate online data transfers to AWS storage services. File Gateway then provides your on-premises applications with low latency access to the migrated data.
+
+
+
+
+
+
+
+------------------------------------------------------- AWS Transfer Family
+
+
+
+
+
+-- Fully managed Service for file transer securely 
+
+-- A fully-managed service for file transfers into and out of Amazon S3 or Amazon EFS using the FTP protocol
+
+-- Supported Protocols
+• AWS Transfer for FTP (File Transfer Protocol (FTP))
+• AWS Transfer for FTPS (File Transfer Protocol over SSL (FTPS)) 
+• AWS Transfer for SFTP (Secure File Transfer Protocol (SFTP))
+
+-- Managed infrastructure, Scalable, Reliable, Highly Available (multi-AZ)
+
+-- Pay per provisioned endpoint per hour + data transfers in GB
+
+-- Usage: sharing files, public datasets, CRM, ERP, ...
+
+-- data can be transferred in and out of s3 buckets and EFS 
+
+-- generally we are uploaing our files in S3 through the console  but we are doing through the http , 
+
+-- now w r going to transfer files securely from ur laptop 
+
+-- for this we have to install software called "FileZilla" which is used to transfer fis very securley 
+
+-- b/w ur laptop and s3 or EFS we have to create One "Transfer Server" , this server allows us to do  SFTP,FTP,FTPS, we can choose any one , and we hav to create one user in Transfer server 
+
+-- in FileZilla u can login as with user name 
+
+-- once u create server it will give u endpoint 
+
+
+
+
+
+
+
+
+-------------------------- Hands ON 
+
+-- create public bucket 
+
+-- create one bucket policy through policy generator 
+
+eg :   
+
+{
+  "Id": "Policy1704630072890",
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "Stmt1704629976563",
+      "Action": [
+        "s3:GetObject",
+        "s3:ListBucket",
+        "s3:PutObject"
+      ],
+      "Effect": "Allow",
+      "Resource": ["arn:aws:s3:::transfer-dem",
+                       "arn:aws:s3:::transfer-dem/*" ],
+      "Condition": {
+        "IpAddress": {
+          "aws:SourceIp": "49.205.119.80/32"
+        }
+      },
+      "Principal": "*"
+    }
+  ]
+}
+
+-- transfer-dem = name 
+
+-- now create transfer server 
+
+-- open aws transfer family in console 
+
+-- create server , selete SFTP --> Srvice managed --> select as per ur requriemnets 
+
+--now add user in server 
+
+-- select server c.o add user --> create one role in IAM --> truste entity = ec2 --> use case = Transfer (imp) --> give s3 full access --> create role 
+
+-- go to puttyGen n create SSH keys(mouseover)  and save private key with .ppk 
+
+-- now download Filezilla 
+
+-- open filezilla --File(top) --> site manager --> new site --> copy end point of server --> selet SFTP n paste endpoint of server and give port number as 22--> logon type : key file --> give ur private file u downoaded -- connect 
+
+
+-- once u coonect u jst drag do upload ur files u want and go check in s3 in console --- getting files 
+
+-- this is how u can transfer files throug SFTP from ur lap to s3 or EFS 
+
+
+
+
+
+
+
+
+------------------------------------------------------- AWS Backup
+
+
+
+
+
+• Fully managed service
+
+• Centrally manage and automate backups across AWS services
+
+• No need to create custom scripts and manual processes
+
+• Supported services:
+ • Amazon EC2 / Amazon EBS
+ • Amazon S3
+ • Amazon RDS (all DBs engines) / Amazon Aurora / Amazon DynamoDB 
+ • Amazon DocumentDB / Amazon Neptune
+ • Amazon EFS / Amazon FSx (Lustre & Windows File Server)
+ • AWS Storage Gateway (Volume Gateway)   
+
+ -- EFS , EC2 , DynamoDB = Service level backups , 
+    for eg we always take backups of EFS files 
+
+ -- RDS, EBS , AWS Storage gateway , amazon aurora = service level snapshots , 
+    for eg we always take snapshots of EBS volumes 
+
+
+
+• Supports cross-region backups
+
+• Supports cross-account backups
+
+• Supports PITR for supported services
+
+• On-Demand and Scheduled backups
+
+• Tag-based backup policies
+
+• You create backup policies known as Backup Plans
+ 
+   • Backup frequency (every 12 hours, daily, weekly, monthly, cron expression)
+   • Backup window
+   • Transition to Cold Storage (Never, Days,Weeks, Months,Years)
+   • Retention Period (Always, Days,Weeks, Months,Years)
+
+
+AWS Backup ----------Create Backup Plan (frequency, retention policy) -------> Assign AWS service -------Automatically backed up to-----> S3
+
+
+------- Backup Plan : it allows you to configure when to take the backups , u can define frequency of taking backup and also retention policy 
+
+------- backup vault ; -- it is like a container which stores all ur backups 
+
+
+
+------------------------------------------------------- AWS Backup Vault Lock
+
+
+• Enforce a WORM (Write Once Read Many) state for all the backups that you store in your AWS Backup Vault
+
+• Additional layer of defense to protect your backups against:
+
+   • Inadvertent or malicious delete operations
+   • Updates that shorten or alter retention Periods
+
+• Even the root user cannot delete backups when enabled
+
+
+----------------- new features 
+
+Announcing New Features :
+
+-- Support for EBS snapshot archive  Explore long-term, lower-cost archive storage lifecycle options for EBS snapshots
+
+-- Restore testing  Periodically validate recovery readiness and gain insights into restore times
+
+-- Jobs dashboard  Monitor backup health through visual representations of aggregated backup, copy, and restore metrics
+
+
+
+------------------------------------------------------- LAB 
+
+-- create one instance with tags
+
+-- now go to aws backup --> settings --> configure resources select only ec2 and deselect remaining
+
+-- now create on-demand backup
+
+-- backup --> dashboard --> create on-demand backup 
+
+-- select ec2 and instance id
+
+-- give retention period 
+
+-- create new backup vault , with default keys , and give tags
+
+-- IAM role  = default 
+
+-- create backup , wait for few minutes to create 
+
+-- once ur jobs is created 
+
+-- go to backup vault --> inside ur vault --> one recovery point will get assigned, u can retrieve ec2 from this recovery point 
+
+-- instead of creating on-demand backup , we can also create backup plans and configure frequency and rentention period time 
+
+-- go to backup plan --> Build a new plan 
+
+-- Backup window  = give time according to ur time zone 
+
+-- do not choose region for destination 
+
+--  now go to backup plans --> assign resources  with default role 
+
+-- in the tags <key> equals <ur value>
+
+-- assign resources 
+
+-- now go to ur backup valut --> select recovery point and see the backup type = manual 
+
+--- now do restoring 
+
+-- first terminate ec2 instance 
+
+-- now go to backup --> backup vault --> recovery point --> restore 
+
+-- it will create one restore job 
+
+-- once it get completed , go n check the ec2 will get back , restore is successfull
+
+-- this is how we can restore thr resource through aws backup , it is manual backup 
+
+-- after sometime it will automatically starts one job for automated backup that we have created 
+
+-- do check ur restore jobs for every 1 hr for automated restore jobs 
+
+-- this is automated backups 
+
+-- clear all resources that u have created 
+
+
+
+
+
+
+
+
+
+======================================================= Security & Compliance =======================================================
+
+
+
+
+
+------------------------------------------------------- AWS Shared Responsibility Model
+
+
+
+• AWS responsibility - Security of the Cloud
+
+        • Protecting infrastructure (hardware, software, facilities, and networking) that runs all the AWS services
+
+        • Managed services like S3, DynamoDB, RDS, etc.
+
+
+• Customer responsibility - Security in the Cloud
+
+        • For EC2 instance, customer is responsible for management of the guest OS (including security patches and updates), firewall & network configuration, IAM
+
+        • Encrypting application data
+
+
+• Shared controls:
+
+        • Patch Management, Configuration Management, Awareness & Training
+
+
+
+
+
+------------------------------------------------------- Example, for RDS
+
+
+
+• AWS responsibility:
+
+        • Manage the underlying EC2 instance, disable SSH access
+
+        • Automated DB patching
+
+        • Automated OS patching
+
+        • Audit the underlying instance and disks & guarantee it functions
+
+
+• Your responsibility:
+
+        • Check the ports / IP / security group inbound rules in DB’s SG
+
+        • In-database user creation and permissions
+
+        • Creating a database with or without public access
+
+        • Ensure parameter groups or DB is configured to only allow SSL connections
+
+        • Database encryption setting
+
+
+
+
+
+Example, for S3 
+
+
+• AWS responsibility:
+
+        • Guarantee you get unlimited storage
+
+        • Guarantee you get encryption
+
+        • Ensure separation of the data between different customers
+
+        • Ensure AWS employees can’t access your data
+
+
+• Your responsibility:
+
+        • Bucket configuration
+
+        • Bucket policy / public setting
+
+        • IAM user and roles
+
+        • Enabling encryption
+
+
+
+
+https://aws.amazon.com/compliance/shared-responsibility-model/
+
+
+
+
+
+
+
+------------------------------------------------------- What’s a DDOS* Attack?
+
+
+
+
+• DDoS: Distributed Denial of Service – many requests at the same time
+
+
+
+
+
+------------------------------------------------------- DDoS Protection on AWS
+
+
+
+• AWS Shield Standard: protects against DDoS attack for your website and applications, for all customers at no additional costs
+
+• AWS Shield Advanced: 24/7 premium DDoS protection
+
+• AWS WAF: Filter specific requests based on rules
+
+• CloudFront and Route 53:
+
+        • Availability protection using global edge network
+
+        • Combined with AWS Shield, provides attack mitigation at the edge
+
+
+• Be ready to scale – leverage AWS Auto Scaling
+
+
+
+
+Sample Reference Architecture  : https://aws.amazon.com/answers/networking/aws-ddos-attack-mitigation/
+
+
+
+
+
+
+-------------------------------------------------------  AWS Shield
+
+
+
+• DDoS: Distributed Denial of Service – many requests at the same time
+
+1  AWS Shield Standard:
+
+  • Free service that is activated for every AWS customer
+  • Provides protection from attacks such as SYN("synchronize")/UDP Floods, Reflection attacks and other layer 3/layer 4 attacks
+
+
+2  AWS Shield Advanced:
+
+  • Optional DDoS mitigation service ($3,000 per month per organization)
+
+  • Protect against more sophisticated attack on Amazon EC2, Elastic Load Balancing (ELB), Amazon CloudFront, AWS Global Accelerator, and Route 53
+
+  • 24/7 access to AWS DDoS response team (DRP)
+ 
+  • Protect against higher fees during usage spikes due to DDoS 
+
+  • Shield Advanced automatic application layer DDoS mitigation automatically creates, evaluates and deploys AWS WAF rules to mitigate layer 7 attacks
+
+
+
+
+
+
+
+------------------------------------------------------- AWS WAF – Web Application Firewall
+
+
+
+
+-- AWS WAF is a web application firewall that helps protect your web applications or APIs against common web exploits that may affect availability, compromise security, or consume excessive resources.
+
+-- AWS WAF gives you control over how traffic reaches your applications by enabling you to create security rules that block common attack patterns, such as SQL injection or cross-site scripting, and rules that filter out specific traffic patterns you define.
+
+
+EPV : If you want to allow or block web requests based on the IP addresses that the requests originate from, create one or more "IP match conditions." An IP match condition lists up to 10,000 IP addresses or IP address ranges that your requests originate from.
+
+
+
+• Protects your web applications from common web exploits (Layer 7)
+
+• Layer 7 is HTTP (vs Layer 4 is TCP/UDP)
+
+• Deploy on
+
+ • Application Load Balancer
+ • API Gateway
+ • CloudFront
+ • AppSync GraphQL API
+ • Cognito User Pool 
+
+• Define Web ACL (Web Access Control List) Rules:
+
+ • IP Set: up to 10,000 IP addresses – use multiple Rules for more IPs
+ • HTTP headers, HTTP body, or URI strings Protects from common attack - SQL injection and Cross-Site Scripting (XSS)
+ • Size constraints, geo-match (block countries)
+ • Rate-based rules (to count occurrences of events) – for DDoS protection
+
+• Web ACL are Regional except for CloudFront
+
+• A rule group is a reusable set of rules that you can add to a web ACL
+
+
+
+
+
+
+---------------- WAF – Fixed IP while using WAF with a Load Balancer
+
+
+
+• WAF does not support the Network Load Balancer (Layer 4)
+
+• We can use Global Accelerator for fixed IP and WAF on the ALB
+
+
+Users <---------> Global Accelerator (fixed IP) <-----------> ALB <----------------> EC2 instances 
+                                                               |
+                                                               |   (attached)
+                                                               |
+                                                              AWS WAF  , it has WebACL
+
+                                       IMP NOTE : WebACL must be in the same AWS Region as ALB
+
+
+EPV : 
+
+AWS WAF - How it Works?:
+
+-- To block specific countries, you can create a AWS WAF geo match statement listing the countries that you want to block, 
+
+-- to allow traffic from IPs of the remote development team, you can create a WAF IP set statement that specifies the IP addresses that you want to allow through. 
+
+
+
+EPV : Your application is deployed on Amazon EC2 instances fronted by an Application Load Balancer. Recently, your infrastructure has come under attack. Attackers perform over 100 requests per second, while your normal users only make about 5 requests per second.
+
+ANS : Use an AWS Web Application Firewall (AWS WAF) and setup a rate-based rule
+
+
+
+
+
+
+------------------------------------------------------- AWS Firewall Manager
+
+
+
+
+
+• Manage rules in all accounts of an AWS Organization
+
+• Security policy: common set of security rules
+ 
+• WAF rules (Application Load Balancer, API Gateways, CloudFront)
+• AWS Shield Advanced (ALB, CLB, NLB, Elastic IP, CloudFront)
+• Security Groups for EC2, Application Load Balancer and ENI resources in VPC 
+• AWS Network Firewall (VPC Level)
+• Amazon Route 53 Resolver DNS Firewall
+• Policies are created at the region level
+
+• Rules are applied to new resources as they are created (good for compliance) across all and future accounts in your Organization
+
+
+
+
+
+
+
+------------------------------------------------------- WAF vs. Firewall Manager vs. Shield
+
+
+
+• WAF, Shield and Firewall Manager are used together for comprehensive protection
+
+• Define your Web ACL rules in WAF
+
+• For granular protection of your resources, WAF alone is the correct choice
+
+• If you want to use AWS WAF across accounts, accelerate WAF configuration, automate the protection of new resources, use Firewall Manager with AWS WAF
+
+• Shield Advanced adds additional features on top of AWS WAF, such as dedicated support from the Shield Response Team (SRT) and advanced reporting.
+
+• If you’re prone to frequent DDoS attacks, consider purchasing Shield Advanced
+
+
+
+
+
+------------------------------------------------------- Penetration Testing on AWS Cloud
+
+
+• AWS customers are welcome to carry out security assessments or penetration tests against their AWS infrastructure without prior approval for 8 services:
+
+
+        • Amazon EC2 instances, NAT Gateways, and Elastic Load Balancers 
+        • Amazon RDS
+        • Amazon CloudFront
+        • Amazon Aurora
+        • Amazon API Gateways
+        • AWS Lambda and Lambda Edge functions 
+        • Amazon Lightsail resources
+        • Amazon Elastic Beanstalk environments
+
+
+• Prohibited Activities
+
+        • DNS zone walking via Amazon Route 53 Hosted Zones
+
+        • Denial of Service (DoS), Distributed Denial of Service (DDoS), Simulated DoS, Simulated DDoS
+
+        • Port flooding
+
+        • Protocol flooding
+
+        • Request flooding (login request flooding, API request flooding)
+
+
+• For any other simulated events, contact aws-security-simulated- event@amazon.com
+
+• Read more: https://aws.amazon.com/security/penetration-testing/
+
+
+
+
+
+
+------------------------------------------------------- Amazon Inspector
+
+
+
+• Automated Security Assessments
+
+it onlt evaluates 
+
+1 For EC2 instances
+
+  • Leveraging the AWS System Manager (SSM) agent
+  • Analyze against unintended network accessibility
+  • Analyze the running OS against known vulnerabilities
+
+
+2 For Container Images push to Amazon ECR
+
+  • Assessment of Container Images as they are pushed
+
+3  For Lambda Functions
+
+  • Identifies software vulnerabilities in function code and package dependencies
+
+  • Assessment of functions as they are deployed
+
+
+
+• Reporting & integration with AWS Security Hub 
+
+• Send findings to Amazon Event Bridge
+
+
+
+
+
+------------------------------ What does Amazon Inspector evaluate?
+
+
+• Remember : only for EC2 instances, Container Images & Lambda functions
+
+• Continuous scanning of the infrastructure, only when needed
+
+• Package vulnerabilities (EC2, ECR & Lambda) – database of CVE
+
+• Network reachability (EC2)
+
+• A risk score is associated with all vulnerabilities for prioritization
+
+
+
+
+ 
+ ------------------------------------------------------- Amazon Inspector Hands ON 
+
+
+
+
+ -- open in console --> activate Inspector 
+
+ -- now create ec2 instance linux 2023 
+
+ -- as we launch this instance it is going to be scanned by the Inspector service.
+
+ -- check in Environment coverage in Inspector console , u can see 0/1 instance 
+
+ -- go to Account management --> instances --> u can see that not scanning instance list coz Unmanaged EC2 instance --> 
+
+  -- click on Unmanaged EC2 instance , follow these instructions --> give instanceid --> give role blank --> execute   ( if you get error then go for nxt step )
+
+ -- go to ssm --> quicksetup --> Host Management --> Targets = current region --> all instances --> create 
+
+
+
+ -- now scanning happening , you can see all vulnerabilities if any happens for lambda and ecr and ec2 
+
+ -- go to general setting in console --> deactivates the inspector 
+
+
+
+
+
+
+
+
+------------------------------------------------------- Logging in AWS for security and compliance
+
+
+• To help compliance requirements,AWS provides many service-specific security and audit logs
+
+• Service Logs include:
+
+        • CloudTrail trails - trace all API calls
+
+        • Config Rules - for config & compliance over time
+
+        • CloudWatch Logs - for full data retention
+
+        • VPC Flow Logs - IP traffic within your VPC
+
+        • ELB Access Logs - metadata of requests made to your load balancers
+
+        • CloudFront Logs - web distribution access logs
+
+        • WAF Logs - full logging of all requests analyzed by the service
+
+
+• Logs can be analyzed using AWS Athena if they’re stored in S3
+
+• You should encrypt logs in S3, control access using IAM & Bucket Policies, MFA
+
+• Move Logs to Glacier for cost savings
+
+• Read whitepaper if interested at: https://d0.awsstatic.com/whitepapers/compliance/AWS_Security_at_Scale_Logging_in_AWS_Whitep aper.pdf
+
+
+
+
+
+
+
+------------------------------------------------------- Amazon GuardDuty
+
+
+
+
+• Intelligent Threat discovery to protect your AWS Account , (malicious activities)
+
+• Uses Machine Learning algorithms, anomaly detection, 3rd party data
+
+• One click to enable (30 days trial), no need to install software
+
+• Input data includes:
+
+  • CloudTrail Events Logs – unusual API calls, unauthorized deployments
+
+     • CloudTrailManagementEvents–createVPCsubnet,createtrail,... 
+     • CloudTrailS3DataEvents–getobject,listobjects,deleteobject,...
+
+  • VPC Flow Logs – unusual internal traffic, unusual IP address
+
+  • DNS Logs – compromised EC2 instances sending encoded data within DNS queries 
+
+  • Optional Features – EKS Audit Logs, RDS & Aurora, EBS, Lambda, S3 Data Events...
+
+• Can setup EventBridge rules to be notified in case of findings
+
+• EventBridge rules can target AWS Lambda or SNS
+
+• Can protect against CryptoCurrency attacks (has a dedicated “finding” for it)
+
+
+
+VPC Flow Logs / CloudTrail Logs / DNS Logs (AWS DNS) 
+
+optional features = / S3 Logs / EBS Volumes / RDS & Aurora Login Activity / Lambda Network Activity / EKS Audit Logs & Runtime Monitoring ------ > GuardDuty ---> EventBridge --> SNS / Lambda
+
+
+
+
+
+
+
+
+------------------------------------------------------- AWS Macie
+
+
+
+
+• Amazon Macie is a fully managed data security and data privacy service that uses machine learning and pattern matching to discover and protect your sensitive data in AWS.
+
+• Macie helps identify and alert you to sensitive data, such as personally identifiable information (PII)
+
+S3 Buckets-------(analyze)------> Macie Discover Sensitive Data (PII)-------(notify)------->Amazon EventBridge--------(integrations)---....
+
+
+
+
+
+
+
+------------------------------------------------------- Trusted Advisor 
+
+
+
+• No need to install anything – high level AWS account assessment
+
+-- It's going to check for a few things and advise you on them.
+
+        - So the checks can be, for example, 
+        
+        - do you have EBS Public Snapshots? 
+        
+        - Or do you have RDS Public Snapshots? Or are you using the root accounts for your accounts? 
+        
+        - So all these things are checked by Trusted Advisor
+
+
+• Analyze your AWS accounts and provides recommendation on 6 categories:
+
+ • Cost optimization 
+ • Performance
+ • Security
+ • Fault tolerance
+ • Service limits
+ • Operational Excellence
+
+
+• Business & Enterprise Support plan
+
+   • Full Set of Checks
+   • Programmatic Access using AWS Support API
+
+ 
+
+
+
+
+
+-------------------------------------------------------  Encryption 101 
+
+
+
+
+
+-- do google for the pictures of encryption for better understanding 
+
+
+1 Encryption in flight (TLS / SSL)
+
+   • Data is encrypted before sending and decrypted after receiving
+
+   • TLS certificates help with encryption (HTTPS)
+
+   • Encryption in flight ensures no MITM (man in the middle attack) can happen
+
+
+         client                                                                                            server 
+
+   Client ---(username : admin )------> TLS encryption ----(hbchdubchdubvchutsvhsbcv)------->     TLS Decryption------(username : admin )----Https website           
+
+
+
+2  Server-side encryption at rest
+
+  • Data is encrypted after being received by the server
+
+  • Data is decrypted before being sent
+
+  • It is stored in an encrypted form thanks to a key (usually a data key)
+
+  • The encryption / decryption keys must be managed somewhere, and the server must have access to it
+
+  eg : AWS s3 
+
+
+3  Client-side encryption 
+
+  • Data is encrypted by the client and never decrypted by the server
+
+  • Data will be decrypted by a receiving client
+
+  • The server should not be able to decrypt the data
+
+  • Could leverage Envelope Encryption
+
+ 
+
+
+
+ ------------------------------------------------------- AWS KMS (Key Management Service)
+
+
+
+
+
+• Anytime you hear “encryption” for an AWS service, it’s most likely KMS
+
+• AWS manages encryption keys for us
+
+• Fully integrated with IAM for authorization
+
+• Easy way to control access to your data
+
+• Able to audit KMS Key usage using CloudTrail
+
+• Seamlessly integrated into most AWS services (EBS, S3, RDS, SSM...)
+
+• Never ever store your secrets in plaintext, especially in your code!
+
+  • KMS Key Encryption also available through API calls (SDK, CLI)
+  • Encrypted secrets can be stored in the code / environment variables
+
+
+
+
+
+
+--------------------------------------- KMS KeysTypes :
+
+
+
+
+• KMS Keys is the new name of KMS Customer Master Key
+
+ • Symmetric (AES-256 keys)
+        
+        • Single encryption key that is used to Encrypt and Decrypt
+        • AWS services that are integrated with KMS use Symmetric CMKs
+        • You never get access to the KMS Key unencrypted (must call KMS API to use)
+
+• Asymmetric (RSA & ECC key pairs)
+
+        • Public (Encrypt) and Private Key (Decrypt) pair
+        • Used for Encrypt/Decrypt, or Sign/Verify operations
+        • The public key is downloadable, but you can’t access the Private Key unencrypted
+        • Use case: encryption outside of AWS by users who can’t call the KMS API
+
+
+
+
+
+--------------------------------------- • Types of KMS Keys:
+
+
+  • AWS Owned Keys (free): SSE-S3, SSE-SQS, SSE-DDB (default key)
+
+  • AWS Managed Key: free (aws/service-name, example: aws/rds or aws/ebs) 
+
+  • Customer managed keys created in KMS: $1 / month
+
+  • Customer managed keys imported (must be symmetric key): $1 / month
+
+  • + pay for API call to KMS ($0.03 / 10000 calls)
+
+
+
+• Automatic Key rotation:
+
+  • AWS-managed KMS Key: automatic every 1 year
+
+  • Customer-managed KMS Key: (must be enabled) automatic every 1 year
+
+  • Imported KMS Key: only manual rotation possible using alias
+
+
+
+
+
+
+
+--------------------------------------- Copying Snapshots across regions 
+
+
+
+-- So KMS keys are scoped per region.
+
+
+-- That means that if we have an EBS volume encrypted with KMS key in a region, for example, eu-west-2,
+
+-- then if you want to copy that to a different region we have to do several steps.
+
+-- First of all, we have to take a snapshot of this EBS volume. And if we take a snapshot from an encrypted snapshot then this snapshot itself will also be encrypted with the same KMS key.
+
+-- Then, to copy the snapshot to another region, we need to re-encrypt the snapshot using a different KMS key. And this is something AWS will do for you.
+
+-- But the same KMS key cannot live in two regions. So now we have an EBS snapshot. It's encrypted with KMS with a different key and it lives in another region.
+
+-- Now we restore the snapshot into its own EBS volume with KMS,  and it's KMS key B into the region ap-southeast-2.
+
+
+
+
+
+
+
+--------------------------------------- KMS Key Policies
+
+
+
+• Control access to KMS keys, “similar” to S3 bucket policies
+
+• Difference: you cannot control access without them
+
+• Default KMS Key Policy:
+
+  • Created if you don’t provide a specific KMS Key Policy
+  • Complete access to the key to the root user = entire AWS account
+
+• Custom KMS Key Policy:
+
+  • Define users, roles that can access the KMS key
+  • Define who can administer the key
+  • Useful for cross-account access of your KMS key
+
+
+
+
+
+
+
+---------------------------------------------------------- Copying Snapshots across accounts
+
+
+1. Create a Snapshot, encrypted with your own KMS Key (Customer Managed Key)
+
+2. Attach a KMS Key Policy to authorize cross-account access
+
+3. Share the encrypted snapshot with the target accounts.
+
+4. (in target) Create a copy of the Snapshot, encrypt it with a CMK in your account
+
+5. Create a volume from the snapshot
+
+
+
+
+
+
+
+------------------------- KMS Multi-Region Keys
+
+
+
+• Identical KMS keys in different AWS Regions that can be used interchangeably
+
+• Multi-Region keys have the same key ID, key material, automatic rotation...
+
+• Encrypt in one Region and decrypt in other Regions
+
+• No need to re-encrypt or making cross-Region API calls
+
+• KMS Multi-Region are NOT global (Primary + Replicas)
+
+• Each Multi-Region key is managed independently
+
+• Use cases: global client-side encryption, encryption on Global DynamoDB, Global Aurora
+
+
+
+
+
+
+
+
+
+---------------------------------------------------------- KMS Hands ON
+
+
+
+-- open KMS in console --> customer - managed Keys --->  Symmetric ----> Encrypt and decrypt ---> KMS - recommended ----> Single-region key --> alias = give anyname ---> nxt ---> nxt ---> create 
+
+-- now do some data encrypt and decrypt 
+
+-- open cloudshell create one folder like kms 
+
+-- cd kms --> create onefile "ExampleSecretFile.txt" and enter some secrets in that file , eg: supersecret
+
+-- u have to cmnds 
+
+
+
+# 1) encryption
+aws kms encrypt --key-id alias/tutorial --plaintext fileb://ExampleSecretFile.txt --output text --query CiphertextBlob  --region ap-south-1 > ExampleSecretFileEncrypted.base64
+
+# base64 decode for Linux or Mac OS 
+cat ExampleSecretFileEncrypted.base64 | base64 --decode > ExampleSecretFileEncrypted
+
+# base64 decode for Windows
+certutil -decode .\ExampleSecretFileEncrypted.base64 .\ExampleSecretFileEncrypted
+
+
+# 2) decryption
+
+aws kms decrypt --ciphertext-blob fileb://ExampleSecretFileEncrypted   --output text --query Plaintext > ExampleFileDecrypted.base64  --region ap-south-1
+
+# base64 decode for Linux or Mac OS 
+cat ExampleFileDecrypted.base64 | base64 --decode > ExampleFileDecrypted.txt
+
+
+# base64 decode for Windows
+certutil -decode .\ExampleFileDecrypted.base64 .\ExampleFileDecrypted.txt
+
+
+
+-- give cmnds without any gaps at the starting point 
+
+--  now perform 1st cmnd , this will create one file , ExampleSecretFileEncrypted.base64 , do cat this , this represents my encrypted file.
+
+        aws kms encrypt --key-id alias/tutorial --plaintext fileb://ExampleSecretFile.txt --output text --query CiphertextBlob  --region ap-south-1 > ExampleSecretFileEncrypted.base64
+
+
+-- now decode 
+
+       cat ExampleSecretFileEncrypted.base64 | base64 --decode > ExampleSecretFileEncrypted
+
+     - this will create "ExampleSecretFileEncrypted " this file 
+
+     - So this is the kind of secret file that you would share with someone.
+
+
+-- now decrypt the file 
+
+      aws kms decrypt --ciphertext-blob fileb://ExampleSecretFileEncrypted   --output text --query Plaintext > ExampleFileDecrypted.base64  --region ap-south-1
+
+
+      - this will create "ExampleFileDecrypted.base64" 
+
+      - cat ExampleFileDecrypted.base64
+
+
+-- now decode 
+
+      cat ExampleFileDecrypted.base64 | base64 --decode > ExampleFileDecrypted.txt
+
+
+      - now do cat ExampleFileDecrypted.txt , u will see the secret 
+
+
+
+
+
+
+
+
+
+
+---------------------------------------------------------- KMS Automatic Key Rotation
+
+
+
+• AWS-managed KMS Keys: automatically rotated every 1 year
+
+• For Customer-Managed Symmetric KMS Key
+
+        • Automatic key rotation is optionally enabled
+
+        • Customize Rotation Period between 90 and 2560 days (default: 365 days)
+
+        • Previous key is kept active so you can decrypt old data
+
+        • New Key has the same KMS Key ID (only the backing key is changed)
+
+
+
+
+
+
+---------------------------------------------------------- KMS On-Demand Key Rotation
+
+
+
+• For Customer-Managed Symmetric KMS Key (not AWS managed CMK)
+
+• Does NOT require Automatic Key Rotation to be enabled
+
+• Does NOT change existing Automatic Rotation schedules        
+
+• Limit to how many times you can trigger an on-demand key rotation
+
+
+
+
+---------------------------------------------------------- KMS Manual Key Rotation (Customer-Managed Symmetric KMS Key & Imports)
+
+
+
+• When you want to rotate key (example: every month)
+
+• New Key has a different KMS Key ID
+
+• Keep the previous key active so you can decrypt old data
+
+• Better to use aliases in this case (to hide the change of key for the application)
+
+• Good solution to rotate KMS Key that are not eligible for automatic rotation (like asymmetric KMS Key)
+
+
+
+
+
+---------------------------------------------------------- KMS Alias Updating
+
+
+
+• Better to use aliases in this case (to hide the change of key for the application)
+
+
+
+
+
+---------------------------------------------------------- Changing The KMS Key For An Encr ypted EBS Volume  (KMS for SysOps)
+
+
+
+• You can’t change the encryption keys used by an EBS volume , if u want to do so , then 
+
+• Create an EBS snapshot and create a new EBS volume and specify the new KMS key
+
+
+
+
+
+---------------------------------------------------------- Sharing KMS Encrypted RDS DB Snapshots
+
+
+
+• You can share RDS DB snapshots encrypted with KMS CMK with other accounts, but must first share the KMS CMK with the target account using Key Policy
+
+
+
+
+---------------------------------------------------------- KMS Key Deletion Considerations
+
+
+
+• Schedule CMK for deletion with a waiting period of 7 to 30 days
+
+        • CMK’s status is “Pending deletion” during the waiting period
+
+
+• During the CMK’s deletion waiting period:
+
+        • The CMK can’t be used for cryptographic operations (e.g., can’t decrypt KMS- encrypted objects in S3 – SSE-KMS)
+
+        • The key is not rotated even if planned
+
+
+• You can cancel the key deletion during the waiting period
+
+• Consider disabling your key instead of deleting it if you’re not sure!
+
+
+
+
+
+---------------------------------------------------------- KMS Key Deletion – CloudWatch Alarm
+
+
+• Use CloudTrail, CloudWatch Logs, CloudWatch Alarms and SNS to be notified when someone tries to use a CMK that’s ”Pending deletion” in a cryptographic operation (Encrypt, Decrypt, ...)
+
+
+
+
+
+
+
+
+---------------------------------------------------------- CloudHSM
+
+
+• KMS => AWS manages the software for encryption , and will have control over the encryption keys.
+
+• CloudHSM => AWS provisions encryption hardware , AWS will provision some encryption hardware.
+
+              - It's called an HSM device, so a dedicated hardware which is a hardware security module.
+
+• Dedicated Hardware (HSM = Hardware Security Module)
+
+• You manage your own encryption keys entirely (not AWS)
+
+
+- The HSM device is going to be set up within the cloud of AWS,
+
+• HSM device is tamper resistant, FIPS 140-2 Level 3 compliance
+
+• Supports both symmetric and asymmetric encryption (SSL/TLS keys)
+
+• No free tier available
+
+• Must use the CloudHSM Client Software
+
+• Redshift supports CloudHSM for database encryption and key management
+
+• Good option to use with SSE-C encryption
+
+
+- IAM permissions:
+
+       • CRUD an HSM Cluster
+
+- CloudHSM Software:
+
+       • Manage the Keys
+       • Manage the Users
+
+
+
+
+
+---------------------------------------------------------- CloudHSM High Availability
+
+
+• CloudHSM clusters are spread across Multi AZ (HA)
+
+• Great for availability and durability
+ 
+
+
+
+---------------------------------------------------------- CloudHSM – Integration with AWS Services
+
+
+• Through integration with AWS KMS
+
+• Configure KMS Custom Key Store with CloudHSM
+
+• Example: EBS, S3, RDS ...
+
+        
+       
+
+
+
+
+
+---------------------------------------------------------- AWS Artifact (not really a service)
+
+
+
+
+• Portal that provides customers with on-demand access to AWS compliance documentation and AWS agreements
+
+• Artifact Reports - Allows you to download AWS security and compliance documents from third-party auditors, like AWS ISO certifications, Payment Card Industry (PCI), and System and Organization Control (SOC) reports
+
+• Artifact Agreements - Allows you to review, accept, and track the status of AWS agreements such as the Business Associate Addendum (BAA) or the Health Insurance Portability and Accountability Act (HIPAA) for an individual account or in your organization
+
+• Can be used to support internal audit or compliance
+
+
+
+
+---------------------------------------------------------- AWS Certificate Manager (ACM)
+
+
+
+• Easily provision, manage, and deploy TLS Certificates
+
+• Provide in-flight encryption for websites (HTTPS)
+
+• Supports both public and private TLS certificates
+
+• Free of charge for public TLS certificates
+
+• Automatic TLS certificate renewal
+
+• Integrations with (load TLS certificates on)
+
+  • Elastic Load Balancers(CLB,ALB,NLB)
+  • CloudFront Distributions 
+  • APIs on API Gateway
+
+• Cannot use ACM with EC2 (can’t be extracted)
+
+
+
+
+
+
+
+-------------------------- ACM – Requesting Public Certificates
+
+
+
+
+1 List domain names to be included in the certificate
+
+   • Fully Qualified Domain Name (FQDN): corp.example.com
+   • WildcardDomain:*.example.com
+
+
+2 Select Validation Method: DNS Validation or Email validation
+
+   • DNS Validation is preferred for automation purposes
+   • Email validation will send emails to contact addresses in the WHOIS database
+   • DNS Validation will leverage a CNAME record to DNS config (ex: Route 53)
+
+3 It will take a few hours to get verified
+
+4 The Public Certificate will be enrolled for automatic renewal
+
+   • ACM automatically renews ACM-generated certificates 60 days before expiry
+
+
+
+
+
+
+------------------------- ACM – Importing Public Certificates
+
+
+• Option to generate the certificate outside of ACM and then import it
+
+• No automatic renewal, must import a new certificate before expiry
+
+• ACM sends daily expiration events starting 45 days prior to expiration
+
+    • The # of days can be configured
+    • Events are appearing in EventBridge
+
+• AWS Config has a managed rule named acm-certificate-expiration-check to check for expiring certificates (configurable number of days) ---- IMP for exam 
+
+
+
+
+
+---------------------------------------------------------- API Gateway - Endpoint Types
+
+
+• Edge-Optimized (default): For global clients
+
+        • Requests are routed through the CloudFront Edge locations (improves latency)
+
+        • The API Gateway still lives in only one region
+
+
+• Regional:
+
+        • For clients within the same region
+
+        • Could manually combine with CloudFront (more control over the caching strategies and the distribution)
+
+
+• Private:
+
+
+        • Can only be accessed from your VPC using an interface VPC endpoint (ENI)
+
+        • Use a resource policy to define access
+
+
+
+
+---------------------------------------------------------- ACM – Integration with API Gateway
+
+
+• Create a Custom Domain Name in API Gateway
+
+• Edge-Optimized (default): For global clients
+
+        • Requests are routed through the CloudFront Edge locations (improves latency)
+
+        • The API Gateway still lives in only one region
+
+        • TheTLS Certificate must be in the same region as CloudFront, in us-east-1
+
+        • Then setup CNAME or (better)A - Alias record in Route53
+
+• Regional:
+
+        • For clients within the same region
+
+        • The TLS Certificate must be imported on APIGateway,in the same region as the API Stage
+
+        • Then setup CNAME or (better)A - Alias record in Route53
+
+
+
+
+
+
+
+---------------------------------------------------------- SSM Parameter Store
+
+
+
+
+
+• Secure storage for configuration and secrets
+
+• Optional Seamless Encryption using KMS
+
+• Serverless, scalable, durable, easy SDK
+
+• Version tracking of configurations / secrets
+
+• Security through IAM
+
+• Notifications with Amazon EventBridge
+
+• Integration with CloudFormation
+
+
+
+
+
+---------------------------------------------------------- SSM Parameter Store Hierarchy
+
+
+• /my-department/
+    • my-app/
+        • dev/
+            • db-url
+            • db-password
+
+        • prod/
+            • db-url
+            • db-password
+
+• other-app/
+
+
+
+- You also have the opportunity to access Secrets of Secrets Manager through the Parameter Store by using this reference right here.
+
+        • /aws/reference/secretsmanager/secret_ID_in_Secrets_Manager
+
+
+- there are something called Public Parameters that are issued by AWS that you can use.
+
+        • /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2 (public)
+           
+
+
+
+
+
+
+
+---------------------------------------------------------- SSM Parameter Standard and advanced parameter tiers
+
+
+
+
+Standard :
+
+- Total number of parameters allowed (per AWS account and Region) :  10,000
+
+- Maximum size of a parameter value                               :  4 KB
+
+- Parameter policies available                                    :  No
+
+- Cost                                                            :  No additional charge
+
+- Storage Pricing                                                 :  Free
+
+
+
+
+
+
+Advanced :
+
+- Total number of parameters allowed (per AWS account and Region) :  100,000
+
+- Maximum size of a parameter value                               :  8 KB
+
+- Parameter policies available                                    : yes
+
+- Cost                                                            :  charges Apply
+
+- Storage Pricing                                                 :  $0.05 per advanced parameter per month
+
+
+
+
+
+
+---------------------------------------------------------- Parameters Policies (for advanced parameters)
+
+
+
+• Allow to assign a TTL to a parameter (expiration date) to force updating or deleting sensitive data such as passwords
+
+• Can assign multiple policies at a time
+
+
+
+
+1 Expiration (to delete a parameter) : 
+
+{
+    "Type": "Expiration",
+    "Version": "1.0",
+    "Attributes": {
+        "Timestamp": "2018-12-02T21:34:33.000Z"
+    }
+}
+
+
+
+
+
+2 ExpirationNotification (EventBridge)
+
+
+
+{
+    "Type": "ExpirationNotification",
+    "Version": "1.0",
+    "Attributes": {
+        "Before": "15",
+        "Unit": "Days"
+    }
+}
+
+
+-- So in this example, 15 days before the parameter expires we'll receive notification in EventBridge which gives us enough time to actually update it
+
+-- and make sure the parameter is not getting deleted because of the TTL.
+
+
+
+
+
+3 NoChangeNotification (EventBridge)
+
+
+{
+    "Type": "NoChangeNotification",
+    "Version": "1.0",
+    "Attributes": {
+        "After": "20",
+        "Unit": "Days"
+    }
+}
+
+
+-- maybe sometimes you wanna make sure the parameters change once in a while.
+
+-- So you can have a no change notification in EventBridge so that if a parameter has not been updated for 20 days, then you will be notified as well.
+
+
+
+
+
+
+
+
+---------------------------------------------------------- SSM Parameter Store Hands ON CLI
+
+
+
+-- open ssm in console --> choose parameter store on left side panel ---> give path to store value (/my-app/dev/db-url) ---> string --> value = dev.database.subbu.com:3306 --> create parameter
+
+-- dev.database.subbu.com:3306 = u can give any value 
+
+-- now do create dev password
+  
+-- give path to store value (/my-app/dev/db-password) ---> securestring --> value = give password here --> KMS Key ID = i am using my own key (eg: tutorial) -----> create parameter       
+
+-- now do create for prod environment also same like as Dev
+
+EG : /my-app/prod/db-url , /my-app/prod/db-password
+
+
+-- So we are going to use this CLI to get the parameters.
+
+-- open cloudshell
+
+       aws ssm get-parameters --names /my-app/dev/db-url /my-app/dev/db-password
+
+
+-- for the password it's a SecureString, and here is the value of it, which is an encrypted value.
+
+-- So for this, you basically need to decrypt it.
+
+-- for this you have a special parameter and it's called with-decryption,
+
+-- so this will check whether or not I have the KMS permission to decrypt this secret that was encrypted with the KMS tutorial key.
+
+         aws ssm get-parameters --names /my-app/dev/db-url /my-app/dev/db-password --with-decryption
+
+
+-- now observe changes 
+
+
+  aws ssm get-parameters-by-path --path /my-app/dev     =  u will get all parameters from specific path if u want 
+
+   aws ssm get-parameters-by-path --path /my-app/ --recursive  --with-decryption     = u will get all parameters under /my-app/ 
+
+
+
+
+
+
+
+
+
+---------------------------------------------------------- SSM Parameter Store Hands ON with LAMBDA 
+
+
+-- create one function with py 3.8 runtime 
+
+
+
+
+import json
+
+import boto3
+
+ssm = boto3.client('ssm', region_name="ap-south-1")
+
+def lambda_handler(event, context):
+    # TODO implement
+    db_url = ssm.get_parameters(Names=["/my-app/dev/db-url"])
+    print(db_url)
+    db_password = ssm.get_parameters(Names=["/my-app/dev/db-password"])
+    print(db_password)
+    return "Worked!"
+
+
+
+-- now go to configuration ---> permissons --->  create inline policy --> system manager ---> give all access --> all resources --> nxt 
+
+-- now do refresht he lambda page 
+
+-- if u get errror , after adding permissions , then wait for 5 min 
+
+-- now u will get this
+
+-- u can see 'SecureString' is encrypted here 
+
+-- So what we'd like to do is now decrypt it,
+
+-- so in code for password decrypt , add 
+
+        db_password = ssm.get_parameters(Names=["/my-app/dev/db-password"], WithDecryption = True)
+
+
+-- now do test , u will get (AccessDeniedException) error 
+
+-- because we're not allowed to use the customer master key and decrypt our secrets.
+
+-- So it turns out that because having given KMS access to my IAM role we're not allowed to decrypt the secrets,
+
+-- so this is a good proof that even though I have access to this database password, because it's encrypted and I don't have access to KMS I'm not able to decrypt it,
+
+-- and so that DB password is really safe and secure.
+
+-- to fix this add permissions 
+
+     permissons --> create inline policy --> kms --> add all permissions --> all resources--> create 
+
+
+-- now do test , u will get decrypted values 
+
+
+-- now to access through the Environment Variables 
+
+-- create  Environment Variable --> DEV_OR_PROD	 = dev
+
+-- add this in code 
+
+
+
+import json
+
+import boto3
+import os 
+
+ssm = boto3.client('ssm', region_name="ap-south-1")
+dev_or_prod = os.environ['DEV_OR_PROD']
+
+
+def lambda_handler(event, context):
+    # TODO implement
+    db_url = ssm.get_parameters(Names=["/my-app/" + dev_or_prod + "/dev/db-url"])
+    print(db_url)
+    db_password = ssm.get_parameters(Names=["/my-app/" + dev_or_prod + "/dev/db-password"], WithDecryption = True)
+    print(db_password)
+    return "Worked!"
+
+
+
+
+-- if u test this u will get dev values 
+
+--  go to env variable , change to prod (DEV_OR_PROD	 = prod )
+
+--  do test again , u will prod values 
+
+        
+
+
+
+
+
+
+
+
+
+---------------------------------------------------------- AWS Secrets Manager ------------------------
+
+
+
+• Newer service, meant for storing secrets
+
+• Capability to force rotation of secrets every X days
+
+• Automate generation of secrets on rotation (uses Lambda)
+
+• Integration with Amazon RDS (MySQL, PostgreSQL, Aurora)
+
+• Secrets are encrypted using KMS
+
+• Mostly meant for RDS integration
+
+
+
+
+
+
+---------------------------------------------------------- AWS Secrets Manager – Multi-Region Secrets
+
+
+• Replicate Secrets across multiple AWS Regions
+
+• Secrets Manager keeps read replicas in sync with the primary Secret
+
+• Ability to promote a read replica Secret to a standalone Secret
+
+• Use cases: multi-region apps, disaster recovery strategies, multi-region DB...
+
+
+
+
+
+
+---------------------------------------------------------- AWS Secrets Manager Hands ON
+
+
+-- open secret manager --> store a new secret ---> Other type of secret ---> give key and values ----> select ur KMS key or default ----> Secret name = prod/my-key-api --> create 
+
+
+
+
+
+---------------------------------------------------------- Secrets Manager – Monitoring
+
+
+
+• CloudTrail captures API calls to the Secrets Manager API
+
+• CloudTrail captures other related events that might have a security or compliance impact on your AWS account or might help you troubleshoot operational problems.
+
+• CloudTrail records these events as non-API service events.
+
+        • RotationStarted event
+
+        • RotationSucceeded event
+
+        • RotationFailed event
+
+        • RotationAbandoned event – a manual change to a secret instead of automated rotation
+
+        • StartSecretVersionDelete event
+
+        • CancelSecretVersionDelete event
+
+        • EndSecretVersionDelete event
+
+
+
+• Combine with CloudWatch Logs and CloudWatch alarms for automations
+
+
+
+
+
+
+
+
+
+
+---------------------------------------------------------- SSM Parameter Store vs Secrets Manager
+
+
+
+
+• Secrets Manager ($$$): 
+
+       • Automatic rotation of secrets with AWS Lambda
+
+       • Lambda function is provided for RDS, Redshift, DocumentDB
+
+       • KMS encryption is mandatory
+
+       • Can integration with CloudFormation
+
+
+• SSM Parameter Store ($):
+
+       • Simple API
+
+       • No secret rotation (can enable rotation using Lambda triggered by EventBridge)
+
+       • KMS encryption is optional
+
+       • Can integration with CloudFormation
+
+       • Can pull a Secrets Manager secret using the SSM Parameter Store API
+
+
+
+
+
+
+
+
+
+============================================================== Identity ==============================================================
+
+
+
+
