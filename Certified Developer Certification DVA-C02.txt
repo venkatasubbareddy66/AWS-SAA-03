@@ -19816,6 +19816,286 @@ see fig
 
 
 
+
+-------------------------- web identity federation and token management 
+
+-- when ever u are login into website some websites will ask u to login through the google , or facebook or gmail etc this is called Identity federation 
+
+-- u can do in sign-in experience page in user pool 
+
+-- u can create ur own log in page using Amplify , and other SDk's
+
+
+----------------------- LAB , we are login through the SAML 2.0
+
+-- now demo 
+
+--- open IAM Identity center
+
+--  choose Organization
+
+-- Confirm your identity source = Identity Center directory  , if u want to change u can like Active direcory , etc ..
+
+-- now create user in IICenter , IAM users and IIC users are different , copy details of user 
+
+-- now open cognito --> select add user directories to ur app in drop down list --> create userpool --> choose Federated identity providers --> email --> SAML --> no MFA , this is not applicable for the federation users --> nxt --> Send email with Cognito --> skip Step 4 for now(we will do after creating SAML application in IIC) --> give username for pool --> domain name --> client name --> give callback URL --> advanced app client settings --> OAuth 2.0 grant type = choose only Implicit grant --> create userpool
+
+-- now copy the user pool id , we will use them in SAML creation in IIC 
+
+-- now create SAML 2.O application in IIC 
+
+-- go to IIC --> choose application on left side --> add application --> I have an application I want to set up --> SAMl 2.O --> copy link of "IAM Identity Center SAML metadata file" --> Application ACS URL = <cognito domain url>/saml2/idpresponse (eg : https://myuserpool123.auth.ap-south-1.amazoncognito.com/saml2/idpresponse)--> Application SAML audience = urn:amazon:cognito:sp:<cognito pool id> 
+
+-- once u submit --> under actions --> edit attribute mapping --> 
+
+${user:subject}    format = persistent 
+
+-- add new attribute 
+
+email     ${user:email}    format = basic 
+
+-- save changes 
+
+-- now choose assign users --> select user that we have created --> assign user
+
+-- let's configure IAM identity center as a SAML identity provider n cognito user pool 
+
+-- go to cognito in console --> inside user pool --> sign-in experience --> Federated identity provider sign-in =  add Federated identity provider = SAML --> name of ur SAML --> Metadata document source = Enter metadata document endpoint URL (paste url that u have copied while creating SAML , eg : https://portal.sso.ap-south-1.amazonaws.com/saml/metadata/Mjk4MTMyMzY5NjI5X2lucy0zNzMxZjY2ODg5OTY3NjBh) --> saml attribute provide email--> add identity provider 
+
+-- now u must add this identity provider to userpool app client , to do this 
+
+-- go to cognito in console --> inside user pool --> app integration --> open client --> in hosted UI choose edit --> choose identity provider = SAML name that u have created --> save changes 
+
+-- now do test 
+
+-- go to cognito in console --> inside user pool --> app integration --> open client --> view hosted UI --> here u are do lofin with SAML give credentials and login 
+
+-- it is same like when u want to sign up with some other website it will ask u to sign in with fackbook , google , twitter etc..... same we have done here 
+
+-- by this we have successfully configured IIC as identity provider of ur userpool 
+
+
+
+
+
+
+
+---------------------- Cognito Identity Pools(Federated Identity) which gives temporary access to AWS resources  LAB 
+
+
+-- use identity as cognito userpools
+
+-- go to identity pools in cognito 
+
+-- create identity --> Authenticated access --> amzn cognito user pool --> create new role ( give any name for ur role )--> user pool details --> Role settings = Use default authenticated role --> Claim mapping = Use default mappings --> name of ur identity pool --> create 
+
+-- make sure u have not blocked pop up for ur browsers
+
+-- go to role created and add s3 full accesss for the demo purpose
+
+-- u can add these policies if u get any error later ( only add when u get error)
+
+
+1 . cognito policy = name of policy 
+
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": [
+                "s3:*",
+                "cognito-identity:GetCredentialsForIdentity"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+
+
+
+
+2 cognito-s3-permissions (optional coz we have added s3 full access in above step )
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": "s3:ListAllMyBuckets",
+            "Resource": "*"
+        }
+    ]
+}
+
+
+
+
+-- Trust Relationship 
+
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "",
+            "Effect": "Allow",
+            "Principal": {
+                "Federated": "cognito-identity.amazonaws.com"
+            },
+            "Action": [
+                "sts:AssumeRoleWithWebIdentity",
+                "sts:TagSession"
+            ],
+            "Condition": {
+                "StringEquals": {
+                    "cognito-identity.amazonaws.com:aud": "<IdentityPoolId>"
+                },
+                "ForAnyValue:StringLike": {
+                    "cognito-identity.amazonaws.com:amr": "authenticated"
+                }
+            }
+        }
+    ]
+}
+
+
+
+
+
+-- now go to userpool ---> client information ---> edit --> 
+
+-- OAuth grant types 
+  
+      - Authorization code grant
+      -  - Implicit grant
+
+-- OpenID Connect scopes
+
+      - aws.cognito.signin.user.admin
+
+      - email
+      - openid
+      - phone
+      - profile
+
+-- now go to postman and add the following info 
+
+-- do not add anyurl in the url tab just leave as blank with GET method
+
+
+     - type         = Oauth 2.o
+     - Token Name   = AccessToken
+     - Callback URL = www.amazon.com
+     - Auth URL      = https://browser-pool.auth.ap-south-1.amazoncognito.com/oauth2/authorize
+     - Access Token URL = https://browser-pool.auth.ap-south-1.amazoncognito.com/oauth2/token
+     - Client ID        = get from userpool appclient id
+     - Client Secret    =  get from userpool appclient id
+     - Scope            =  openid profile
+     - Refresh Token URL  = u will get from userpool (Token signing key URL)
+
+
+
+ -- add headers :
+
+              Key                 Value
+           CONTENT-TYPE            application/x-amz-json-1.1
+           X-AMZ-TARGET            com.amazonaws.cognito.identity.model.AWSCognitoIdentityService.GetId
+
+-- https://browser-pool.auth.ap-south-1.amazoncognito.com - this is domain name of ur userpool 
+
+-- u have to add  /oauth2/authorize( Auth URL ) and /oauth2/token (Access Token URL)
+
+-- click on "get new access token " and login using credentials u will get tokens 
+
+-- copy id_token and store it some where 
+
+-- copy access token and go to online jwt token decode in google and paste and check the info
+
+-- go to postman and type = Post and give identity url in the url section eg : https://cognito-identity.ap-south-1.amazonaws.com/  (based on region u can change)
+
+-- add headers like above step 
+
+-- now go to body --> raw --> Text
+
+
+
+
+{
+   "IdentityPoolId":"ap-south-1:9750241a-7acb-42b3-919d-54bac1f1fb44",
+   "Logins": {
+       "cognito-idp.ap-south-1.amazonaws.com/ap-south-1_SH87tNLwB": ""
+    }
+}
+
+
+
+
+-- IdentityPoolId - u will get from identity pools
+
+-- cognito-idp.ap-south-1.amazonaws.com  ( replace ur region)
+
+-- /ap-south-1_SH87tNLwB -- u will get this from Identity pools --> UserAccess --> Identity provider 
+
+-- click on post , the identityId will create and also do check in console also (identity pools --> identity browser )
+
+-- once u do all correct u will get one o/p like this 
+
+
+{
+    "IdentityId": "ap-south-1:456a12f0-dda6-cf0a-f6fa-705b538d8a59"
+}
+
+
+
+-- go to aws cli and use below cmnds
+
+-- replace the values below cmnd (https://repost.aws/knowledge-center/cognito-identity-pool-grant-user-access)
+
+         aws cognito-identity get-credentials-for-identity --identity-id region:abcdef --logins cognito-idp.example_region.amazonaws.com/example_cognito_user_pool_id = example_cognito_user_id_token
+
+
+-- eg it will look like this 
+
+
+
+
+aws cognito-identity get-credentials-for-identity --identity-id us-east-1:456a12f0-dd26-cbc6-4360-7a3c189b8725 --logins cognito-idp.us-east-1.amazonaws.com/us-east-1_dh67H1QNF=eyJraWQiOiJrY3pmTTkwd0ZYd3JGUG0weWtqNTdUaVRuTnJ1Z3R1NmpiMm9NRTBvN2FjPSIsImFsZyI6IlJTMjU2In0.eyJhdF9oYXNoIjoiRFJoLVNneWtRQ1BuaURxa0IwZlA1dyIsInN1YiI6ImE0ZDhmNGE4LTkwNTEtNzAxNy04ZDljLTU1NGEzMGM2M2JhNiIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJpc3MiOiJodHRwczpcL1wvY29nbml0by1pZHAudXMtZWFzdC0xLmFtYXpvbmF3cy5jb21cL3VzLWVhc3QtMV9kaDY3SDFRTkYiLCJjb2duaXRvOnVzZXJuYW1lIjoic2F0aHlhIiwib3JpZ2luX2p0aSI6IjRlY2I2NjZjLTUwNWQtNDZkYS1iZWQ3LWM4MDQ5Mzk3YWJkMyIsImF1ZCI6Imsya2pzMmppZWUxMXY2aGRwMG9iOXRxazEiLCJldmVudF9pZCI6IjdiMzg3ODVjLWExNmYtNDIzMS1hODU5LTI3YjM4OTk1Y2NmZiIsInRva2VuX3VzZSI6ImlkIiwiYXV0aF90aW1lIjoxNzI1MTk1MTk5LCJleHAiOjE3MjUxOTg3OTksImlhdCI6MTcyNTE5NTE5OSwianRpIjoiMTI0MjkwYzAtNmM4OS00NTMyLTgwNTgtYWJkYTIyMTY3ZGUxIiwiZW1haWwiOiJzYXRoeWFkaGFybWE2NjY2QGdtYWlsLmNvbSJ9.JZS1u5Q0JxS0cECF9Djla5rNEN4dY4U6mVWXpaRomdpXgykfkZ0AtoO9WZLsXl37yLACRMNK0HQJyB4QahMWVgHoWfwtPCz6QkwRFKBVMbPOytxaXs0xyuNEMJh1-KP64JeC-anG8i3zCJTLWh9ziCTad4hBgkfopyAovQ5bGgHKDo7lpENGObpoq-eNSpU4etKClcAVPGdjcZS50N61sCjP7Nc1iuV98d9CbP2ViZNadbatHxv8yc9I7mmwBFrYbX8xefI4uNKz5im_AvsbUnXjFEk_tyoDtB-VgogXPcFnYOVffDKx2xz7szq0HRfqshLPWA1lN5Q5l0sxHclaKg
+
+
+
+-- u will temporary credentials 
+
+
+-- once u got temporary credentials
+
+-- go to postman --> method = GET --> type = aws signature 
+
+-- in the URL section 
+
+         https://cf-templates-12zxw0rmzpafi-us-east-1.s3.us-east-1.amazonaws.com/
+
+
+-- by using this url u can retrieve buckets in the specific region 
+
+ -- s3 endpoint will change according to region 
+
+ --  cf-templates-12zxw0rmzpafi-us-east-1    = bucket name present in us-east-1 region    
+
+ --  give credentials and service name is s3 and once u enter u will get buckets and it's objects , u can also leverage permissions (limited to guests)
+
+
+
+
+
+
+
+
+
+
+
 ----------------------------------------------------------------- Cognito Identity Pools – IAM Roles
 
 
@@ -19920,6 +20200,48 @@ see fig
 -- for the authenticated users, you can define a policy variable on Amazon S3,
 
 -- so our users are connected, but we want to make sure that they only have access to a prefix in your S3 bucket,
+
+
+
+
+
+
+----------------------------------------------------------------- Cognito Identity Pools – DynamoDB
+
+
+
+
+
+-- This example shows how you might create an identity-based policy that allows item-level access to the MyTable DynamoDB table based on an Amazon Cognito identity pool user ID. This policy grants the permissions necessary to complete this action programmatically from the AWS API or AWS CLI.
+
+
+-- To use this policy, you must structure your DynamoDB table so the Amazon Cognito identity pool user ID is the partition key. 
+
+
+
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "dynamodb:DeleteItem",
+                "dynamodb:GetItem",
+                "dynamodb:PutItem",
+                "dynamodb:Query",
+                "dynamodb:UpdateItem"
+            ],
+            "Resource": ["arn:aws:dynamodb:*:*:table/MyTable"],
+            "Condition": {
+                "ForAllValues:StringEquals": {
+                    "dynamodb:LeadingKeys": ["${cognito-identity.amazonaws.com:sub}"]
+                }
+            }
+        }
+    ]
+}
+
 
 
 

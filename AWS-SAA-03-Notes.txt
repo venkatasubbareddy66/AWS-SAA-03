@@ -4569,6 +4569,9 @@ IMP : to avoid this problem ,
 
 ------------------------------------------ 3 Network load balancer : 2017
 
+
+
+
 - Choose a Network Load Balancer when you need ultra-high performance, TLS offloading at scale, centralized certificate deployment, support for UDP, and static IP addresses for your applications.
 
 - Handle millions of request per seconds
@@ -12553,6 +12556,7 @@ Can be Private .
 
 -------------------------------------------- R53 Features
 
+
 -- Domian registration 
 
 -- DNS routing 
@@ -12570,6 +12574,7 @@ eg : www.google.com => 172.217.18.36
 -- DNS is the backbone of the Internet
 
 -- DNS uses hierarchical naming structure 
+
 - .com
 - example.com
 - www.example.com
@@ -12600,7 +12605,13 @@ in this URL
 - http ----> protocol
 
 
+
+
+
 -------------------- Route 53 – Hosted Zones
+
+
+
 
 -- A container for records that define how to route traffic to a domain and its subdomains
 
@@ -12609,6 +12620,8 @@ in this URL
 -- Hosted Zone (Domain name = subbu.com ) are same 
 
 • You pay $0.50 per month per hosted zone
+
+
 
 -- 2 types of H.Z 
 
@@ -12634,11 +12647,17 @@ ANS : Enable DNS hostnames and DNS resolution for private hosted zones
 
 -- DNS hostnames and DNS resolution are required settings for private hosted zones. DNS queries for private hosted zones can be resolved by the Amazon-provided VPC DNS server only.
 
+
+
+
 ------------------- 1 DNS hostnames: 
 
 -- For non-default virtual private clouds that aren't created using the Amazon VPC wizard, this option is disabled by default.
 
 -- If you create a private hosted zone for a domain and create records in the zone without enabling DNS hostnames, private hosted zones aren't enabled. To use a private hosted zone, this option must be enabled.
+
+
+
 
 ------------------- 2 DNS resolution: 
 
@@ -12668,18 +12687,28 @@ enableDnsSupport
 
 -------------------------- Route 53 – Health Checks
 
+
+
+
 • HTTP Health Checks are only for public resources
 
 • Health Check => Automated DNS Failover:
+
    - Health checks that monitor an endpoint (application, server, other AWS resource)
+
    - Health checks that monitor other health checks (Calculated Health Checks)
+
    - Health checks that monitor CloudWatch Alarms (full control !!) – e.g., throttles of DynamoDB, alarms on RDS, custom metrics, ... (helpful for private resources)
 
 
 • Health Checks are integrated with CW metrics
 
 
+
+
 ----------------------------------- Health Checks – Monitor an Endpoint
+
+
 
 • About 15 global health checkers will check the endpoint health
 
@@ -12694,6 +12723,8 @@ enableDnsSupport
 • Health Checks can be setup to pass / fail based on the text in the first 5120 bytes of the response
 
 • Configure you router/firewall to allow incoming requests from Route 53 Health Checkers
+
+
 
 
 ----------------------------------- Route 53 – Calculated Health Checks
@@ -12712,6 +12743,8 @@ enableDnsSupport
 
 
 -------------------------- Health Checks – Private Hosted Zone
+
+
 
 -- Route 53 health checkers are outside the VPC
 
@@ -12761,20 +12794,33 @@ IMP -- You can create a CloudWatch Metric and associate a CloudWatch Alarm, then
 
 ----------------------------------Route53 Records------------
 
+
+
 -- How you want to route traffic for a domain
 
 -- Each record contains:
-- Domain/subdomain Name – e.g., example.com
-- Record Type – e.g., A or AAAA
-- Value – e.g., 12.34.56.78
-- Routing Policy – how Route 53 responds to queries
-- TTL – amount of time the record cached at DNS Resolvers
+
+
+  - Domain/subdomain Name – e.g., example.com
+  - Record Type – e.g., A or AAAA
+  - Value – e.g., 12.34.56.78
+  - Routing Policy – how Route 53 responds to queries
+  - TTL – amount of time the record cached at DNS Resolvers
 
 -- Route 53 supports the following DNS record types:
+
 - (must know)A /AAAA / CNAME / NS
+
 - (advanced)CAA/DS/MX/NAPTR/PTR/SOA/TXT/SPF/SRV
 
+
+
+
+
 ---------------------- Route 53 – RecordTypes
+
+
+
 
 -- we have A Record , AAAA Record , Cname recor , Alias Record  , MX Record 
 
@@ -12812,6 +12858,8 @@ http://subbbu.com -- > it reach R53--> Hosted zone (subbu.com) --> records(subbu
 
 
 ----------- Route 53 – Alias Records Targets
+
+
 
 -- Elastic Load Balancers
 -- CloudFront Distributions
@@ -13126,6 +13174,9 @@ IMP -- You must use Route 53 Traffic Flow to use this feature
 
 
 ============================================== Routing Policies – IP-based Routing
+
+
+
 
 -- Routing is based on clients’ IP addresses
 
@@ -14373,6 +14424,8 @@ u will get responce
 
 
 ---------------------------------------------------- AWS VPN CloudHub -------------------------------
+
+
 
 • Provide secure communication between multiple sites, if you have multiple VPN connections
 
@@ -18637,6 +18690,8 @@ Key AWS service:
 
 
 ----------------------------------------------- Trusted Advisor 
+
+
 
 • No need to install anything – high level AWS account assessment
 

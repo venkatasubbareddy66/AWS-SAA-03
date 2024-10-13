@@ -15715,3 +15715,2422 @@ def lambda_handler(event, context):
 
 
 
+
+---------------------------------------------------------- IAM Security Tools
+
+
+• IAM Credentials Report (account-level)
+
+        • a report that lists all your account's users and the status of their various credentials
+
+        - go to IAM Dashboard --> credential Report
+
+
+• IAM Access Advisor (user-level)
+
+        • Access advisor shows the service permissions granted to a user and when those services were last accessed.
+
+        • You can use this information to revise your policies.
+
+        - Go to IAM Dashboard --> users --> select users u want --> access Advisor (LAst Accessed)
+
+
+
+
+
+
+---------------------------------------------------------- IAM Access Analyzer
+
+
+
+• Find out which resources are shared externally
+
+
+        • S3 Buckets
+        • IAM Roles
+        • KMS Keys
+        • Lambda Functions and Layers 
+        • SQS queues
+        • Secrets Manager Secrets
+
+
+• Define Zone of Trust = AWS Account or AWS Organization
+
+• Access outside zone of trusts => findings
+
+
+
+
+---------------------------------------------------------- What’s Identity Federation?
+
+
+
+• Federation lets users outside of AWS to assume temporary role for accessing AWS resources.
+
+• These users assume identity provided access role.
+
+• Federation assumes a form of 3rd party authentication
+
+
+        • Microsoft Active Directory (~= SAML) 
+        • Single Sign On
+        • Open ID
+        • Cognito
+        • LDAP
+
+
+• Using federation, you don’t need to create IAM users (user management is outside of AWS)
+
+
+
+
+
+
+---------------------------------------------------------- SAML Federation For Enterprises
+
+
+
+• To integrate Active Directory / ADFS with AWS (or any SAML 2.0)
+
+• Provides access to AWS Console or CLI (through temporary creds)
+
+• No need to create an IAM user for each of your employees
+
+
+https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_saml.html
+
+https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_enable-console-saml.html
+
+
+
+
+if you don't have a SAML 2.0 way of identifying your users then you need to use custom identity broker.
+
+
+
+
+
+
+---------------------------------------------------------- Custom Identity Broker Application For Enterprises
+
+
+• Use only if identity provider is not compatible with SAML 2.0
+
+• The identity broker must determine the appropriate IAM policy
+
+
+
+https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_ common-scenarios_federated-users.html
+
+
+
+
+
+
+---------------------------------------------------------- AWS Cognito - Federated Identity Pools For Public Applications
+
+
+
+
+• Goal:
+
+        • Provide direct access to AWS Resources from the Client Side
+
+
+• How:
+
+        • Log in to federated identity provider – or remain anonymous
+
+        • Get temporary AWS credentials back from the Federated Identity Pool
+
+        • These credentials come with a pre-defined IAM policy stating their permissions
+
+
+• Example:
+
+        • provide (temporary) access to write to S3 bucket using Facebook Login
+
+
+• Note:
+
+        • Web Identity Federation is an alternative to using Cognito but AWS recommends against it
+
+
+
+
+
+
+---------------------------------------------------------- AWS STS – Security Token Service
+
+
+
+• Allows to grant limited and temporary access to AWS resources.
+
+• Token is valid for up to one hour (must be refreshed)
+
+• AssumeRole
+
+        • Within your own account: for enhanced security
+
+        • Cross Account Access: assume role in target account to perform actions there
+
+
+• AssumeRoleWithSAML
+
+        • return credentials for users logged with SAML
+
+
+• AssumeRoleWithWebIdentity
+
+        • return creds for users logged with an IdP (Facebook Login, Google Login, OIDC compatible...)
+
+        • AWS recommends against using this, and using Cognito instead
+
+
+• GetSessionToken
+
+        • for MFA, from a user or AWS account root user
+
+
+
+
+• GetFederationToken: obtain temporary creds for a federated user
+
+• GetCallerIdentity: return details about the IAM user or role used in the API call
+
+• DecodeAuthorizationMessage: decode error message when an AWS API is denied
+
+
+
+
+
+----------------------------------------------------- Using STS to Assume a Role
+
+
+
+• Define an IAM Role within your account or cross-account
+
+• Define which principals can access this IAM Role and we authorize everything with IAM policies.
+
+• Use AWS STS (Security Token Service) to retrieve credentials and impersonate the IAM Role you have access to (AssumeRole API)
+
+• Temporary credentials can be valid between 15 minutes to 1 hour
+
+
+
+
+
+
+----------------------------------------------------- STS with MFA
+
+
+• Use GetSessionToken from STS
+
+• Appropriate IAM policy using IAM Conditions
+
+• aws:MultiFactorAuthPresent:true
+
+        - For example, this role only allows us to stop instances or terminate instances only if we have MFA on,
+
+        - so MultiFactorAuthPresent:true. And this is how we would use it.
+
+• Reminder, GetSessionToken returns:
+
+      • Access ID
+      • Secret Key
+      • SessionToken
+      • Expiration date
+
+
+
+
+
+
+----------------------------------------------------- Cross-Account Access with STS
+
+
+
+-- let's say we have a Dev account and a Prod account and we have an S3 bucket in Prod that we want to access from IAM users in a group in Dev.
+
+-- So the first thing we have to do is to create an IAM role in the production account And this IAM role is going to have access to the S3 buckets.
+
+-- Next, we grant in the IAM group permissions, to assume the UpdateApp IAM role from the other accounts.
+
+-- So we're going to be able to assume this role and then we're going to get back STS Role Credentials.
+
+-- And then these credentials will allow us to access the bucket in the target accounts.
+
+-- So this IAM role, that we define in the production accounts, must also of course, authorize the development accounts to assume it.
+
+-- so if you have an IAM group of testers that are not authorized to assume this role then they cannot access your production account.
+
+
+
+
+
+
+
+
+
+============================================================================== Amazon Cognito ==================================================
+
+
+
+
+• Give users an identity to interact with our web or mobile application
+
+-- So these users usually sit outside of our AWS account, hence the name Cognito, because it gives an identity to users that we don't know about yet.
+
+-- So we have two kind of sub-services within Cognito.
+
+
+1 • Cognito User Pools:
+
+      • Sign in functionality for app users
+
+      • Integrate with API Gateway & Application Load Balancer
+
+
+2 • Cognito Identity Pools (Federated Identity):
+
+      • Provide AWS temporarily credentials to users so they can access some AWS resources directly
+
+      • Integrate with Cognito User Pools as an identity provider
+
+
+
+
+• Cognito vs IAM: “hundreds of users”, ”mobile users”, “authenticate with SAML” 
+
+       - So if you are asking yourself don't we already have users in IAM?
+
+       - But Cognito is gonna be for your web and mobile application users, which sits outside of AWS.
+
+       - So look for the keywords such as hundreds of users or mobile users, or authentication with whatever mechanisms such as SAML and so on.
+
+
+
+
+
+
+----------------------------------------------------------------- Cognito User Pools (CUP) – User Features
+
+
+• Create a serverless database of user for your web & mobile apps
+
+• Simple login: Username (or email) / password combination
+
+• Password reset
+
+• Email & Phone Number Verification
+
+• Multi-factor authentication (MFA)
+
+• Federated Identities: users from Facebook, Google, SAML...
+
+• Login sends back a JSON Web Token (JWT)
+
+      - when your users log in with the Cognito User Pool, what they get back from the API is a JWT, so a JSON Web Token.
+
+
+
+
+
+
+----------------------------------------------------------------- Cognito User Pools (CUP) - Integrations
+
+
+• CUP integrates with API Gateway and Application Load Balancer
+
+
+
+
+
+--------------------------------------------------------------- CUP LAB 
+
+
+
+
+
+
+ Cognito User Pools (CUP) 
+
+ -- create user pool 
+
+ -- open console and create user pool
+
+ -- Cognito user pool sign-in options --> email 
+
+ --  step 2 Required attributes --> add any one for user to register --> name 
+
+ -- step 3 --> Send email with Cognito 
+
+ -- step 5 --> name of userpool --> enable hosted UI  --> give domain name any thing eg demo-user-pool-cognito
+
+ -- Initial app client --> public client name --> Allowed callback URL = localhost or anything like www.flipkart.com
+
+ -- once u created usewr pool --> open user pool ,u can see users and groups 
+
+ -- create user --> set password , once u create user pool 
+
+ --  go to google and search for amazon cognito ui --> view signup page in documentation 
+
+ https://<your domain>/oauth2/authorize?response_type=code&client_id=<your app client id>&redirect_uri=<your callback url>
+
+ -- go to user pools --> app integration -->  change ur details in the above link 
+
+ 
+https://demo-user-pool-66.auth.ap-south-1.amazoncognito.com/oauth2/authorize?response_type=code&client_id=juroqdd4a95dac05aom4dvadj&redirect_uri=https://www.amazon.com
+
+-- u will get domain name  in APP integration section
+
+-- once the url is ready , paste the link in the browser 
+
+-- this will pop-up sign in page , this is called hosted UI , enter ur details 
+
+-- once u enter it will ask u to change password 
+
+-- once u enter details , u will redirected to the link which u have given in call back url 
+
+--  so delete cookies in ur browser and try to login again 
+
+-- now try to sign up as new user and see how it works 
+
+-- u can also do MFA for another layer of security 
+
+
+
+
+
+
+----------------------------------------------------------------- Cognito User Pools – Lambda Triggers
+
+
+
+• CUP can invoke a Lambda function synchronously on these triggers:
+
+
+1 Authentication Events : 
+
+
+        - Pre Authentication Lambda Trigger : Custom validation to accept or deny the sign-in request
+
+        - Post Authentication Lambda Trigger : Event logging for custom analytics
+
+        - Pre Token Generation Lambda Trigger : Augment or suppress token claims
+
+
+2 Sign-Up
+
+        - Pre Sign-up Lambda Trigger : Custom validation to accept or deny the sign-up request
+
+        - Post Confirmation Lambda Trigger : Custom welcome messages or event logging for custom analytics
+
+        - Migrate User Lambda Trigger : Migrate a user from an existing user directory to user pools
+
+
+3 Messages : 
+
+        - Custom Message Lambda Trigger : Advanced customization and localization of messages
+
+
+4 Token Creation : 
+
+        - Pre Token Generation Lambda Trigger : Add or remove attributes in Id tokens
+
+
+
+
+
+
+
+----------------------------------------------------------------- Cognito User Pools – Hosted Authentication UI
+
+
+• Cognito has a hosted authentication UI that you can add to your app to handle sign-up and sign-in workflows
+
+• Using the hosted UI, you have a foundation for integration with social logins, OIDC or SAML
+
+• Can customize with a custom logo and custom CSS
+
+
+
+
+
+----------------------------------------------------------------- CUP – Hosted UI Custom Domain
+
+
+• For custom domains, you must create an ACM certificate in "us-east-1"
+
+         - So the trick you need to know is that if you're using custom domains with Cognito User Pools, regardless of where it is created, 
+         
+         - you must create an certificate for using HTTPS. That certificate must be in ACM, 
+
+
+• The custom domain must be defined in the “App Integration” section
+
+         - because this is going to be a configuration for all app claims. This is a general configuration.
+
+
+
+
+
+
+----------------------------------------------------------------- CUP – Adaptive Authentication
+
+
+
+• Block sign-ins or require MFA if the login appears suspicious
+
+• Cognito examines each sign-in attempt and generates a risk score (low, medium, high) for how likely the sign-in request is to be from a malicious attacker
+
+• Users are prompted for a second MFA only when risk is detected
+
+• Risk score is based on different factors such as if the user has used the same device, location, or IP address
+
+• Checks for compromised credentials, account takeover protection, and phone and email verification
+
+• Integration with CloudWatch Logs (sign-in attempts, risk score, failed challenges...)
+
+
+
+
+
+----------------------------------------------------------------- Decoding a ID Token; JWT – JSON Web Token
+
+
+• CUP issues JWT tokens (Base64 encoded): 
+
+   • Header
+   • Payload
+   • Signature
+   - so Base64 is allowing you to transmit that over the network easily,   
+
+
+• The signature must be verified to ensure the JWT can be trusted
+
+• Libraries can help you verify the validity of JWT tokens issued by Cognito User Pools
+
+• The Payload will contain the user information (sub UUID, given_name, email, phone_number, attributes...)
+
+• From the sub UUID, you can retrieve all users details from Cognito / OIDC
+
+
+
+<header>.
+{
+   "sub":"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+   "device_key": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+   "cognito:groups":[
+      "testgroup"
+   ],
+   "iss":"https://cognito-idp.us-west-2.amazonaws.com/us-west-2_example",
+   "version":2,
+   "client_id":"xxxxxxxxxxxxexample",
+   "origin_jti":"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+   "event_id":"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+   "token_use":"access",
+   "scope":"phone openid profile resourceserver.1/appclient2 email",
+   "auth_time":1676313851,
+   "exp":1676317451,
+   "iat":1676313851,
+   "jti":"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+   "username":"my-test-user"
+}
+.<token signature>
+
+
+
+
+
+----------------------------------------------------------------- Application Load Balancer – Authenticate Users
+
+
+
+• Your Application Load Balancer can securely authenticate users
+
+    • Offload the work of authenticating users to your load balancer
+
+    • Your applications can focus on their business logic
+
+
+-- So you can authenticate in multiple ways for your application load balancer.    
+
+
+
+• Authenticate users through:
+
+        1 Identity Provider (IdP): OpenID Connect (OIDC) compliant
+
+        2 Cognito User Pools:
+
+              • SocialIdPs,such as Amazon,Facebook,or Google
+
+              • Corporate identities using SAML, LDAP, or MicrosoftAD
+
+
+-- So the first one, first option is to integrate directly without Cognito user pools              
+
+
+• Must use an HTTPS listener to set authenticate-oidc & authenticate-cognito rules
+
+• OnUnauthenticatedRequest – authenticate (default), deny, allow
+
+
+
+
+
+
+----------------------------------------------------------------- Application Load Balancer – Cognito Auth.
+
+
+
+
+
+
+
+           1. GET /api/data                                                3. GET /api/data
+Users ---------------------------------> Application Load Balancer ------------------------------->  Amazon ECS
+
+                                                   |
+                                                   |
+                                                   |
+                          2. authenticate          |            HTTPS listener Action: authenticate-cognito
+                                                   |
+                                                   |
+                                                   |
+
+                                              Amazon Cognito
+
+
+
+
+-- let's say we have an application load balancer connected to Amazon ECS and we want to implement a login through Amazon Cognito
+
+-- the users will do GET/api/data. Then the ALB is going to be set up with HTTPS with the action authenticate-cognito.
+
+-- So Cognito will do its thing and authenticate the user, 
+
+-- and then the payload and the request is passed on to Amazon ECS with the added information of the user that was doing the request from Cognito.
+
+
+
+
+
+
+
+----------------------------------------------------------------- ALB – Auth through Cognito User Pools
+
+
+• Create Cognito User Pool, Client and Domain
+
+• Make sure an ID token is returned
+
+• Add the social or Corporate IdP if needed
+
+• Several URL redirections are necessary
+
+• Allow your Cognito User Pool Domain on your IdP app's callback URL.  for example 
+
+      • https://domain- prefix.auth.region.amazoncognito.com/saml2/ idpresponse
+
+      • https://user-pool-domain/oauth2/idpresponse
+
+
+
+
+
+----------------------------------------------------------------- Application Load Balancer – OIDC Auth.
+
+
+see fig 
+
+
+
+
+
+
+----------------------------------------------------------------- ALB – Auth.Through an Identity Provider (IdP) That is OpenID Connect (OIDC) Compliant
+
+
+
+
+• Configure a Client ID & Client Secret
+
+• Allow redirect from OIDC to your Application Load Balancer DNS name (AWS provided) and CNAME (DNS Alias of your app)
+
+• https://DNS/oauth2/idpresponse
+
+• https://CNAME/oauth2/idpresponse
+
+
+
+
+
+----------------------------------------------------------------- Cognito Identity Pools (Federated Identities) -------------
+
+
+
+• Get identities for “users” so they obtain temporary AWS credentials
+
+       - So, our users are outside of our AWS environment, and there can be a web application users, or mobile users, and they want access to stuff within our AWS environments.
+
+       - So for example, they want to have access to DynamoDB table, or an S3 bucket. And so to access these things, they need temporary AWS credentials.
+
+       - So we cannot create normal IAM users for these users because there are too many of them, it doesn't scale, and we don't trust them.
+
+       - So instead, we're going to give these users access to AWS through a Cognito Identity Pool.
+
+
+-- So this identity pool can allow your users to log in through a trusted third party.       
+
+• Your identity pool (e.g identity source) can include:
+
+      • Public Providers (Login with Amazon, Facebook, Google, Apple)
+
+      • Users in an Amazon Cognito user pool
+
+      • OpenID Connect Providers & SAML Identity Providers
+
+      • Developer Authenticated Identities (custom login server)
+
+      • Cognito Identity Pools allow for unauthenticated (guest) access
+
+
+
+• Users can then access AWS services directly or through API Gateway
+
+      - So, once the users have obtained these AWS credentials, then they can access the AWS services directly,
+
+      - with an API call using an SDK, or through the API gateway.
+
+      • The IAM policies applied to the credentials are defined in Cognito
+
+      • They can be customized based on the user_id for fine grained control
+
+
+
+
+
+
+
+-------------------------- web identity federation and token management 
+
+-- when ever u are login into website some websites will ask u to login through the google , or facebook or gmail etc this is called Identity federation 
+
+-- u can do in sign-in experience page in user pool 
+
+-- u can create ur own log in page using Amplify , and other SDk's
+
+
+----------------------- LAB , we are login through the SAML 2.0
+
+-- now demo 
+
+--- open IAM Identity center
+
+--  choose Organization
+
+-- Confirm your identity source = Identity Center directory  , if u want to change u can like Active direcory , etc ..
+
+-- now create user in IICenter , IAM users and IIC users are different , copy details of user 
+
+-- now open cognito --> select add user directories to ur app in drop down list --> create userpool --> choose Federated identity providers --> email --> SAML --> no MFA , this is not applicable for the federation users --> nxt --> Send email with Cognito --> skip Step 4 for now(we will do after creating SAML application in IIC) --> give username for pool --> domain name --> client name --> give callback URL --> advanced app client settings --> OAuth 2.0 grant type = choose only Implicit grant --> create userpool
+
+-- now copy the user pool id , we will use them in SAML creation in IIC 
+
+-- now create SAML 2.O application in IIC 
+
+-- go to IIC --> choose application on left side --> add application --> I have an application I want to set up --> SAMl 2.O --> copy link of "IAM Identity Center SAML metadata file" --> Application ACS URL = <cognito domain url>/saml2/idpresponse (eg : https://myuserpool123.auth.ap-south-1.amazoncognito.com/saml2/idpresponse)--> Application SAML audience = urn:amazon:cognito:sp:<cognito pool id> 
+
+-- once u submit --> under actions --> edit attribute mapping --> 
+
+${user:subject}    format = persistent 
+
+-- add new attribute 
+
+email     ${user:email}    format = basic 
+
+-- save changes 
+
+-- now choose assign users --> select user that we have created --> assign user
+
+-- let's configure IAM identity center as a SAML identity provider n cognito user pool 
+
+-- go to cognito in console --> inside user pool --> sign-in experience --> Federated identity provider sign-in =  add Federated identity provider = SAML --> name of ur SAML --> Metadata document source = Enter metadata document endpoint URL (paste url that u have copied while creating SAML , eg : https://portal.sso.ap-south-1.amazonaws.com/saml/metadata/Mjk4MTMyMzY5NjI5X2lucy0zNzMxZjY2ODg5OTY3NjBh) --> saml attribute provide email--> add identity provider 
+
+-- now u must add this identity provider to userpool app client , to do this 
+
+-- go to cognito in console --> inside user pool --> app integration --> open client --> in hosted UI choose edit --> choose identity provider = SAML name that u have created --> save changes 
+
+-- now do test 
+
+-- go to cognito in console --> inside user pool --> app integration --> open client --> view hosted UI --> here u are do lofin with SAML give credentials and login 
+
+-- it is same like when u want to sign up with some other website it will ask u to sign in with fackbook , google , twitter etc..... same we have done here 
+
+-- by this we have successfully configured IIC as identity provider of ur userpool 
+
+
+
+
+
+
+
+---------------------- Cognito Identity Pools(Federated Identity) which gives temporary access to AWS resources  LAB 
+
+
+-- use identity as cognito userpools
+
+-- go to identity pools in cognito 
+
+-- create identity --> Authenticated access --> amzn cognito user pool --> create new role ( give any name for ur role )--> user pool details --> Role settings = Use default authenticated role --> Claim mapping = Use default mappings --> name of ur identity pool --> create 
+
+-- make sure u have not blocked pop up for ur browsers
+
+-- go to role created and add s3 full accesss for the demo purpose
+
+-- u can add these policies if u get any error later ( only add when u get error)
+
+
+1 . cognito policy = name of policy 
+
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": [
+                "s3:*",
+                "cognito-identity:GetCredentialsForIdentity"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+
+
+
+
+2 cognito-s3-permissions (optional coz we have added s3 full access in above step )
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": "s3:ListAllMyBuckets",
+            "Resource": "*"
+        }
+    ]
+}
+
+
+
+
+-- Trust Relationship 
+
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "",
+            "Effect": "Allow",
+            "Principal": {
+                "Federated": "cognito-identity.amazonaws.com"
+            },
+            "Action": [
+                "sts:AssumeRoleWithWebIdentity",
+                "sts:TagSession"
+            ],
+            "Condition": {
+                "StringEquals": {
+                    "cognito-identity.amazonaws.com:aud": "<IdentityPoolId>"
+                },
+                "ForAnyValue:StringLike": {
+                    "cognito-identity.amazonaws.com:amr": "authenticated"
+                }
+            }
+        }
+    ]
+}
+
+
+
+
+
+-- now go to userpool ---> client information ---> edit --> 
+
+-- OAuth grant types 
+  
+      - Authorization code grant
+      -  - Implicit grant
+
+-- OpenID Connect scopes
+
+      - aws.cognito.signin.user.admin
+
+      - email
+      - openid
+      - phone
+      - profile
+
+-- now go to postman and add the following info 
+
+-- do not add anyurl in the url tab just leave as blank with GET method
+
+
+     - type         = Oauth 2.o
+     - Token Name   = AccessToken
+     - Callback URL = www.amazon.com
+     - Auth URL      = https://browser-pool.auth.ap-south-1.amazoncognito.com/oauth2/authorize
+     - Access Token URL = https://browser-pool.auth.ap-south-1.amazoncognito.com/oauth2/token
+     - Client ID        = get from userpool appclient id
+     - Client Secret    =  get from userpool appclient id
+     - Scope            =  openid profile
+     - Refresh Token URL  = u will get from userpool (Token signing key URL)
+
+
+
+ -- add headers :
+
+              Key                 Value
+           CONTENT-TYPE            application/x-amz-json-1.1
+           X-AMZ-TARGET            com.amazonaws.cognito.identity.model.AWSCognitoIdentityService.GetId
+
+-- https://browser-pool.auth.ap-south-1.amazoncognito.com - this is domain name of ur userpool 
+
+-- u have to add  /oauth2/authorize( Auth URL ) and /oauth2/token (Access Token URL)
+
+-- click on "get new access token " and login using credentials u will get tokens 
+
+-- copy id_token and store it some where 
+
+-- copy access token and go to online jwt token decode in google and paste and check the info
+
+-- go to postman and type = Post and give identity url in the url section eg : https://cognito-identity.ap-south-1.amazonaws.com/  (based on region u can change)
+
+-- add headers like above step 
+
+-- now go to body --> raw --> Text
+
+
+
+
+{
+   "IdentityPoolId":"ap-south-1:9750241a-7acb-42b3-919d-54bac1f1fb44",
+   "Logins": {
+       "cognito-idp.ap-south-1.amazonaws.com/ap-south-1_SH87tNLwB": ""
+    }
+}
+
+
+
+
+-- IdentityPoolId - u will get from identity pools
+
+-- cognito-idp.ap-south-1.amazonaws.com  ( replace ur region)
+
+-- /ap-south-1_SH87tNLwB -- u will get this from Identity pools --> UserAccess --> Identity provider 
+
+-- click on post , the identityId will create and also do check in console also (identity pools --> identity browser )
+
+-- once u do all correct u will get one o/p like this 
+
+
+{
+    "IdentityId": "ap-south-1:456a12f0-dda6-cf0a-f6fa-705b538d8a59"
+}
+
+
+
+-- go to aws cli and use below cmnds
+
+-- replace the values below cmnd (https://repost.aws/knowledge-center/cognito-identity-pool-grant-user-access)
+
+         aws cognito-identity get-credentials-for-identity --identity-id region:abcdef --logins cognito-idp.example_region.amazonaws.com/example_cognito_user_pool_id = example_cognito_user_id_token
+
+
+-- eg it will look like this 
+
+
+
+
+aws cognito-identity get-credentials-for-identity --identity-id us-east-1:456a12f0-dd26-cbc6-4360-7a3c189b8725 --logins cognito-idp.us-east-1.amazonaws.com/us-east-1_dh67H1QNF=eyJraWQiOiJrY3pmTTkwd0ZYd3JGUG0weWtqNTdUaVRuTnJ1Z3R1NmpiMm9NRTBvN2FjPSIsImFsZyI6IlJTMjU2In0.eyJhdF9oYXNoIjoiRFJoLVNneWtRQ1BuaURxa0IwZlA1dyIsInN1YiI6ImE0ZDhmNGE4LTkwNTEtNzAxNy04ZDljLTU1NGEzMGM2M2JhNiIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJpc3MiOiJodHRwczpcL1wvY29nbml0by1pZHAudXMtZWFzdC0xLmFtYXpvbmF3cy5jb21cL3VzLWVhc3QtMV9kaDY3SDFRTkYiLCJjb2duaXRvOnVzZXJuYW1lIjoic2F0aHlhIiwib3JpZ2luX2p0aSI6IjRlY2I2NjZjLTUwNWQtNDZkYS1iZWQ3LWM4MDQ5Mzk3YWJkMyIsImF1ZCI6Imsya2pzMmppZWUxMXY2aGRwMG9iOXRxazEiLCJldmVudF9pZCI6IjdiMzg3ODVjLWExNmYtNDIzMS1hODU5LTI3YjM4OTk1Y2NmZiIsInRva2VuX3VzZSI6ImlkIiwiYXV0aF90aW1lIjoxNzI1MTk1MTk5LCJleHAiOjE3MjUxOTg3OTksImlhdCI6MTcyNTE5NTE5OSwianRpIjoiMTI0MjkwYzAtNmM4OS00NTMyLTgwNTgtYWJkYTIyMTY3ZGUxIiwiZW1haWwiOiJzYXRoeWFkaGFybWE2NjY2QGdtYWlsLmNvbSJ9.JZS1u5Q0JxS0cECF9Djla5rNEN4dY4U6mVWXpaRomdpXgykfkZ0AtoO9WZLsXl37yLACRMNK0HQJyB4QahMWVgHoWfwtPCz6QkwRFKBVMbPOytxaXs0xyuNEMJh1-KP64JeC-anG8i3zCJTLWh9ziCTad4hBgkfopyAovQ5bGgHKDo7lpENGObpoq-eNSpU4etKClcAVPGdjcZS50N61sCjP7Nc1iuV98d9CbP2ViZNadbatHxv8yc9I7mmwBFrYbX8xefI4uNKz5im_AvsbUnXjFEk_tyoDtB-VgogXPcFnYOVffDKx2xz7szq0HRfqshLPWA1lN5Q5l0sxHclaKg
+
+
+
+-- u will temporary credentials 
+
+
+-- once u got temporary credentials
+
+-- go to postman --> method = GET --> type = aws signature 
+
+-- in the URL section 
+
+         https://cf-templates-12zxw0rmzpafi-us-east-1.s3.us-east-1.amazonaws.com/
+
+
+-- by using this url u can retrieve buckets in the specific region 
+
+ -- s3 endpoint will change according to region 
+
+ --  cf-templates-12zxw0rmzpafi-us-east-1    = bucket name present in us-east-1 region    
+
+ --  give credentials and service name is s3 and once u enter u will get buckets and it's objects , u can also leverage permissions (limited to guests)
+
+
+
+
+
+
+
+
+
+
+
+----------------------------------------------------------------- Cognito Identity Pools – IAM Roles
+
+
+• Default IAM roles for authenticated and guest users
+
+       - So that means the guest users will have one IAM role, and the other will have another one's IAM role.
+
+
+• Define rules to choose the role for each user based on the user’s ID       
+
+• You can partition your users’ access using policy variables
+
+        - hen we can customize the IAM policy, thanks to using policy variables, and 
+        
+        - this will be allowing us to make sure that the users will only get access to what they need in DynamoDB or Amazon S3, 
+
+
+• IAM credentials are obtained by Cognito Identity Pools through STS
+
+• The roles must have a “trust” policy of Cognito Identity Pools
+
+
+
+
+
+
+
+
+----------------------------------------------------------------- Cognito Identity Pools – Guest User example
+
+
+
+
+
+
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+    
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject"
+      ],
+      "Resource": "arn:aws:s3:region:accountID:map/ExampleMap"
+    }
+  ]
+}
+
+
+
+-- So we want to give our guest users access to AWS, so we want to create an IAM policy,
+
+-- that would allow any guest user to do a get object on a bucket for my picture, 
+
+-- So this would give us, for the guest users, access to AWS with a very simple, and obviously restricted, IAM policy.
+
+
+
+
+
+
+----------------------------------------------------------------- Cognito Identity Pools – Policy variable on S3
+
+
+
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ListYourObjects",
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": [
+        "arn:aws:s3:::bucket-name"
+      ],
+      "Condition": {
+        "StringLike": {
+          "s3:prefix": [
+            "cognito/application-name/${cognito-identity.amazonaws.com:sub}/*"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "ReadWriteDeleteYourObjects",
+      "Effect": "Allow",
+      "Action": [
+        "s3:DeleteObject",
+        "s3:GetObject",
+        "s3:PutObject"
+      ],
+      "Resource": [
+        "arn:aws:s3:::bucket-name/cognito/application-name/${cognito-identity.amazonaws.com:sub}/*"
+      ]
+    }
+  ]
+}
+
+
+
+-- for the authenticated users, you can define a policy variable on Amazon S3,
+
+-- so our users are connected, but we want to make sure that they only have access to a prefix in your S3 bucket,
+
+
+
+
+
+
+----------------------------------------------------------------- Cognito Identity Pools – DynamoDB
+
+
+
+
+
+-- This example shows how you might create an identity-based policy that allows item-level access to the MyTable DynamoDB table based on an Amazon Cognito identity pool user ID. This policy grants the permissions necessary to complete this action programmatically from the AWS API or AWS CLI.
+
+
+-- To use this policy, you must structure your DynamoDB table so the Amazon Cognito identity pool user ID is the partition key. 
+
+
+
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "dynamodb:DeleteItem",
+                "dynamodb:GetItem",
+                "dynamodb:PutItem",
+                "dynamodb:Query",
+                "dynamodb:UpdateItem"
+            ],
+            "Resource": ["arn:aws:dynamodb:*:*:table/MyTable"],
+            "Condition": {
+                "ForAllValues:StringEquals": {
+                    "dynamodb:LeadingKeys": ["${cognito-identity.amazonaws.com:sub}"]
+                }
+            }
+        }
+    ]
+}
+
+
+
+
+
+
+
+----------------------------------------------------------------- Cognito User Pools vs Identity Pools vs Cognito Sync
+
+
+
+• Cognito User Pools (for authentication = identity verification)
+
+    • Database of users for your web and mobile application
+
+    • Allows to federate logins through Public Social, OIDC, SAML...
+
+    • Can customize the hosted UI for authentication (including the logo)
+
+    • Has triggers with AWS Lambda during the authentication flow
+
+    • Adapt the sign-in experience to different risk levels (MFA, adaptive authentication, etc...)
+
+
+• Cognito Identity Pools (for authorization = access control) 
+
+    • Obtain AWS credentials for your users
+
+    • Users can login through Public Social, OIDC, SAML & Cognito User Pools
+
+    • Users can be unauthenticated (guests)
+
+    • Users are mapped to IAM roles & policies, can leverage policy variables
+
+
+• CUP + CIP = authentication + authorization    
+
+
+
+
+-- Cognito Sync
+
+       - Amazon Cognito Sync is an AWS service and client library that enables cross-device syncing of application-related user data.
+
+       - You can use it to synchronize user profile data across mobile devices and the web without requiring your own backend. 
+
+       - The client libraries cache data locally so your app can read and write data regardless of device connectivity status
+
+       - When the device is online, you can synchronize data, and if you set up push sync, notify other devices immediately that an update is available.
+
+
+
+
+
+
+
+
+
+
+==================================================================== Amazon Route 53 ====================================================================
+
+
+
+
+
+-- Domian registration 
+
+-- DNS routing 
+
+-- Health checks
+
+-- Routng policies 
+
+----------------------------------------------------------------- DNS ?
+
+
+
+-- Domain Name System which translates the human friendly hostnames into the machine IP addresses
+
+eg : www.google.com => 172.217.18.36
+
+-- DNS is the backbone of the Internet
+
+-- DNS uses hierarchical naming structure 
+
+- .com
+- example.com
+- www.example.com
+- api.example.com
+
+--- DNS Terminologies
+
+-- Domain Registrar : Amazon Route 53, GoDaddy, ...
+
+-- DNS Records: A, AAAA, CNAME(Canonical Name), NS, ...
+
+-- Zone File: contains DNS records
+
+-- Name Server: resolves DNS queries (Authoritative or Non-Authoritative)
+
+-- Top Level Domain (TLD): .com, .us, .in, .gov, .org, ...
+
+-- Second Level Domain (SLD): amazon.com, google.com, ...
+
+eg :  http://api.www.example.co  --> it is known as URL 
+
+in this URL 
+
+- .com  --> TOP levle domain
+- example.com --> Second Level Domain (SLD)
+- www.example.com ---> Sub Domain
+- api.example.com ---> FQDN (Fully Qualified Domain Name)
+- http ----> protocol
+
+
+
+
+
+
+
+
+----------------------------------------------------------------- Amazon Route 53
+
+
+• A highly available, scalable, fully managed and Authoritative DNS
+
+        • Authoritative = the customer (you) can update the DNS records
+
+
+• Route 53 is also a Domain Registrar
+
+• Ability to check the health of your resources
+
+• The only AWS service which provides 100% availability SLA
+
+• Why Route 53? 53 is a reference to the traditional DNS port
+
+
+
+
+
+
+----------------------------------------------------------------- Route 53 – Records
+
+
+
+• How you want to route traffic for a domain
+
+• Each record contains:
+
+        • Domain/subdomain Name – e.g., example.com
+
+        • Record Type – e.g., A or AAAA
+
+        • Value – e.g., 12.34.56.78
+
+        • Routing Policy – how Route 53 responds to queries
+
+        • TTL – amount of time the record cached at DNS Resolvers
+
+
+• Route 53 supports the following DNS record types:
+
+        • (must know)A /AAAA / CNAME / NS
+
+        • (advanced)CAA/DS/MX/NAPTR/PTR/SOA/TXT/SPF/SRV
+
+
+
+
+
+
+----------------------------------------------------------------- Route 53 – RecordTypes
+
+
+
+
+• A – maps a hostname to IPv4
+
+• AAAA – maps a hostname to IPv6
+
+• CNAME – maps a hostname to another hostname
+
+        • The target is a domain name which must have an A or AAAA record
+
+        • Can’t create a CNAME record for the top node of a DNS namespace (Zone Apex)
+
+
+• Example: you can’t create for example.com, but you can create for www.example.com
+
+• NS – Name Servers for the Hosted Zone
+
+        • Control how traffic is routed for a domain
+
+
+
+
+
+
+-- we have A Record , AAAA Record , Cname recor , Alias Record  , MX Record 
+
+-- Most common use is A record + Alias Record 
+
+1 A Record : URL to IPv4
+
+
+http://subbbu.com -- > it reach R53--> Hosted zone (subbu.com) --> records it contains subbu.com --> Ec2 instance IP 
+
+URL --> ipv4
+
+
+2  AAAA Reacord : URL to IPv6
+
+
+3 Alias Record : URL to Any Resource :
+
+http://subbbu.com -- > it reach R53--> Hosted zone (subbu.com) --> records(subbu.com --> ec2 ip or elb nasty url)
+
+- url to ANY Resource 
+
+-- Maps a hostname to an AWS resource
+
+-- An extension to DNS functionality
+
+-- Automatically recognizes changes in the resource’s IP addresses
+
+-- Unlike CNAME, it can be used for the top node of a DNS namespace (Zone Apex), e.g.: example.com
+
+-- Alias Record is always of type A/AAAA for AWS resources (IPv4 / IPv6)
+
+-- You can’t set the TTL 
+
+
+
+----------- Route 53 – Alias Records Targets
+
+-- Elastic Load Balancers
+-- CloudFront Distributions
+-- API Gateway
+-- Elastic Beanstalk environments
+-- S3 Websites
+-- VPC Interface Endpoints
+-- Global Accelerator accelerator
+-- Route 53 record in the same hosted zone Elastic Load Balancer
+
+
+
+----- You cannot set an ALIAS record for an EC2 DNS name
+
+ANS : You actually can create a CNAME (or even A) record without an Elastic IP. But every time your EC2 instance is restarted and so moved to another host system the IP address (and your external hostname) of your instance will change.
+
+-- If you can live with this and accept the fact that during the TTL of your DNS record your instance is not reachable you can use the external IP and create an A record with your subdomain. 
+-- But as DNS is not very fast in distributing changes (even with a low TTL you can't make sure every resolver handles the TTL correctly) you don't want to do such things most of the times. 
+-- This is why AWS provides the Elastic IP - so your IP address which is in the DNS record never changes but the routing behind this IP address is changed by AWS if you reassign it to another instance (or you reboot your host). 
+-- This routing change is only inside the AWS data centers and so it is quite fast (within a few seconds) and your instance is reachable again for all users.
+
+
+
+
+4 CNAME Record : URL to URL : 
+
+http://subbbu.com -- > it reach R53--> Hosted zone (subbu.com) --> records (subbu.com-->ELB Nasty URL)
+
+URL to URL 
+
+--- here 
+
+-- http://subbbu.com  ----- Main Domain / Naked domain / Zone Apex Record 
+
+-- admin.gopi.com , web.subbu.com ----- called Sub-domains 
+
+
+-- CNAME Records are bilable , where as Alias Rec are free 
+
+-- for Naked domain/Main domain we can not use CNAME , instead use Alias 
+
+-- for sub-domains u can u can use CNAME
+
+-- the target is a domain name which must have an A or AAAA record
+
+-- Can’t create a CNAME record for the top node of a DNS namespace (Zone Apex)
+
+-- Example: you can’t create for example.com, but you can create for www.example.com
+
+-- Note: Always choose Alias over CNAME 
+
+
+
+
+
+EPV : A startup has created a new web application for users to complete a risk assessment survey for COVID-19 symptoms via a self-administered questionnaire. The startup has purchased the domain covid19survey.com using Amazon Route 53. The web development team would like to create Amazon Route 53 record so that all traffic for covid19survey.com is routed to www.covid19survey.com.As a solutions architect, which of the following is the MOST cost-effective solution that you would recommend to the web development team?
+
+ANS : Create an alias record for covid19survey.com that routes traffic to www.covid19survey.com
+
+EXP : 
+
+-- You can create an alias record at the top node of a DNS namespace, also known as the zone apex, however, you cannot create a CNAME record for the top node of the DNS namespace. 
+
+-- So, if you register the DNS name covid19survey.com, the zone apex is covid19survey.com. You can't create a CNAME record for covid19survey.com, but you can create an alias record for covid19survey.com that routes traffic to www.covid19survey.com.
+
+
+
+
+IMP NOTE : 
+
+-- You should also note that Amazon Route 53 doesn't charge for alias queries to AWS resources but Route 53 does charge for CNAME queries.
+
+-- Additionally, an alias record can only redirect queries to selected AWS resources such as Amazon S3 buckets, Amazon CloudFront distributions, and another record in the same Amazon Route 53 hosted zone;
+
+-- however a CNAME record can redirect DNS queries to any DNS record. So, you can create a CNAME record that redirects queries from app.covid19survey.com to app.covid19survey.net.
+
+
+
+
+
+
+
+----------------------------------------------------------------- Route 53 – Hosted Zones
+
+
+
+• A container for records that define how to route traffic to a domain and its subdomains
+
+
+
+-- in R53 , we should create "Hosted Zones"(container of Recoreds) first 
+
+-- Hosted Zone (Domain name = subbu.com ) are same 
+
+• You pay $0.50 per month per hosted zone
+
+
+
+-- 2 types of H.Z 
+
+
+public : contains records that specify how to route traffic on the Internet (public domain names)
+
+private : contain records that specify how you route traffic within one or more VPCs (private domain names)
+        
+        -- You create a hosted zone for a domain (such as example.com), and then you create records to tell Amazon Route 53 how you want traffic to be routed for that domain within and among your VPCs.
+
+
+IMP : For each VPC that you want to associate with the Route 53 hosted zone, change the following VPC settings to true:
+
+enableDnsHostnames
+
+enableDnsSupport
+
+
+
+
+EPV (private zone) : A systems administrator has created a private hosted zone and associated it with a Virtual Private Cloud (VPC). However, the Domain Name System (DNS) queries for the private hosted zone remain unresolved?
+
+ANS : Enable DNS hostnames and DNS resolution for private hosted zones
+
+-- DNS hostnames and DNS resolution are required settings for private hosted zones. DNS queries for private hosted zones can be resolved by the Amazon-provided VPC DNS server only.
+
+
+
+
+------------------- 1 DNS hostnames: 
+
+-- For non-default virtual private clouds that aren't created using the Amazon VPC wizard, this option is disabled by default.
+
+-- If you create a private hosted zone for a domain and create records in the zone without enabling DNS hostnames, private hosted zones aren't enabled. To use a private hosted zone, this option must be enabled.
+
+
+
+
+------------------- 2 DNS resolution: 
+
+-- Private hosted zones accept DNS queries only from a VPC DNS server.
+
+-- The IP address of the VPC DNS server is the reserved IP address at the base of the VPC IPv4 network range plus two.
+
+--  Enabling DNS resolution allows you to use the VPC DNS server as a Resolver for performing DNS resolution. Keep this option disabled if you're using a custom DNS server in the DHCP Options set, and you're not using a private hosted zone.
+
+
+
+
+EPV : The engineering team at an e-commerce company wants to set up a custom domain for internal usage such as internaldomainexample.com. The team wants to use the private hosted zones feature of Amazon Route 53 to accomplish this.
+
+Which of the following settings of the VPC need to be enabled? (Select two)
+
+
+ANS : enableDnsHostnames and enableDnsSupport
+
+EXP : For each VPC that you want to associate with the Route 53 hosted zone, change the following VPC settings to true:
+
+enableDnsHostnames
+
+enableDnsSupport
+
+
+
+
+
+
+----------------------------------------------------------------- Create First record 
+
+
+
+-- go to R53 in console --> create public hosted zone if you do have any previously --> create sample record like test --> give random ip for demo like 11.22.33.44
+
+-- now do test this record --> go to cloudshell (coz we do not have 11.22.33.44 in realtime )--> sudo yum install -y bind-utils --> it will install nslookup and dig 
+
+-- now do  
+
+        nslookup test.subbu.com
+
+        - here test = record name that u have created and subbu.com is ur hosted zone name 
+
+-- do 
+
+        dig test.subbu.com
+
+        - u will get more details 
+
+
+
+
+
+
+----------------------------------------------------------------- Route 53 – Records TTL (TimeTo Live)
+
+
+-- TTL (time to live), is the amount of time, in seconds, that you want DNS recursive resolvers to cache information about a record. 
+
+-- If you specify a longer value (for example, 172800 seconds, or two days), you reduce the number of calls that DNS recursive resolvers must make to Amazon Route 53 to get the latest information for the record.
+
+-- This has the effect of reducing latency and reducing your bill for Route 53 service.
+
+-- However, if you specify a longer value for TTL, it takes longer for changes to the record (for example, a new IP address) to take effect because recursive resolvers use the values in their cache for longer periods before they ask Route 53 for the latest information.
+
+--  If you're changing settings for a domain or subdomain that's already in use, AWS recommends that you initially specify a shorter value, such as 300 seconds, and increase the value after you confirm that the new settings are correct.
+
+
+
+-- High TTL – e.g., 24 hr
+
+        - Less traffic on Route 53
+        - Possibly outdated records
+
+-- Low TTL – e.g., 60 sec.
+
+        - More traffic on Route 53 ($$)
+        - Records are outdated for less time 
+        - Easy to change records
+
+
+-- Except for Alias records, TTL is mandatory for each DNS record
+
+
+
+
+
+
+----------------------------------------------------------------- Route 53 – Records TTL (TimeTo Live) Hands on 
+
+
+
+
+-- create 2 instances with the userdata from different az or regions 
+
+-- create record test.subbu.com and give any ip of 2 ec2 and set ttl as u want 
+
+-- copy test.subbu.com and paste in chrome , so for eg if you give ttl = 120 sec then it will cache 120 sec 
+
+-- now do change the IP give IP of 2nd ec2 and update record and go to chrome and refresh still u will get response from the 1st ip coz it get cached for 120 sec .
+
+-- so after 120 sec it will give response from the updated IP ,
+
+-- this is how TTL works 
+
+
+
+
+
+
+----------------------------------------------------------------- CNAME vs Alias
+
+
+
+• AWS Resources (Load Balancer, CloudFront...) expose an AWS hostname:
+
+        • lb1-1234.us-east-2.elb.amazonaws.com and you want myapp.mydomain.com
+
+
+• CNAME:
+
+        • Points a hostname to any other hostname. (app.mydomain.com => blabla.anything.com)
+
+        • ONLY FOR NON ROOT DOMAIN (aka. something.mydomain.com)
+
+
+• Alias:
+
+        • Points a hostname to an AWS Resource (app.mydomain.com => blabla.amazonaws.com)
+
+        • Works for ROOT DOMAIN and NON ROOT DOMAIN (aka mydomain.com)
+
+        • Free of charge
+
+        • Native health check
+
+
+
+
+----------------------------------------------------------------- Route 53 – Alias Records
+
+
+
+• Maps a hostname to an AWS resource
+
+• An extension to DNS functionality
+
+• Automatically recognizes changes in the resource’s IP addresses
+
+• Unlike CNAME, it can be used for the top node of a DNS namespace (Zone Apex), e.g.: example.com
+
+• Alias Record is always of type A/AAAA for AWS resources (IPv4 / IPv6)
+
+• You can’t set the TTL It is set automatically by Route 53.
+
+
+
+
+----------------------------------------------------------------- Route 53 – Alias Records Targets
+
+
+
+• Elastic Load Balancers
+
+• CloudFront Distributions
+
+• API Gateway
+
+• Elastic Beanstalk environments
+
+• S3 Websites
+
+• VPC Interface Endpoints
+
+• Global Accelerator accelerator
+
+• Route 53 record in the same hosted zone
+
+
+
+• You cannot set an ALIAS record for an EC2 DNS name
+
+
+
+----- You cannot set an ALIAS record for an EC2 DNS name
+
+ANS : You actually can create a CNAME (or even A) record without an Elastic IP. But every time your EC2 instance is restarted and so moved to another host system the IP address (and your external hostname) of your instance will change.
+
+-- If you can live with this and accept the fact that during the TTL of your DNS record your instance is not reachable you can use the external IP and create an A record with your subdomain. 
+-- But as DNS is not very fast in distributing changes (even with a low TTL you can't make sure every resolver handles the TTL correctly) you don't want to do such things most of the times. 
+-- This is why AWS provides the Elastic IP - so your IP address which is in the DNS record never changes but the routing behind this IP address is changed by AWS if you reassign it to another instance (or you reboot your host). 
+-- This routing change is only inside the AWS data centers and so it is quite fast (within a few seconds) and your instance is reachable again for all users.
+
+
+
+
+
+
+
+----------------------------------------------------------------- Route 53 – Routing Policies  (for hands on check in course for each policy)
+
+
+
+-- Define how Route 53 responds to DNS queries
+
+-- Don’t get confused by the word “Routing”
+   - It’s not the same as Load balancer routing which routes the traffic
+   - DNS does not route any traffic, it only responds to the DNS queries
+
+-- Route 53 Supports the following Routing Policies
+
+        • Simple
+        • Weighted
+        • Failover
+        • Latency based
+        • Geolocation
+        • Multi-Value Answer
+        • Geoproximity (using Route 53 Traffic Flow feature)
+
+
+
+
+
+
+1               Simple Routing Policy
+
+        -- when u search for soemthing it wil goto R53 
+
+        http://subbbu.com --> r53 --> hosted ones --> Records --> ELB DNS name 
+
+        -- here we are doing simple routing so it is called "simple Routing Policy"
+
+        -- it does not have Health Checks 
+
+        -- if any down happens of websites u won't get any response from website 
+
+        • Typically, route traffic to a single resource
+
+        • Can specify multiple values in the same record
+
+        • If multiple values are returned, a random one is chosen by the client
+
+        • When Alias enabled, specify only one AWS resource
+
+        
+
+
+
+2               FailOver Routing Policy : (Active-passive)
+
+
+        -- u have to create 2 records for this policy 
+
+        eg : 
+
+        subbu.com --> ELB DNS Name(Mumbai) -- primary record 
+
+        subbu.com --> ELB DNS Name(ireland) -- Secondary record 
+
+
+        if one record get down , the request will automaticall go to second record 
+
+        -- for this u have to setup 2 sites in different regions for high availability if downtime of websites happens
+
+        -- if u have maintainnece page ,u go for S3 , u can redirect to S3 ur request  
+
+        -- it has health checks
+
+
+
+3                  GeoLocation Routing Policy;
+
+
+        -- for eg u have cutomers all over the world if they are in china , japan , india, austria etc
+
+        -- here if some one is from japan , search for http://subbu.com but he wants in Japanese language 
+
+        -- so we have application in each region , we do not have other options , so in each region we do have  appn in region seperately , in this case CFront is not work 
+
+        -- if user search for something from japan , he will get reply from japan only 
+
+        -- how to do? 
+
+        we have to create records for each regions eg : if u have 5 regions then create 5 records 
+
+        http://subbu.com--> Mumbai ELB/IP
+        http://subbu.com--> sydney ELB/IP
+        http://subbu.com--> us ELB/IP
+        http://subbu.com--> ALSKA ELB/IP
+        http://subbu.com--> japan ELB/IP
+
+
+        -- R53 will identify user's/request location automatically and redirect to the correct record 
+
+        -- Different from Latency-based!
+
+        -- This routing is based on user location
+
+        -- Specify location by Continent, Country or by US State (if there’s overlapping, most precise location selected)
+
+        -- Should create a “Default” record (in case there’s no match on location)
+
+        • Use cases: website localization, restrict content distribution, load balancing, ...
+
+        -- Can be associated with Health Checks
+
+
+
+
+EPV : 1) Use Amazon Route 53 based geolocation routing policy to restrict distribution of content to only the locations in which you have distribution rights
+
+- Geolocation routing lets you choose the resources that serve your traffic based on the geographic location of your users, meaning the location that DNS queries originate from.
+
+- For example, you might want all queries from Europe to be routed to an ELB load balancer in the Frankfurt region. You can also use geolocation routing to restrict the distribution of content to only the locations in which you have distribution rights.
+
+2) Use georestriction to prevent users in specific geographic locations from accessing content that you're distributing through a Amazon CloudFront web distribution
+
+- You can use georestriction, also known as geo-blocking, to prevent users in specific geographic locations from accessing content that you're distributing through a Amazon CloudFront web distribution.
+
+- When a user requests your content, Amazon CloudFront typically serves the requested content regardless of where the user is located.
+
+- If you need to prevent users in specific countries from accessing your content, you can use the CloudFront geo restriction feature to do one of the following: Allow your users to access your content only if they're in one of the countries on a whitelist of approved countries.
+
+
+
+
+
+4                Latency Routing Policy 
+
+
+
+                -- u have different Regions , u have appn in every region seperately
+
+                -- if he made any request it does not matter about the regions 
+
+                -- which regions give low latency from there resonxe will get 
+
+                -- Latency is based on traffic between users and AWS Regions
+
+                -- Can be associated with Health Checks (has a failover capability)
+
+                • Redirect to the resource that has the least latency close to us
+
+                • Super helpful when latency for users is a priority
+
+
+
+5       Mutli-Value Routing Policy 
+
+                --  Same as Simple routing Polcy but it has Health Checks 
+
+                -- share the traffic based on the traffic 
+
+                -- Use when routing traffic to multiple resources
+
+                -- Route 53 return multiple values/resources
+
+                -- Can be associated with Health Checks (return only values for healthy resources)
+
+                -- Up to 8 healthy records are returned for each Multi-Value query
+
+                -- Multi-Value is not a substitute for having an ELB
+
+
+
+6      Weighted Routing Policy 
+
+                -- Control the % of the requests that go to each specific resource
+
+                -- Assign each record a relative weight:
+
+                𝑡𝑟𝑎𝑓𝑓𝑖𝑐(%) = weight for a specific resource / sum of all the weights for all records
+
+                -- DNS records must have the same name and type
+
+                -- Can be associated with Health Checks
+
+                -- Use cases: load balancing between regions, testing new application versions...
+
+                -- Assign a weight of 0 to a record to stop sending traffic to a resource
+
+                -- If all records have weight of 0, then all records will be returned equally
+
+
+
+
+7      Geoproximity (using Route 53 Traffic Flow feature)
+
+
+        -- Route traffic to your resources based on the geographic location of users and resources
+
+        -- Ability to shift more traffic to resources based on the defined bias
+
+        -- To change the size of the geographic region, specify bias values:
+
+                - To expand (1 to 99) – more traffic to the resource
+                - To shrink (-1 to -99) – less traffic to the resource
+
+        -- Resources can be:
+
+                - AWS resources (specify AWS region)
+                - Non-AWS resources (specify Latitude and Longitude)
+
+        IMP -- You must use Route 53 Traffic Flow to use this feature 
+
+
+
+
+----- Route 53 – Traffic flow
+
+
+
+• Simplify the process of creating and maintaining records in large and complex configurations
+
+• Visual editor to manage complex routing decision trees
+
+• Configurations can be saved as Traffic Flow Policy
+  
+   • Can be applied to different Route 53 Hosted Zones (different domain names)
+
+   • Supports versioning
+
+
+
+
+
+
+
+
+
+
+-------------------------- Route 53 – Health Checks
+
+
+
+
+• HTTP Health Checks are only for public resources
+
+• Health Check => Automated DNS Failover:
+
+   - Health checks that monitor an endpoint (application, server, other AWS resource)
+
+   - Health checks that monitor other health checks (Calculated Health Checks)
+
+   - Health checks that monitor CloudWatch Alarms (full control !!) – e.g., throttles of DynamoDB, alarms on RDS, custom metrics, ... (helpful for private resources)
+
+
+• Health Checks are integrated with CW metrics
+
+
+
+
+
+----------------------------------- Health Checks – Monitor an Endpoint
+
+
+
+• About 15 global health checkers will check the endpoint health
+
+   • Healthy/Unhealthy Threshold – 3(default)
+
+   • Interval – 30 sec (can set to 10 sec – higher cost)
+
+   • Supportedprotocol:HTTP, HTTPS and TCP
+
+   • If > 18% of health checkers report the endpoint is healthy, Route 53 considers it Healthy. Otherwise, it’s Unhealthy
+
+   • Ability to choose which locations you want Route 53 to use
+
+• Health Checks pass only when the endpoint responds with the 2xx and 3xx status codes
+
+• Health Checks can be setup to pass / fail based on the text in the first 5120 bytes of the response
+
+• Configure you router/firewall to allow incoming requests from Route 53 Health Checkers
+
+
+
+
+
+
+
+----------------------------------- Route 53 – Calculated Health Checks
+
+
+
+
+• Combine the results of multiple Health Checks into a single Health Check
+
+• You can use OR, AND, or NOT
+
+• Can monitor up to 256 Child Health Checks
+
+• Specify how many of the health checks need to pass to make the parent pass
+
+• Usage: perform maintenance to your website without causing all health checks to fail
+
+
+
+
+
+
+-------------------------- Health Checks – Private Hosted Zone
+
+
+
+-- Route 53 health checkers are outside the VPC
+
+-- They can’t access private endpoints (private VPC or on-premises resource)
+
+IMP -- You can create a CloudWatch Metric and associate a CloudWatch Alarm, then create a Health Check that checks the alarm itself
+
+        - So the idea is that we're going to monitor the health of our EC2 instance in a private subnet with a CloudWatch Metric.
+
+        - And then if the metric is breached, we're going to create a CloudWatch Alarm on it. And when the alarm goes into the alarm state,
+
+        - then the health checker is going to be automatically unhealthy and therefore will have created exactly what we want, which is a health check on a private resource,
+
+
+
+-- subbu.com -> elb gives nasty url --> ec2(it has appn)
+
+-- whenever u type subbu.com in browser -> R53--> Hoste Zone --> ELB--> Nasty Url--> Ec2 Instance 
+
+
+
+--- whenevr u creat "Public Hosted Zone " 2 records will create automatically 
+
+1 NS(Name Server) Record = Pool of servers ( ~ it give 4 Servers) ,it identifies the server(website) 
+
+2 SOA Record : Admin for Hosted Zones ( it has IP address) 
+
+
+-- NS and SOA are default records , automatically created and managed by AWS 
+
+-- u can purchase domains in 2 ways 
+
+
+
+1 R53 
+
+2  3rd party (go daddy) 
+
+
+-- if u purchase in R53 ,it wil create hoste zones automaticlaly and  NS and SOA records created automatically 
+
+
+-- whenever u purchase domain 3rd party domain registery , u should connect t AWS ,'coz ur request is here going to GO-daddy so u should connct to AWS 
+
+-- HOW to conect ? 
+
+
+-- once u create hosted zones in R53 ,the NS records wil crated (4 servers) , these servers u should updated in th Go-daddy , once u updated requests are redirected to AWS 
+
+
+-- it has some latency 
+
+
+-- NS and SOA records cannot be deleted 
+
+
+
+
+
+
+
+
+-------------------------------------- healthcheck Hands ON 
+
+
+
+check in course 
+
+
+
+
+
+
+----------------------------------- Routing Policies – IP-based Routing
+
+
+
+
+
+-- Routing is based on clients’ IP addresses
+
+-- You provide a list of CIDRs for your clients and the corresponding endpoints/locations (user-IP-to-endpoint mappings)
+
+-- Use cases: Optimize performance, reduce network costs
+
+-- Example: route end users from a particular ISP to a specific endpoint
+
+
+
+
+
+
+-----------------------------------  Routing Policies – Multi-Value
+
+
+
+
+--  Same as Simple routing Polcy but it has Health Checks 
+
+-- share the traffic based on the traffic 
+
+-- Use when routing traffic to multiple resources
+
+-- Route 53 return multiple values/resources
+
+-- Can be associated with Health Checks (return only values for healthy resources)
+
+-- Up to 8 healthy records are returned for each Multi-Value query
+
+-- Multi-Value is not a substitute for having an ELB
+
+
+
+
+
+----------------------------------- Domain Registar vs. DNS Service
+
+
+• You buy or register your domain name with a Domain Registrar typically by paying annual charges (e.g., GoDaddy, Amazon Registrar Inc., ...)
+
+• The Domain Registrar usually provides you with a DNS service to manage your DNS records
+
+• But you can use another DNS service to manage your DNS records
+
+• Example: purchase the domain from GoDaddy and use Route 53 to manage your DNS records
+
+
+
+
+----------------------------------- 3rd Party Registrar with Amazon Route 53
+
+
+
+• If you buy your domain on a 3rd par ty registrar, you can still use Route 53 as the DNS Service provider
+
+        1. Create a Hosted Zone in Route 53
+
+        2. Update NS Records on 3rd party website to use Route 53 Name Servers
+
+• Domain Registrar != DNS Service
+
+• But every Domain Registrar usually comes with some DNS features
+
+
+
+
+
+
+----------------------------------- S3 Website with Route 53
+
+
+
+For acme.example.com:
+
+        • Create an S3 bucket with the same name as the target record (acme.example.com)
+
+        • Enable S3 website on the bucket (and enable S3 bucket public settings)
+
+        • Create a Route 53 Alias record to the S3 website endpoint or type A – IPv4 address
+
+
+Note: • This only works for HTTP traffic (for HTTPS, use CloudFront) 
+
+
+
+
+
+
+
+
+----------------------------------------------------------------- Route 53 – Hybrid DNS
+
+
+
+• By default, Route 53 Resolver automatically answers DNS queries for:
+
+        • Local domain names for EC2 instances
+
+        • Records in Private Hosted Zones
+
+        • Records in public Name Servers
+
+
+-- Now, if you want to resolve DNS queries between your VPC and other private networks, your own networks that has other DNS resolvers, then you're going to need a hybrid DNS.
+
+
+• Hybrid DNS – resolving DNS queries between VPC (Route 53 Resolver) and your networks (other DNS Resolvers)
+
+• Networks can be:
+
+        • VPC itself / Peered VPC
+
+        • On-premises Network (connected through Direct Connect or AWS VPN)
+
+
+
+
+
+
+----------------------------------------------------------------- Route 53 – Resolver Endpoints 
+
+
+
+
+• Inbound Endpoint
+
+        • So inbound endpoints are allowing DNS Resolvers on your network can forward DNS queries to Route 53 Resolver
+
+        • Allows your DNS Resolvers to resolve domain names for AWS resources (e.g., EC2 instances) and records in Route 53 Private Hosted Zones
+
+
+• Outbound Endpoint
+
+        • Route 53 Resolver conditionally forwards DNS queries to your DNS Resolvers
+
+        • Use Resolver Rules to forward DNS queries to your DNS Resolvers
+
+
+• Associated with one or more VPCs in the same AWS Region
+
+• Create in two AZs for high availability
+
+• Each Endpoint supports 10,000 queries per second per IP address
+
+
+
+
+
+----------------------------------------------------------------- Route 53 – Resolver Rules
+
+
+• Control which DNS queries are forwarded to DNS Resolvers on your network
+
+• Conditional Forwarding Rules (Forwarding Rules)
+
+        • Forward DNS queries for a specified domain and all its subdomains to target IP addresses
+
+• System Rules
+
+        • Selectively overriding the behavior defined in Forwarding Rules (e.g., don’t forward DNS queries for a subdomain acme.example.com)
+
+
+• Auto-defined System Rules
+
+        • Defines how DNS queries for selected domains are resolved (e.g., AWS internal domain names, Privated Hosted Zones)
+
+
+• If multiple rules matched, Route 53 Resolver chooses the most specific match
+
+• Resolver Rules can be shared across accounts using AWS RAM
+
+        • Manage them centrally in one account
+
+        • Send DNS queries from multiple VPC to the target IP defined in the rule
+
+
+
+
+
+
+
+
+
+----------------------------------------------------------------- Route53 Hands ON 
+
+
+
+
+-- to do this buy domain in R53 registry or do purchase from any other 3rd party services 
+
+-- i Bought from NameCheap 
+
+-- go to your domain --> manage domain --> custom domain in drop down menu
+
+-- now create one ec2 instance with the user data 
+
+-- make sure you are using linux 2 version 
+
+#!/bin/bash
+# Use this for your user data (script from top to bottom)
+# install httpd (Linux 2 version)
+yum update -y
+yum install -y httpd
+systemctl start httpd
+systemctl enable httpd
+echo "<h1>Hello World from $(hostname -f)</h1>" > /var/www/html/index.html
+
+
+-- follow below step only if ur getting apache test page , otherwise continue with next steps
+
+IMP NOTE : If u r getting apache test page I instead of ur content) no need to worry , just follow below things -- Geek Dairy
+
+-- connect Linux machine and login as super user sudo su
+
+-- Method 1
+
+-- removing/renaming Welcome Page
+
+mv /etc/httpd/conf.d/welcome.conf /etc/httpd/conf.d/welcome.conf_backup
+
+-- Make sure that Apache is restarted (as root) with the command:
+
+systemctl restart httpd
+
+
+-- Method 2
+
+-- allow Indexes in /etc/httpd/conf.d/welcome.conf
+
+-- Without an index at the DocumentRoot, the default Apache Welcome page will display unless /etc/httpd/conf.d/welcome.conf is modified to allow Indexes. Edit /etc/httpd/conf.d/welcome.conf to allow Indexes.
+
+-- Comment the Options line (add a # mark) in /etc/httpd/conf.d/welcome.conf as shown below:
+
+vi /etc/httpd/conf.d/welcome.conf
+<LocationMatch "^/+$">
+#   Options -Indexes
+    ErrorDocument 403 /error/noindex.html
+</LocationMatch>
+
+              or 
+
+you can enable Indexes by changing the – to a +
+
+vi /etc/httpd/conf.d/welcome.conf
+<LocationMatch "^/+$">
+    Options +Indexes
+    ErrorDocument 403 /error/noindex.html
+</LocationMatch>
+
+-- systemctl restart httpd
+
+-- thats it !
+
+
+-- now do create another ec2 with same userdata in 1b availability zone
+
+-- make sure you have to give HTTP in SG 
+
+-- now create one Load Balancer (application load balancer) 
+
+-- it is not good to give nasty url of LB so do make over for this link 
+
+-- go to R53 service 
+
+-- You have to create one hosted zone in R53 
+
+-- if You purchase domain in AWS itself automatically it will create Hosted zone for you 
+
+-- if u buy some other places u have to create ur hosted zones 
+
+-- create hosted zone, the name is  ( it should be same ur domain name)
+
+-- mine is  subbucloud.lat
+
+-- create hosted zone with public type 
+
+-- once u created hosted zone it will create 2 Records automatically Ns and SOA
+
+-- NS have 4 servers , u should give these servers in ur custom domain (3rd party) 
+
+-- update ur Name servers in ur custom domain 
+
+-- now create records to do make up of ur url 
+
+-- here u can go with subdomian or with naked (main) Url 
+
+
+1 simple routing policy
+
+-- type sample is sub-domain and record type is A
+
+-- choose Alias Always on , if u do not on u have to give ur IP but we have LB so choose Alias
+
+-- in route traffic section 
+
+select   alias to application and classic load balancer 
+
+select AZ , LB and Routing policy 
+
+-- create record
+
+
+2  FailOver Routing Policy
+
+-- FailOver it means in simple words if ur website is facing down period in one Region then , automatically the Load balancer will shift the request into the another another region 
+
+-- in Genaral we have deployed our application in 2 regions for high availability , if one region goes down automatically the request shift to another region through the load balancer 
+
+-- for this we have 2 primary site and secondary site , if primary site is not working then it will redirect to secondary site 
+
+-- we know how to create load balancers in different regions but now we will try with the maintainance page which is stored in S3 
+
+-- create one html files add some content related to the maintainance and do store in the s3 bucket (IMP: ur record name and bucket name should be same  then only it works )
+
+-- make sure ur bucket name is ur domain for easy understanding purpose (ACL is enabled for bucket)
+
+-- upload html file and make file has Public and enable static weh hosting ( in index document u have to give ur index.html extension like maintainace.html)
+
+-- create records for load balancer and s3 
+
+-- for s3 record u have to slect end point as s3 website endpoint in dropdown below 
+
+-- check ur url is working 
+
+-- now stop the primary site and observe the changes 
+
+-- if ur primary site is not working then it will shift to secondary site so , here u will get mainatainanace page , through the health checks the LOad balancer know that primary site is down so , it will shift traffic to the nxt site
+
+-- getting maintainance page successfully 
+
+
+-- u can also do same for geo location policy
+
+
+
+
+
+
+
+
+
+===================================================================== Amazon VPC (Virtual Private Cloud) =====================================================================
