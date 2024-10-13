@@ -4131,6 +4131,9 @@ EXP : PostgreSQL port = 5432  HTTP port = 80  HTTPS port = 443
 
 ==================================NACL(network Acces control list)=============
 
+
+
+
 -- it is another layer of security to the ec2 
 
 -- if u want tight the security go for NACL
@@ -4181,15 +4184,15 @@ EXP : PostgreSQL port = 5432  HTTP port = 80  HTTPS port = 443
 
 IMP ------------ • You define NACL Rules:
 
-• Rules have a number (1-32766), higher precedence with a lower number
-• First rule match will drive the decision
-• Example: if you define #100 ALLOW 10.0.0.10/32 and #200 DENY 10.0.0.10/32, the IP address will be allowed because 100 has a higher precedence over 200
-• The last rule is an asterisk (*) and denies a request in case of no rule match
-• AWS recommends adding rules by increment of 100
+    • Rules have a number (1-32766), higher precedence with a lower number
+    • First rule match will drive the decision
+    • Example: if you define #100 ALLOW 10.0.0.10/32 and #200 DENY 10.0.0.10/32, the IP address will be allowed because 100 has a higher precedence over 200
+    • The last rule is an asterisk (*) and denies a request in case of no rule match
+    • AWS recommends adding rules by increment of 100
 
-• Newly created NACLs will deny everything
+    • Newly created NACLs will deny everything
 
-• NACL are a great way of blocking a specific IP address at the subnet level
+    • NACL are a great way of blocking a specific IP address at the subnet level
 
 
 ------------------------- Default NACL
@@ -4248,27 +4251,6 @@ NOTE : in SG , it is stateful , no need to give inbound and outbound rules , eve
       - A NAT gateway uses ports 1024-65535.
 
       - AWS Lambda functions use ports 1024-65535.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -13453,6 +13435,7 @@ EXP : A route table contains a set of rules, called routes, that are used to det
 
 -------------------------------------------------- LAB 
 
+
 -- create ur own VPC with CIDR 192.168.0.0/16
 
 Tenancy defines how EC2 instances are distributed across physical hardware and affects pricing. There are three tenancy options available: Shared ( default ) — Multiple AWS accounts may share the same physical hardware. Dedicated Instance ( dedicated ) — Your instance runs on single-tenant hardware.
@@ -13517,6 +13500,8 @@ eg : ssh -i "terraform-key.pem" ec2-user@192.168.2.31
 
 
 ------------------------------------------------ NAT Gateway 
+
+
 
 ----------- Basics of NAT Gateway
 
@@ -13678,6 +13663,10 @@ but he wants to Access AWS services from private subnet ?
 
 ----------------------------CIDR(Classless InterDomain Routing) 
 
+
+
+
+
 -- Classless Inter-Domain Routing – a method for allocating IP addresses
 
 -- private ip series starts with eg: 172.98.90.2/16
@@ -13722,6 +13711,7 @@ but he wants to Access AWS services from private subnet ?
 
 
 ---------------------- VPC – Subnet (IPv4)
+
 
 • AWS reserves 5 IP addresses (first 4 & last 1) in each subnet
 
