@@ -13814,6 +13814,8 @@ NOTE : u have to remove 5 IP's from each subnet maks , here u will get 251
 
 ----------------------------------------- VPC Endpoints
 
+
+
 • Every AWS service is publicly exposed (public URL)
 
 • VPC Endpoints (powered by AWS PrivateLink) allows you to connect to AWS services using a private network instead of using the public Internet
@@ -13823,8 +13825,11 @@ NOTE : u have to remove 5 IP's from each subnet maks , here u will get 251
 • They remove the need of IGW, NATGW, ... to access AWS Services
 
 • In case of issues:
+
   • Check DNS Setting Resolution in your VPC 
   • CheckRouteTables
+
+
 
 ------------- Types of Endpoints
 
@@ -13838,7 +13843,7 @@ NOTE : u have to remove 5 IP's from each subnet maks , here u will get 251
 2 Gateway Endpoints
 
   • Provisions a gateway and must be used as a target in a route table (does not use security groups)
-  • Supports both S3 and DynamoDB
+  • Supports both S3 and DynamoDB only 
   • Free
 
 
@@ -14129,6 +14134,13 @@ OK                    =  log-status
 ------------------------------------------------------------ AWS Site-to-Site VPN
 
 
+
+-- So the idea is that, now we have a VPC but we may have also a structure within the corporate data center, and we wanna connect AWS to our corporate data center using a private connection.
+
+-- So for this, we'll have a customer gateway on the corporation side, and a VPN gateway on the VPC side. And we're going to establish, through the public internet, a private site-to-site VPN connection.
+
+-- So it's a VPN connection, so it's encrypted. It goes over the public internet, though. And using this, we have linked effectively the network of our VPC to the network of our corporate data center.
+
 -- A VPN connection refers to the connection between your VPC and your own on-premises network. Site-to-Site VPN supports Internet Protocol security (IPsec) VPN connections.
 
 -- By default, instances that you launch into an Amazon VPC can't communicate with your own (remote/ on-premises) network.
@@ -14139,27 +14151,48 @@ OK                    =  log-status
 
 -- Customer gateway: An AWS resource which provides information to AWS about your customer gateway device.
 
+
 -------
 
 1  Virtual Private Gateway (VGW)
+
    • VPN concentrator on the AWS side of the VPN connection
+
    • VGW is created and attached to the VPC from which you want to create the Site-to-Site VPN connection
+
    • Possibility to customize the ASN (Autonomous System Number)
 
 2  Customer Gateway (CGW)
+
    • Software application or physical device on customer side of the VPN connection
 
 
 -------------- Site-to-Site VPN Connections
 
 • Customer Gateway Device (On-premises)
-   • What IP address to use?
-      • Public Internet-routable IP address for your Customer Gateway device
-      • If it’s behind a NAT device that’s enabled for NAT traversal (NAT-T), use the public IP address of the NAT device
 
-• Important step: enable Route Propagation for the Virtual Private Gateway in the route table that is associated with your subnets
+        • What IP address to use?
+
+                • Public Internet-routable IP address for your Customer Gateway device
+
+                        - Well, if your customer gateway is public, there is a public internet-routable IP address for your customer gateway device. Then you would use this one,between your VGW and your CGW using the public IP of the customer gateway.
+
+                • If it’s behind a NAT device that’s enabled for NAT traversal (NAT-T), use the public IP address of the NAT device
+
+                        - But it's possible for your customer gateway to also be private and have a private IP. 
+                        
+                        - In which case, then it is very common for it to be behind a NAT device that has NAT-T enabled. And then, that NAT device has a public IP, in which case, the IP address you should use for the CGW is the public IP of the NAT device.
+
+                        - And then, the site-to-site VPN connection can be established.
+
+• Impor tant step: enable Route Propagation for theVirtual Private Gateway in the route table that is associated with your subnets
+
+        - even though this is set up, this site-to-site VPN connection will not work until you enable route propagation in your VPC within your subnets. And then, when this is done, then the connectivity will work.
+
 
 • If you need to ping your EC2 instances from on-premises, make sure you add the ICMP protocol on the inbound of your security groups
+
+
 
 
 ---- The following are the key concepts for Site-to-Site VPN:
@@ -14183,6 +14216,8 @@ OK                    =  log-status
 
 
 --------- Site-to-Site VPN limitations
+
+
 
 A Site-to-Site VPN connection has the following limitations.
 
@@ -14208,6 +14243,8 @@ IPSEC stands for IP Security. It is an Internet Engineering Task Force (IETF) st
 
 
 ------------------------------------- LAB 
+
+
 
 STEP 1 (AWS SIDE)
 
@@ -14459,7 +14496,7 @@ IMP to know , they are 5 parts in aws to work on hybrid networking
 
 - apart this DX , remaining are wotk through the internet 
 
-- only DX works with Intranet , which means diect connection to ur server and aws network through the cables(wired connection), all the cost will be paid by customer , it is one time set up
+- only DX works with Intranet , which means direct connection to ur server and aws network through the cables(wired connection), all the cost will be paid by customer , it is one time set up
 
 
 
@@ -14473,6 +14510,7 @@ IMP to know , they are 5 parts in aws to work on hybrid networking
 • Access public resources (S3) and private (EC2) on same connection
 
 • Use Cases:
+
    • Increase bandwidth throughput - working with large data sets – lower cost
    • More consistent network experience - applications using real-time data feeds 
    • Hybrid Environments (on prem + cloud)
@@ -14601,6 +14639,8 @@ EXP : Maximum resilience is achieved by separate connections terminating on sepa
 
 ------------------------------------------ Site-to-Site VPN connection as a backup ------
 
+
+
 • In case Direct Connect fails, you can set up a backup Direct Connect connection (expensive), or a Site-to-Site VPN connection
 
     Corporate DC <-------(Direct Connect Primary Connection)------------> vpc
@@ -14612,6 +14652,9 @@ EXP : Maximum resilience is achieved by separate connections terminating on sepa
 
 
 ------------------------------------------ Transit Gateway ---------------------------
+
+
+
 
 • For having transitive peering between thousands of VPC and on-premises, hub-and-spoke (star) connection
 
@@ -14659,6 +14702,7 @@ Step 3 : specify accounts.
 
 
 -------------------------------- VPC – Traffic Mirroring ----------
+
 
 • Allows you to capture and inspect network traffic in your VPC
 
@@ -14841,7 +14885,9 @@ u have to create
 • AWS PrivateLink / VPC Endpoint Services:
 
     • Connect services privately from your service VPC to customers VPC
+
     • Doesn’t need VPC Peering, public Internet, NAT Gateway, Route Tables
+
     • Must be used with Network Load Balancer & ENI
 
 • ClassicLink – connect EC2-Classic EC2 instances privately to your VPC
