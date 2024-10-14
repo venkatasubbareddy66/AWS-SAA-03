@@ -1130,14 +1130,14 @@ inline policy ? Why : Inline policy completely restricted to this role only we c
 			"Sid": "Statement1",
 			"Effect": "Allow",
 			"Action": "sts:AssumeRole",
-			"Resource": "arn:aws:iam::851725361030:role/demo-s3-cross-iam-role"      
+			"Resource": "arn:aws:iam::123456789:role/demo-s3-cross-iam-role"      
 		}
 	]
 }
 
 
 
--- "arn:aws:iam::851725361030:role/demo-s3-cross-iam-role"  # this is Account B Role Arn 
+-- "arn:aws:iam::12345567:role/demo-s3-cross-iam-role"  # this is Account B Role Arn 
 
 -- now our basic arrnagement is done 
 
@@ -2826,8 +2826,7 @@ EXP : -- If your Spot Instance request is active and has an associated running S
 
 • The most expensive option
 
-• Useful for software that have complicated licensing model (BYOL – Bring Your
-Own License)
+• Useful for software that have complicated licensing model (BYOL – Bring Your Own License)
 
 • Or for companies that have strong regulatory or compliance needs
 

@@ -4051,6 +4051,7 @@ Launch Template :
 • EC2-level metrics (enabled): CPU Utilization, etc...
 
         • Basic monitoring: 5 minutes granularity
+
         • Detailed monitoring: 1 minute granularity
 
 
@@ -8731,6 +8732,7 @@ def lambda_handler(event, context):
 
 
 -- Data migration:
+
 1 Snowcone
 2 Snowball Edge
 3 Snowmobile
@@ -10289,6 +10291,12 @@ workflow = Master Db instance --> snapshot is taken --> restore from the snapsho
         • PostgreSQL / SQL Server: rds.force_ssl=1 => force SSL connections
 
         • MySQL / MariaDB: require_secure_transport=1 => force SSL connections
+
+
+
+
+
+https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/PostgreSQL.Concepts.General.SSL.html
 
 
 
