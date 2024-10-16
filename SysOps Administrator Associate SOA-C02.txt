@@ -30,6 +30,42 @@
 
 
 
+
+
+-- A retail company has realized that their Amazon EBS volume backed EC2 instance is consistently over-utilized and needs an upgrade. A developer has connected with you to understand the key parameters to be considered when changing the instance type.
+
+As a SysOps Administrator, which of the following would you identify as correct regarding the instance types for the given use-case? 
+
+
+ANS : 
+
+        1 Resizing of an instance is only possible if the root device for your instance is an EBS volume
+
+                - If the root device for your instance is an EBS volume, you can change the size of the instance simply by changing its instance type, which is known as resizing it.
+
+                - If the root device for your instance is an instance store volume, you must migrate your application to a new instance with the instance type that you need.
+
+
+
+        2 You must stop your Amazon EBS–backed instance before you can change its instance type. AWS moves the instance to new hardware; however, the instance ID does not change                
+
+                - You must stop your Amazon EBS–backed instance before you can change its instance type.
+
+                - When you stop and start an instance, AWS moves the instance to new hardware; however, the instance ID does not change.
+
+
+
+        3 If your instance is in an Auto Scaling group, the Amazon EC2 Auto Scaling service marks the stopped instance as unhealthy, and may terminate it and launch a replacement instance                 
+
+                -  If your instance is in an Auto Scaling group, the Amazon EC2 Auto Scaling service marks the stopped instance as unhealthy, and may terminate it and launch a replacement instance.
+
+                - To prevent this, you can suspend the scaling processes for the group while you're resizing your instance.
+
+
+
+
+
+
 ----------------------------------------------- Enhanced Networking
 
 
@@ -994,6 +1030,22 @@ IMP
 
 
 
+-- A retail company has built its server infrastructure on Amazon EC2 instances that run on Windows OS. The development team has defined a few custom metrics that need to be collected by the unified CloudWatch agent.
+
+As a SysOps Administrator, can you identify the correct configuration to be used for this scenario?
+
+
+ANS : Configure the CloudWatch agent with StatsD protocol to collect the necessary system metrics 
+
+
+EXP : You can retrieve custom metrics from your applications or services using the StatsD and collectd protocols. StatsD is supported on both Linux servers and servers running Windows Server. collectd is supported only on Linux servers. Here, the instances are running on Windows servers, hence StatsD is the right protocol.
+
+
+https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Install-CloudWatch-Agent.html
+
+
+
+
 
 
 ----------------------------------------------  Unified CloudWatch Agent – procstat Plugin
@@ -1487,6 +1539,28 @@ US-EAST-1A  --------- Create AMI ------> Custom AMI -----------> Launch from AMI
 
    - this will allow the target accounts to launch your custom AMI, even though it was encrypted with a key from your accounts,
 
+
+
+
+
+
+
+
+---- A firm uses Amazon EC2 instances for running its flagship application. With new business expansion plans, the firm is looking at a bigger footprint for its AWS infrastructure. The development team needs to share Amazon Machine Images (AMIs) across AZs, AWS accounts and Regions.
+
+ANS : 
+
+        1 You can only share AMIs that have unencrypted volumes and volumes that are encrypted with a customer-managed CMK 
+
+                - You can only share AMIs that have unencrypted volumes and volumes that are encrypted with a customer-managed CMK.
+
+                - If you share an AMI with encrypted volumes, you must also share any CMKs used to encrypt them.
+
+        2 You do not need to share the Amazon EBS snapshots that an AMI references in order to share the AMI
+
+                - You do not need to share the Amazon EBS snapshots that an AMI references in order to share the AMI. 
+
+                - Only the AMI itself needs to be shared; the system automatically provides the access to the referenced Amazon EBS snapshots for the launch.                
 
 
 
@@ -2798,6 +2872,33 @@ Why use a load balancer?
 
 
 
+
+
+-- A data analytics company has its server infrastructure built on Amazon EC2 instances fronted with Elastic Load Balancers (ELBs). The ELBs are maintained in two AZs with each ELB having two EC2 instances registered with it. Both the instances in one AZ have been recorded as unhealthy.
+
+What is the status of traffic that flows to the ELB connected to unhealthy instances?
+
+
+ANS : The Load Balancer routes requests to the unhealthy targets 
+
+EXP :
+
+      - If there is at least one healthy target in a target group, the load balancer routes requests only to the healthy targets. 
+
+      - If a target group contains only unhealthy targets, the load balancer routes requests to the unhealthy targets. 
+
+      - Hence, it is advised to configure an Auto Scaling Group, if the instances are hosting a business-critical application.
+
+
+
+
+
+
+
+
+
+
+
 ----------------------------------------------- Health Checks
 
 
@@ -3612,6 +3713,31 @@ UnhealthyThresholdCount         5               Consider the target unhealthy af
 IMP : When rebalancing, Amazon EC2 Auto Scaling launches new instances before terminating the earlier ones. This way, rebalancing does not compromise the performance or availability of your application.
 
 -- Because Amazon EC2 Auto Scaling attempts to launch new instances before terminating the earlier ones, being at or near the specified maximum capacity could impede or completely halt rebalancing activities.
+
+
+
+
+
+
+-- After configuring Amazon EC2 Auto Scaling, a systems administrator had tried to launch the Auto Scaling Group. But, the following launch failure message was displayed - Client.InternalError: Client error on launch.
+
+What is the cause of this error and how can it be fixed?
+
+
+ANS : This error can be caused when an Auto Scaling group attempts to launch an instance that has an encrypted EBS volume, but the service-linked role does not have access to the customer-managed CMK used to encrypt it
+
+EXP :
+
+        - Client.InternalError: Client error on launch error is caused when an Auto Scaling group attempts to launch an instance that has an encrypted EBS volume, but the service-linked role does not have access to the customer-managed CMK used to encrypt it. Additional setup is required to allow the Auto Scaling group to launch instances.
+
+        - There are two scenarios possible:
+
+                1) CMK and Auto Scaling group are in the same AWS account,
+
+                2) CMK and Auto Scaling group are in different AWS accounts.
+
+
+                https://docs.aws.amazon.com/autoscaling/ec2/userguide/ts-as-instancelaunchfailure.html#ts-as-instancelaunchfailure-12   - ref for 2 cases 
 
 
 
@@ -8381,6 +8507,25 @@ $("#loadDiv").load("https://cors-dem2.s3.ap-south-1.amazonaws.com/load.html");
 
 
 
+-- Your company has decided that certain users should have Multi-Factor Authentication (MFA) enabled for their sign-in credentials. A newly hired manager has a Gemalto MFA device that he used in his earlier company. He has approached you to configure it for his AWS account.
+
+How will you configure his existing Gemalto MFA device so he can seamlessly connect with AWS services in the new company?
+
+
+ANS : AWS MFA does not support the use of your existing Gemalto device
+
+EXP : 
+
+        - AWS MFA relies on knowing a unique secret associated with your hardware MFA (Gemalto) device in order to support its use.
+
+        - Because of security constraints that mandate such secrets never be shared between multiple parties, AWS MFA cannot support the use of your existing Gemalto device.
+
+        - Only a compatible hardware MFA device purchased from Gemalto can be used with AWS MFA. You can re-use an existing U2F security key with AWS MFA, as U2F security keys do not share any secrets between multiple parties.
+
+
+
+
+
 
 
 ------------------------------------------------------ Amazon S3 – MFA Delete Hands ON 
@@ -10537,6 +10682,25 @@ DB Instance ---> Store Logs: -----------> CW Logs ------> CW Alarm --------(Aler
 
 
 
+-- Consider this scenario - the primary instance of an Amazon Aurora cluster is unavailable because of an outage that has affected an entire AZ. The primary instance and all the reader instances are in the same AZ.
+
+As a SysOps Administrator, what action will you take to get the database online?
+
+ANS : You must manually create one or more new DB instances in another AZ
+
+EXP :
+
+        - Suppose that the primary instance in your cluster is unavailable because of an outage that affects an entire AZ. In this case, the way to bring a new primary instance online depends on whether your cluster uses a multi-AZ configuration. 
+
+        - If the cluster contains any reader instances in other AZs, Aurora uses the failover mechanism to promote one of those reader instances to be the new primary instance.
+
+        - If your provisioned cluster only contains a single DB instance, or if the primary instance and all reader instances are in the same AZ, you must manually create one or more new DB instances in another AZ.
+
+
+
+
+
+
 
 --------------------------------------------------------------  difference b/w Aurora read replicas and MySQL Replicas 
 
@@ -11401,6 +11565,32 @@ IMP : In CloudWatch Logs, Log Retention Policy defined at ......................
 ANS : Log Groups 
 
 
+
+
+A systems administration team is configuring Amazon EC2 metrics that are sent to Amazon CloudWatch for monitoring purposes. The team is looking for a metric that can help them identify the processing power required to run an application on the selected instance.
+
+Which of the below metric should be used for this requirement?
+
+
+ANS : CPUUtilization metric should be used to identify the processing power required 
+
+EXP : 
+
+        - CPUUtilization specifies the percentage of allocated EC2 compute units that are currently in use on the instance. 
+
+        - This metric identifies the processing power required to run an application on a selected instance. This metric is expressed in Percent.
+
+        - Depending on the instance type, tools in your operating system can show a lower percentage than CloudWatch when the instance is not allocated a full processor core.
+
+
+
+
+
+
+
+
+
+
 ---------------------------------------- some  terminologies to understand for the Cloudwatch 
 
 
@@ -11944,6 +12134,30 @@ EXP : If you set an alarm on a high-resolution metric, you can specify a high-re
 
 
 
+
+
+-- A junior developer working on configuring CloudWatch alarms is unable to figure out why a particular CloudWatch Alarm is constantly in the ALARM state.
+
+As a SysOps Administrator, which of these options would you suggest as a fix for the issue?
+
+
+ANS : Alarms continue to evaluate metrics against the configured threshold, even after they have already triggered. You can adjust the alarm threshold if you do not want it to be in ALARM state
+
+EXP : 
+
+        - Alarms continue to evaluate metrics against your chosen threshold, even after they have already triggered. This allows you to view its current up-to-date state at any time.
+
+        - You may notice that one of your alarms stays in the ALARM state for a long time. 
+
+        - If your metric value is still in breach of your threshold, the alarm will remain in the ALARM state until it no longer breaches the threshold. 
+
+        - This is normal behavior. If you want your alarm to treat this new level as OK, you can adjust the alarm threshold accordingly.
+
+
+
+
+
+
 ---------------------------------------- CloudWatch Alarms Hands On
 
 
@@ -12184,6 +12398,34 @@ stepehe note
 • Example: allow/deny events from another AWS account or AWS region
 
 • Use case: aggregate all events from your AWS Organization in a single AWS account or AWS region
+
+
+
+
+
+
+
+-- A developer has created rules for different events on Amazon EventBridge with AWS Lambda function as a target. The developer has also created an IAM Role with the necessary permissions and associated it with the rule. The rule however is failing, and on initial analysis, it is clear that the IAM Role associated with the rule is not being used when calling the Lambda function.
+
+What could have gone wrong with the configuration and how can you fix the issue?
+
+
+ANS : For Lambda functions configured as a target to EventBridge, you need to provide resource-based policy. IAM Roles will not work 
+
+EXP : 
+
+        - IAM roles for rules are only used for events related to Kinesis Streams. For Lambda functions and Amazon SNS topics, you need to provide resource-based permissions.
+
+        - When a rule is triggered in EventBridge, all the targets associated with the rule are invoked. Invocation means invoking the AWS Lambda functions, publishing to the Amazon SNS topics, and relaying the event to the Kinesis streams.
+
+        - In order to be able to make API calls against the resources you own, EventBridge needs the appropriate permissions. 
+
+        - For Lambda, Amazon SNS, Amazon SQS, and Amazon CloudWatch Logs resources, EventBridge relies on resource-based policies. For Kinesis streams, EventBridge relies on IAM roles.
+
+
+
+
+
 
 
 
@@ -12984,6 +13226,39 @@ Example 2 : EventBridge with SNS
 • You can set Remediation Retries if the resource is still non-compliant after auto-remediation
 
 
+
+
+
+
+
+-- A media company stores all their articles on Amazon S3 buckets. As a security measure, they have server access logging enabled for all the buckets. The company is looking at a solution that can regularly check if logging is enabled for all the existing buckets and for any new ones they create. If the solution can also automate the remedy, it will be a perfect fit for their requirement.
+
+Which of the following would you suggest to address the given use-case?
+
+ANS :  Use AWS Config rules to check whether or not an S3 bucket has logging enabled, and carry out the necessary remediation if needed
+
+
+EXP : 
+
+      - AWS Config keeps track of the configuration of your AWS resources and their relationships to other resources. It can also evaluate those AWS resources for compliance. 
+
+      - This service uses rules that can be configured to evaluate AWS resources against desired configurations.
+
+      - For example, there are AWS Config rules that check whether or not your Amazon S3 buckets have logging enabled or your IAM users have an MFA device enabled.
+
+      - AWS Config rules use AWS Lambda functions to perform the compliance evaluations, and the Lambda functions return the compliance status of the evaluated resources as compliant or noncompliant. 
+
+      - The non-compliant resources are remediated using the remediation action associated with the AWS Config rule. 
+
+      - With the Auto-Remediation feature of AWS Config rules, the remediation action can be executed automatically when a resource is found non-compliant.
+
+      - AWS Config Auto Remediation feature has auto remediate feature for any non-compliant S3 buckets using the following AWS Config rules:
+
+            - s3-bucket-logging-enabled s3-bucket-server-side-encryption-enabled s3-bucket-public-read-prohibited s3-bucket-public-write-prohibited
+
+      - These AWS Config rules act as controls to prevent any non-compliant S3 activities.
+
+      
 
 
 
@@ -14631,6 +14906,24 @@ S3 Buckets-------(analyze)------> Macie Discover Sensitive Data (PII)-------(not
    • Programmatic Access using AWS Support API
 
  
+
+
+
+A video streaming app uses Amazon Kinesis Data Streams for streaming data. The systems administration team needs to be informed of the shard capacity when it is reaching its limits.
+
+How will you configure this requirement?
+
+
+ANS : Monitor Trusted Advisor service check results with Amazon CloudWatch Events
+
+EXP : 
+
+        - AWS Trusted Advisor checks for service usage that is more than 80% of the service limit.
+
+
+        https://docs.aws.amazon.com/awssupport/latest/user/service-limits.html#kinesis-shards-per-region
+
+
 
 
 
@@ -18145,6 +18438,14 @@ select AZ , LB and Routing policy
 
 
 
+IMP Points :
+
+-- Regardless of the type of subnet, the internal IPv4 address range of the subnet is always private
+
+-- When you create a VPC, you must specify a range of IPv4 addresses for the VPC in the form of a Classless Inter-Domain Routing (CIDR) block
+
+-- By default, all subnets can route between each other, whether they are private or public
+
 
 
 
@@ -19052,6 +19353,24 @@ Applies to an EC2 instance when specified by someone                            
 • You can create VPC Peering connection between VPCs in different AWS accounts/regions
 
 • You can reference a security group in a peeredVPC (works cross accounts – same region)
+
+
+
+
+-- A highly critical financial services application is being moved to AWS Cloud from the on-premises data center. The application uses a fleet of Amazon EC2 instances provisioned in different geographical areas. The Chief Technology Officer (CTO) of the company needs to understand the communication network used between instances at various locations when they interact using public IP addresses.
+
+ANS :  
+
+        - When two instances communicate using public IP addresses, the following three scenarios are possible: 
+
+                1. Traffic between two EC2 instances in the same AWS Region stays within the AWS network, even when it goes over public IP addresses. 
+
+                2 Traffic between EC2 instances in different AWS Regions stays within the AWS network if there is an Inter-Region VPC Peering connection between the VPCs where the two instances reside.
+
+                3 Traffic between EC2 instances in different AWS Regions where there is no Inter-Region VPC Peering connection between the VPCs where these instances reside, is not guaranteed to stay within the AWS network.
+
+
+
 
 
 

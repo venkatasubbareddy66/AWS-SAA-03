@@ -6870,6 +6870,40 @@ IMP : In CloudWatch Logs, Log Retention Policy defined at ......................
 ANS : Log Groups 
 
 
+
+
+
+
+
+A systems administration team is configuring Amazon EC2 metrics that are sent to Amazon CloudWatch for monitoring purposes. The team is looking for a metric that can help them identify the processing power required to run an application on the selected instance.
+
+Which of the below metric should be used for this requirement?
+
+
+ANS : CPUUtilization metric should be used to identify the processing power required 
+
+EXP : 
+
+        - CPUUtilization specifies the percentage of allocated EC2 compute units that are currently in use on the instance. 
+
+        - This metric identifies the processing power required to run an application on a selected instance. This metric is expressed in Percent.
+
+        - Depending on the instance type, tools in your operating system can show a lower percentage than CloudWatch when the instance is not allocated a full processor core.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ---------------------------------------- some  terminologies to understand for the Cloudwatch 
 
 
@@ -21484,6 +21518,28 @@ ANS : it is a software that is found on any windows server with AD domain servic
    • Create your own AD in AWS, manage users locally, supports MFA
 
    • Establish “trust” connections with your on- premise AD
+
+
+
+
+-- As a SysOps Administrator, you have been contacted by a team for troubleshooting a security issue they seem to be facing. A security check red flag is being raised for the security groups created by AWS Directory Services. The flag message says "Security Groups - Unrestricted Access."
+
+How will you troubleshoot this issue?
+
+ANS : Ignore or suppress the red flag since it is safe to do so, in this scenario
+
+EXP : 
+
+      - AWS Directory Services is a managed service that automatically creates an AWS security group in your VPC with network rules for traffic in and out of AWS managed domain controllers. 
+
+      - The default inbound rules allow traffic from any source (0.0.0.0/0) to ports required by Active Directory.
+
+      - These rules do not introduce security vulnerabilities, as traffic to the domain controllers is limited to traffic from your VPC, other peered VPCs, or networks connected using AWS Direct Connect, AWS Transit Gateway or Virtual Private Network.
+
+      - In addition, the ENIs the security group is attached to, do not and cannot have Elastic IPs attached to them, limiting inbound traffic to local VPC and VPC routed traffic.
+
+
+
 
 
 

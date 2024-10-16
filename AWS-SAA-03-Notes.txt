@@ -1867,6 +1867,9 @@ Use cases :
 
 ------------------------- AWS Directory Services
 
+
+
+
 1  AWS Managed Microsoft AD
 
  • Create your own AD in AWS, manage users locally, supports MFA 
@@ -1882,6 +1885,32 @@ Use cases :
  -- With AWS Managed Microsoft AD, you can run directory-aware workloads in the AWS Cloud such as SQL Server-based applications. 
 
  -- You can also configure a trust relationship between AWS Managed Microsoft AD in the AWS Cloud and your existing on-premises Microsoft Active Directory, providing users and groups with access to resources in either domain, using single sign-on (SSO).
+
+
+
+
+
+
+-- As a SysOps Administrator, you have been contacted by a team for troubleshooting a security issue they seem to be facing. A security check red flag is being raised for the security groups created by AWS Directory Services. The flag message says "Security Groups - Unrestricted Access."
+
+How will you troubleshoot this issue?
+
+ANS : Ignore or suppress the red flag since it is safe to do so, in this scenario
+
+EXP : 
+
+      - AWS Directory Services is a managed service that automatically creates an AWS security group in your VPC with network rules for traffic in and out of AWS managed domain controllers. 
+
+      - The default inbound rules allow traffic from any source (0.0.0.0/0) to ports required by Active Directory.
+
+      - These rules do not introduce security vulnerabilities, as traffic to the domain controllers is limited to traffic from your VPC, other peered VPCs, or networks connected using AWS Direct Connect, AWS Transit Gateway or Virtual Private Network.
+
+      - In addition, the ENIs the security group is attached to, do not and cannot have Elastic IPs attached to them, limiting inbound traffic to local VPC and VPC routed traffic.
+
+
+
+
+
 
 
 2  AD Connector
@@ -4371,6 +4400,30 @@ EXP :
 
 
 
+
+
+-- A data analytics company has its server infrastructure built on Amazon EC2 instances fronted with Elastic Load Balancers (ELBs). The ELBs are maintained in two AZs with each ELB having two EC2 instances registered with it. Both the instances in one AZ have been recorded as unhealthy.
+
+What is the status of traffic that flows to the ELB connected to unhealthy instances?
+
+
+ANS : The Load Balancer routes requests to the unhealthy targets 
+
+EXP :
+
+      - If there is at least one healthy target in a target group, the load balancer routes requests only to the healthy targets. 
+
+      - If a target group contains only unhealthy targets, the load balancer routes requests to the unhealthy targets. 
+
+      - Hence, it is advised to configure an Auto Scaling Group, if the instances are hosting a business-critical application.
+
+
+
+
+
+
+
+
 --------------------------------------------------------------------------- types of L.B's
 
 
@@ -5803,6 +5856,36 @@ IMP : When rebalancing, Amazon EC2 Auto Scaling launches new instances before te
 
 
 
+
+
+
+
+
+-- After configuring Amazon EC2 Auto Scaling, a systems administrator had tried to launch the Auto Scaling Group. But, the following launch failure message was displayed - Client.InternalError: Client error on launch.
+
+What is the cause of this error and how can it be fixed?
+
+
+ANS : This error can be caused when an Auto Scaling group attempts to launch an instance that has an encrypted EBS volume, but the service-linked role does not have access to the customer-managed CMK used to encrypt it
+
+EXP :
+
+        - Client.InternalError: Client error on launch error is caused when an Auto Scaling group attempts to launch an instance that has an encrypted EBS volume, but the service-linked role does not have access to the customer-managed CMK used to encrypt it. Additional setup is required to allow the Auto Scaling group to launch instances.
+
+        - There are two scenarios possible:
+
+                1) CMK and Auto Scaling group are in the same AWS account,
+
+                2) CMK and Auto Scaling group are in different AWS accounts.
+
+
+                https://docs.aws.amazon.com/autoscaling/ec2/userguide/ts-as-instancelaunchfailure.html#ts-as-instancelaunchfailure-12   - ref for 2 cases 
+
+
+
+
+
+
 ----------------------- Auto Scaling - CloudWatch Alarms & Scaling
 
 • It is possible to scale an ASG based on CloudWatch alarms
@@ -6836,6 +6919,43 @@ EPV : AWS CloudTrail cannot stream data to Amazon Kinesis. Amazon S3 buckets and
 • AWS Config Rules does not prevent actions from happening (no deny)
 
 Pricing: no free tier, $0.003 per configuration item recorded per region, $0.001 per config rule evaluation per region
+
+
+
+
+
+
+-- A media company stores all their articles on Amazon S3 buckets. As a security measure, they have server access logging enabled for all the buckets. The company is looking at a solution that can regularly check if logging is enabled for all the existing buckets and for any new ones they create. If the solution can also automate the remedy, it will be a perfect fit for their requirement.
+
+Which of the following would you suggest to address the given use-case?
+
+ANS :  Use AWS Config rules to check whether or not an S3 bucket has logging enabled, and carry out the necessary remediation if needed
+
+
+EXP : 
+
+      - AWS Config keeps track of the configuration of your AWS resources and their relationships to other resources. It can also evaluate those AWS resources for compliance. 
+
+      - This service uses rules that can be configured to evaluate AWS resources against desired configurations.
+
+      - For example, there are AWS Config rules that check whether or not your Amazon S3 buckets have logging enabled or your IAM users have an MFA device enabled.
+
+      - AWS Config rules use AWS Lambda functions to perform the compliance evaluations, and the Lambda functions return the compliance status of the evaluated resources as compliant or noncompliant. 
+
+      - The non-compliant resources are remediated using the remediation action associated with the AWS Config rule. 
+
+      - With the Auto-Remediation feature of AWS Config rules, the remediation action can be executed automatically when a resource is found non-compliant.
+
+      - AWS Config Auto Remediation feature has auto remediate feature for any non-compliant S3 buckets using the following AWS Config rules:
+
+            - s3-bucket-logging-enabled s3-bucket-server-side-encryption-enabled s3-bucket-public-read-prohibited s3-bucket-public-write-prohibited
+
+      - These AWS Config rules act as controls to prevent any non-compliant S3 activities.
+
+      
+
+
+
 
 
 ----------------------------- LAB 
@@ -9879,6 +9999,34 @@ workflow = Master Db instance --> snapshot is taken --> restore from the snapsho
 -- Master + up to 15 Aurora Read Replicas serve reads
 
 -- Support for Cross Region Replication
+
+
+
+
+
+
+
+
+
+-- Consider this scenario - the primary instance of an Amazon Aurora cluster is unavailable because of an outage that has affected an entire AZ. The primary instance and all the reader instances are in the same AZ.
+
+As a SysOps Administrator, what action will you take to get the database online?
+
+ANS : You must manually create one or more new DB instances in another AZ
+
+EXP :
+
+        - Suppose that the primary instance in your cluster is unavailable because of an outage that affects an entire AZ. In this case, the way to bring a new primary instance online depends on whether your cluster uses a multi-AZ configuration. 
+
+        - If the cluster contains any reader instances in other AZs, Aurora uses the failover mechanism to promote one of those reader instances to be the new primary instance.
+
+        - If your provisioned cluster only contains a single DB instance, or if the primary instance and all reader instances are in the same AZ, you must manually create one or more new DB instances in another AZ.
+
+
+
+
+
+
 
 
 
@@ -13320,7 +13468,20 @@ select AZ , LB and Routing policy
 
 
 
-========================================VPC(Virual Private Cloud)==================
+========================================VPC(Virtual Private Cloud)==================
+
+
+
+-- Regardless of the type of subnet, the internal IPv4 address range of the subnet is always private
+
+-- When you create a VPC, you must specify a range of IPv4 addresses for the VPC in the form of a Classless Inter-Domain Routing (CIDR) block
+
+-- By default, all subnets can route between each other, whether they are private or public
+
+
+
+
+
 
 -- it is like a virtual Data center of cloud 
 
@@ -13603,6 +13764,9 @@ Security Groups                   NO                                            
 
 Use as Bastion Host?              NO                                                                                    YES
      
+
+
+
 
 --------------------Steps to create our own VPC
 
@@ -18746,6 +18910,34 @@ Key AWS service:
    • Programmatic Access using AWS Support API
 
  
+
+
+
+
+
+A video streaming app uses Amazon Kinesis Data Streams for streaming data. The systems administration team needs to be informed of the shard capacity when it is reaching its limits.
+
+How will you configure this requirement?
+
+
+ANS : Monitor Trusted Advisor service check results with Amazon CloudWatch Events
+
+EXP : 
+
+        - AWS Trusted Advisor checks for service usage that is more than 80% of the service limit.
+
+
+        https://docs.aws.amazon.com/awssupport/latest/user/service-limits.html#kinesis-shards-per-region
+
+
+
+
+
+
+
+
+
+
 
 
 ------------------------------------------------------- some scenario based question ---------------------------------------------------
