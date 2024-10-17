@@ -2123,6 +2123,8 @@ Explanation for Deployment Options
 
 ---------- 1 All at once (deploy all in one go)
 
+
+
 -- Here is our four EC2 instances, and they all run the version one, which is blue, of our application.
 
 -- Then we are going to do an all at once deployment. So we want deploy v2.
@@ -2254,6 +2256,7 @@ ANS : immutable , In this mode, a full set of new instances running the new vers
 
 
 --------------------------------- 5 Elastic Beanstalk Deployment Blue / Green
+
 
 • Not a “direct feature” of Elastic Beanstalk
 

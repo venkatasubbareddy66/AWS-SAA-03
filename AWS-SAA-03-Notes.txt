@@ -3158,7 +3158,7 @@ EXP : This is an invalid configuration. The maximum ratio of provisioned IOPS to
 
 • When in doubt always consult the AWS documentation – it’s good!
 
-• Only gp2/gp3 and io1/io2 Block Express can be used as root volumes
+• Only gp2/gp3 and io1/io2 Block Express can be used as Boot volumes
 
 
 ---------------------------- Detailed explanation of Volumes
@@ -3325,7 +3325,7 @@ Note : io1,io2 , gp3 are iops configurable
 
 -- GP2 has default IOPS = 1:3 =1gb:3IOPS -> it is not IOPS configurable
 
--- Root volume supports (gp2,gp3,io1,io2 and standard) except sc1 n st1
+-- Boot volume supports (gp2,gp3,io1,io2 and standard) except sc1 n st1
 
 -- Additional volume supports all types of volumes
 

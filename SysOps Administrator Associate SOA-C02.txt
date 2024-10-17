@@ -1544,6 +1544,27 @@ US-EAST-1A  --------- Create AMI ------> Custom AMI -----------> Launch from AMI
 
 
 
+-- A SysOps Administrator has shared an AMI from account A to account B and then de-registered the AMI in a few days.
+
+What is the outcome of this action? (Select two)
+
+
+ANS : 
+
+        1 You can't launch new instances from the AMI in account A or in account B
+
+              - If you share an AMI from account A to account B, and then deregister the AMI from account A, you can't launch new instances from the AMI in account B.
+
+        2 The instances already launched from the shared AMI in account B, are not impacted by this de-registration 
+
+                - Deregistering the AMI in the original account doesn't impact instances launched from the shared AMI. 
+
+                - If you need to launch new instances after deregistering the AMI, you can create a new AMI from one of the new instances.      
+
+
+
+
+
 
 
 ---- A firm uses Amazon EC2 instances for running its flagship application. With new business expansion plans, the firm is looking at a bigger footprint for its AWS infrastructure. The development team needs to share Amazon Machine Images (AMIs) across AZs, AWS accounts and Regions.
@@ -1561,6 +1582,31 @@ ANS :
                 - You do not need to share the Amazon EBS snapshots that an AMI references in order to share the AMI. 
 
                 - Only the AMI itself needs to be shared; the system automatically provides the access to the referenced Amazon EBS snapshots for the launch.                
+
+
+
+
+
+-- You have designed an AMI in an account that is optimizing the legacy database technology your gambling company has developed. You wish to share that AMI with other AWS accounts that belong to the same organization.
+
+How do you do it?
+
+
+ANS : Edit the account list that can see the AMI from the AMI Console UI and the other accounts can start using it
+
+
+EXP : 
+
+        - An Amazon Machine Image (AMI) provides the information required to launch an instance. You must specify an AMI when you launch an instance. You can launch multiple instances from a single AMI when you need multiple instances with the same configuration.
+
+        - You can use different AMIs to launch instances when you need instances with different configurations. A shared AMI is an AMI that a developer created and made available for other developers to use.
+
+        - You can share an AMI with specific AWS accounts without making the AMI public. All you need is the AWS account IDs.
+
+        -  You can only share AMIs that have unencrypted volumes and volumes that are encrypted with a customer-managed CMK. 
+
+        - If you share an AMI with encrypted volumes, you must also share any CMKs used to encrypt them.
+
 
 
 
@@ -11815,6 +11861,24 @@ sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-c
 
 
 
+
+-- As part of monitoring your global e-learning website, you have decided to implement a CloudWatch dashboard. The most important metric to monitor is the number of users that are connected over time, in each region.
+
+Which option should you opt for?
+
+ANS : Create one CloudWatch dashboard and add a graph per region using the region selector in the top right corner of the AWS Console
+
+EXP : 
+
+        - Amazon CloudWatch dashboards are customizable home pages in the CloudWatch console that you can use to monitor your resources in a single view, even those resources that are spread across different Regions
+
+        - You can use CloudWatch dashboards to create customized views of the metrics and alarms for your AWS resources. To address the given use-case, you can create a graph per region using the region selector.
+
+
+
+
+
+
 ---------------------------------------- CloudWatch Dashboards hands on 
 
 
@@ -18978,6 +19042,9 @@ eg : ssh -i "terraform-key.pem" ec2-user@192.168.2.31
 
 
 ----------- Basics of NAT Gateway
+
+
+
 
 -- A NAT gateway supports the following protocols: TCP, UDP, and ICMP.
 
