@@ -4616,6 +4616,112 @@ Resources:
 
 
 
+
+
+
+
+EG: 1
+
+{
+  "Statement" : [
+  {
+    "Effect" : "Allow",
+    "Principal" : "*",
+    "Action" : "update:*",
+    "Resource" : "*",
+   },
+
+  {
+    "Effect" : "Deny",
+    "Principal" : "*",
+    "Action" : "Update:*",
+    "Resource" : "LogicalResourceId/ProductionDatabase"
+  }
+  ]
+}
+
+
+-- So here, we have an example where the first statement is saying "Allow update*" on everything, meaning that everything in your CloudFormation Stack can be updated,
+
+-- second part is saying "Deny update*" on Resource Production Database. That means that whatever is named "Production Database" in your CloudFormation Stack is going to be protected against any kind of updates,
+
+
+
+• Protect resources from unintentional updates
+
+• When you set a Stack Policy, all resources in the Stack are protected by default
+
+• Specify an explicit ALLOW for the resources you want to be allowed to be updated
+
+
+
+
+
+
+EG: 2
+
+
+
+policy 1 
+
+
+
+{
+  "Statement" : [
+    {
+      "Effect" : "Deny",
+      "Action" : "Update:*",
+      "Principal": "*",
+      "Resource" : "LogicalResourceId/MyDatabase"
+    },
+    {
+      "Effect" : "Allow",
+      "Action" : "Update:*",
+      "Principal": "*",
+      "Resource" : "*"
+    }
+  ]
+}
+
+
+
+
+policy 2
+
+
+
+{
+  "Statement" : [
+    {
+      "Effect" : "Allow",
+      "Action" : "Update:*",
+      "Principal": "*",
+      "NotResource" : "LogicalResourceId/MyDatabase"
+    }
+  ]
+}
+
+
+
+
+
+Exp: Both the policies deny all update actions on the database with the MyDatabase logical ID. And they allow all update actions on all other stack resources
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ----------------------------------------- CloudFormation – Stack Policies Hands ON
 
 

@@ -2107,9 +2107,9 @@ NOTE : use the above method to create environment , in the new console there mig
 
 2 • Rolling: update a few instances at a time (bucket), and then move onto the next bucket once the first bucket is healthy
 
-3 • Rolling with additional batches: like rolling, but spins up new instances to move the batch (so that the old application is still available)
+3 • Rolling with additional batches: like rolling, but spins up new instances to move the batch (so that the old application is still available) , maintain full capaicty for new deployments at all time
 
-4 • Immutable (slow deployment): spins up new instances in a new ASG, deploys version to these instances, and then swaps all the instances when everything is healthy
+4 • Immutable (slow deployment): spins up new instances in a new ASG, deploys version to these instances, and then swaps all the instances when everything is healthy , maintain full capaicty for new deployments at all time
 
 5 • Blue Green: create a new environment and switch over when ready
 
@@ -4070,7 +4070,7 @@ Resources:
 • A Stack Policy is a JSON document that defines the update actions that are allowed on specific resources during Stack updates
 
 
-EG:
+EG: 1
 
 {
   "Statement" : [
@@ -4102,6 +4102,68 @@ EG:
 • When you set a Stack Policy, all resources in the Stack are protected by default
 
 • Specify an explicit ALLOW for the resources you want to be allowed to be updated
+
+
+
+
+
+
+EG: 2
+
+
+
+policy 1 
+
+
+
+{
+  "Statement" : [
+    {
+      "Effect" : "Deny",
+      "Action" : "Update:*",
+      "Principal": "*",
+      "Resource" : "LogicalResourceId/MyDatabase"
+    },
+    {
+      "Effect" : "Allow",
+      "Action" : "Update:*",
+      "Principal": "*",
+      "Resource" : "*"
+    }
+  ]
+}
+
+
+
+
+policy 2
+
+
+
+{
+  "Statement" : [
+    {
+      "Effect" : "Allow",
+      "Action" : "Update:*",
+      "Principal": "*",
+      "NotResource" : "LogicalResourceId/MyDatabase"
+    }
+  ]
+}
+
+
+
+
+
+Exp: Both the policies deny all update actions on the database with the MyDatabase logical ID. And they allow all update actions on all other stack resources
+
+
+
+-- Policy-1 denies all update actions on the database with the MyDatabase logical ID. It allows all update actions on all other stack resources with an Allow statement. The Allow statement doesn't apply to the MyDatabase resource because the Deny statement always overrides allow actions.
+
+-- You can achieve the same result by using a default denial. When you set a stack policy, AWS CloudFormation denies any update that is not explicitly allowed. Policy-2 allows updates to all resources except for the MyDatabase, which is denied by default.
+
+-- If a stack policy includes overlapping statements (both allowing and denying updates on a resource), a Deny statement always overrides an Allow statement. To ensure that a resource is protected, use a Deny statement for that resource.
 
 
 
@@ -13994,6 +14056,46 @@ Application -----------------------------> Table --------> DynamoDB Streams     
 
 
 
+
+IMP : A company has inherited a legacy relational database that produces a multitude of reports needed for accounting and operations. Now, the company also wants to use Amazon DynamoDB for customer-facing applications that need millisecond latencies.
+
+Which is the most optimal way to integrate the existing relational system with DynamoDB?
+
+
+ANS :  DynamoDB Streams and AWS Lambda can be used to integrate DynamoDB seamlessly with the relational system
+
+
+EXP :
+
+      - DynamoDB can take advantage of DynamoDB Streams and AWS Lambda to integrate seamlessly with one or more existing relational database systems.
+
+      - For this kind of integration to be implemented, essentially three kinds of interoperation must be provided:
+
+          1 Fill the DynamoDB cache incrementally - When an item is queried, look for it first in DynamoDB. If it is not there, look for it in the SQL system, and load it into DynamoDB.
+
+          2 Write through a DynamoDB cache - When a customer changes a value in DynamoDB, a Lambda function is triggered to write the new data back to the SQL system.
+
+          3 Update DynamoDB from the SQL system - When internal processes such as inventory management or pricing change a value in the SQL system, a stored procedure is triggered to propagate the change to the DynamoDB materialized view.
+
+
+
+Integrating DynamoDB with relational systems:
+
+  https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-hybrid.html#bp-hybrid-problems
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ---------------------------------------------------------- DynamoDB Streams Hands On
 
 
@@ -22769,6 +22871,23 @@ def lambda_handler(event, context):
 
 • Automate generation of secrets on rotation (uses Lambda)
 
+    - Secrets Manager can't rotate secrets for AWS services running in Amazon VPC private subnets because these subnets don't have internet access.
+
+        - To rotate the keys successfully you need to configure an Amazon VPC interface endpoint to access your Secrets Manager Lambda function and private Amazon Relational Database Service (Amazon RDS) instance.
+
+        - Steps that need to be followed:
+
+                1. Create security groups for the Secrets Manager VPC endpoint, Amazon RDS instance, and the Lambda rotation function 
+
+                2. Add rules to Amazon VPC endpoint and Amazon RDS instance security groups 
+
+                3. Attach security groups to AWS resources 
+
+                4. Create an Amazon VPC interface endpoint for the Secrets Manager service and associate it with a security group
+
+                5. Verify that the Secrets Manager can rotate the secret
+                
+
 • Integration with Amazon RDS (MySQL, PostgreSQL, Aurora)
 
 • Secrets are encrypted using KMS
@@ -23469,6 +23588,34 @@ Amazon MSK
      • Elastic Load Balancers
      • CloudFront Distributions
      • APIs on API Gateway
+
+
+
+
+
+
+
+IMP : As a SysOps Administrator, you are tasked with creating an AWS Certificate Manager (ACM) certificate for Elastic Load Balancer that is fronting Amazon EC2 instances.
+
+What are the key points to consider while creating certificates through ACM? (Select two)
+
+
+ANS : 
+
+        1 You cannot use ACM certificates for email encryption
+
+            - Indeed, ACM certificates cannot be used for email encryption.
+
+
+        2 ACM provides certificates for SSL/TLS protocols only
+
+            - AWS Certificate Manager (ACM) handles the complexity of creating, storing, and renewing public and private SSL/TLS X.509 certificates and keys that protect your AWS websites and applications. 
+
+            - Therefore, ACM does not provide certificates for anything other than the SSL/TLS protocols.
+
+            - Exceptions for ACM certifications:
+
+               https://docs.aws.amazon.com/acm/latest/userguide/acm-certificate.html
 
 
 

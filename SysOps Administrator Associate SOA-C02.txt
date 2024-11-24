@@ -1127,9 +1127,11 @@ But there is a way for you to automate the recovery
 
 • Option 1: CloudWatch Alarm to recover your EC2 instance.
 
-        • Recover EC2 instance with the same private/publicIP,EIP, metadata, and Placement Group
+        StatusCheckFailed_System metric :
 
-        • Send notifications using SNS
+                • Recover EC2 instance with the same private/publicIP,EIP, metadata, and Placement Group
+
+                • Send notifications using SNS
 
 
 • Option 2: Auto Scaling Group
@@ -1507,6 +1509,37 @@ US-EAST-1A  --------- Create AMI ------> Custom AMI -----------> Launch from AMI
 
 
 
+---------------------------------------------- EC2 Instance Migration between region 
+
+
+
+-- A SysOps Administrator has been tasked with copying AMIs from one Region to another. While doing this task, the following error message popped up: Linux error message "This AMI was copied from an AMI with a kernel that is unavailable in the destination Region: {Image ID}"
+
+Which of the following would you identify as the root cause behind the issue?
+
+
+ANS :  Linux paravirtual (PV) AMIs aren't supported in all AWS Regions and copying these across unsupported Regions results in this error
+
+
+EXP :
+
+        - Linux Amazon Machine Images use one of two types of virtualization:
+
+                1 paravirtual (PV) or hardware virtual machine (HVM).
+
+        - The main differences between PV and HVM AMIs are how they boot and whether they can take advantage of special hardware extensions (CPU, network, and storage) for better performance.
+
+        - Linux paravirtual (PV) AMIs aren't supported in all AWS Regions.
+
+        - If you receive this message, you can create a new HVM instance, and then attach new EBS volumes to the HVM instance.
+
+        - Then, copy over data from the EBS volumes attached to the old PV instance.        
+
+
+
+
+
+
 
 
 ---------------------------------------------- Cross-Account AMI Sharing
@@ -1654,7 +1687,7 @@ Cross-Region / Cross-Account Encrypted AMI Copy
 ---------------------------------------------- EC2 Image Builder
 
 
-• Used to automate the creation ofVirtual Machines or container images
+• Used to automate the creation of Virtual Machines or container images
 
 • => Automate the creation, maintain, validate and test EC2 AMIs
 
@@ -3144,6 +3177,17 @@ Hands on ---- refer SAA Course
 
 
 
+-- You enable one or more Availability Zones for your load balancer when you create it. 
+
+-- If you enable multiple Availability Zones for your load balancer, this increases the fault tolerance of your applications. 
+
+-- You cannot disable Availability Zones for a Network Load Balancer after you create it, but you can enable additional Availability Zones.
+
+
+
+
+
+
 
 ---------------------------------------------------- Network Load Balancer – Target Groups 
 
@@ -3487,7 +3531,8 @@ UnhealthyThresholdCount         5               Consider the target unhealthy af
 
 • Unsuccessful at server side : 5xx code.
 
-        • An error 500 / Internal server error would mean some error on the ELB itself. • Error 502 : Bad Gateway
+        • An error 500 / Internal server error would mean some error on the ELB itself. 
+        • Error 502 : Bad Gateway
         • An error 503 / Service Unavailable
         • Error 504 / Gateway timeout : probably an issue within the server.
         • Error 561 : Unauthorized
@@ -4144,6 +4189,29 @@ Launch Template :
 -- whenever that queue length is too big, that means you have too many messages to process.        
 
 -- Then you can create an alarm, and that alarm will go into CloudWatch alarm, and would be triggering a scaling policy on your ASG.
+
+
+
+
+
+
+-- An application hosted on Amazon EC2 instances polls messages from Amazon SQS queue for downstream processing. The team is now looking at configuring an Auto Scaling group to scale using the CloudWatch metrics for Amazon SQS queue to process messages without delays.
+
+As a Systems Administrator, which feature or dimension of an SQS queue will you pick to collect SQS data from CloudWatch metrics?
+
+
+ANS : Queue name of the SQS queue should be used to fetch the necessary data from CloudWatch metrics
+
+
+EXP :
+
+        - Amazon SQS sends a number of metrics to CloudWatch, some of which are ApproximateAgeOfOldestMessage, ApproximateNumberOfMessagesDelayed, NumberOfMessagesDeleted and so on.
+
+        - Some metrics are calculated from a service perspective and can include retries. AWS suggests not to rely on the absolute values of these metrics, or use them to estimate current queue status.
+
+        - The only dimension that Amazon SQS sends to CloudWatch is QueueName. This means that all available statistics are filtered by QueueName.
+
+
 
 
 
@@ -5724,6 +5792,44 @@ tmpfs            95M     0   95M   0% /run/user/1000
 
 
 
+
+IMP POints to know :
+
+
+1 Use separate Amazon EBS volumes for the operating system and your data, even though root volume persistence feature is available
+
+
+        - As a best practice, AWS recommends the use of separate Amazon EBS volumes for the operating system and your data. 
+
+        - This ensures that the volume with your data persists even after instance termination or any issues to the operating system.
+
+
+2 EBS snapshots only capture data that has been written to your Amazon EBS volume, which might exclude any data that has been locally cached by your application or operating system
+
+
+        - Snapshots only capture data that has been written to your Amazon EBS volume, which might exclude any data that has been locally cached by your application or OS. 
+
+        - To ensure consistent snapshots on volumes attached to an instance, AWS recommends detaching the volume cleanly, issuing the snapshot command, and then reattaching the volume.
+
+        - For Amazon EBS volumes that serve as root devices, AWS recommends shutting down the machine to take a clean snapshot.
+
+
+3 By default, data on a non-root EBS volume is preserved even if the instance is shutdown or terminated
+
+        - By default, when you attach a non-root EBS volume to an instance, its DeleteOnTermination attribute is set to false.
+
+        - Therefore, the default is to preserve these volumes. After the instance terminates, you can take a snapshot of the preserved volume or attach it to another instance.
+
+        - You must delete a volume to avoid incurring further charges.
+
+
+
+
+
+
+
+
+
 ------------------------------------------------------------- Amazon Data Lifecycle Manager
 
 
@@ -5763,6 +5869,30 @@ tmpfs            95M     0   95M   0% /run/user/1000
 • Enabled for a snapshot in a particular AZ (billed per minute – very expensive $$$) around $500 per month.
 
 • Can be enabled on snapshots created by Data Lifecycle Manager
+
+
+
+
+
+
+-- While checking different deployment options, a development team has realized that there is a significant increase in latency when data on a new EBS volume (created from a snapshot) is accessed for the first time. This seems to be the general behavior of all the EBS volumes used by Amazon EC2 instances for different applications.
+
+What should the team do to reduce the latency and increase the performance of EBS volumes before moving them to production?
+
+
+ANS : Initialize the EBS volume or pre-warm it before moving the volumes to production
+
+
+EXP : 
+
+        - There is a significant increase in latency when you first access each block of data on a new EBS volume that was created from a snapshot. 
+
+        - You can avoid this performance lag by using one of the following options:
+
+                1 Access each block before putting the volume into production. This process is called initialization (formerly known as pre-warming).
+
+                2 Enable fast snapshot to restore on a snapshot to ensure that the EBS volumes created from it are fully-initialized at creation and instantly deliver all of their provisioned performance.
+
 
 
 
@@ -5984,6 +6114,45 @@ tmpfs            95M     0   95M   0% /run/user/1000
 
 
 
+
+
+
+
+IMP : A company stores all of its data on Amazon EFS that is accessed by different applications hosted on Amazon EC2 instances. The company's new security policy mandates encrypting all data-at-rest.
+
+How will you enforce the creation of the Amazon EFS file system that is encrypted at rest? (Select two)
+
+
+ANS :
+
+        1 Use the elasticfilesystem:Encrypted IAM condition key in AWS IAM identity-based policies to mandate users for creating only encrypted-at-rest Amazon EFS file systems
+
+        
+                - You can create an AWS Identity and Access Management (IAM) identity-based policy to control whether users can create Amazon EFS file systems that are encrypted at rest. 
+
+                - The Boolean condition key elasticfilesystem:Encrypted specifies the type of file system, encrypted or unencrypted, that the policy applies to.
+
+                - You use the condition key with the elasticfilesystem:CreateFileSystem action and the policy effect, allow or deny, to create a policy for creating encrypted or unencrypted file systems.
+
+        
+        2 Define Service Control Policies (SCPs) inside AWS Organizations to enforce EFS encryption for all AWS accounts in your organization
+
+
+                - Service control policies (SCPs) are a type of organization policy that you can use to manage permissions in your organization. 
+
+                - SCPs offer central control over the maximum available permissions for all accounts in your organization.
+
+                - An SCP restricts permissions for IAM users and roles in member accounts, including the member account's root user.
+
+                -  If a user or role has an IAM permission policy that grants access to an action that is either not allowed or explicitly denied by the applicable SCPs, the user or role can't perform that action.
+
+                - You can also define service control policies (SCPs) inside AWS Organizations to enforce EFS encryption for all AWS accounts in your organization.         
+
+
+
+
+
+
 ------------------------------------------------------------- EFS – Performance & Storage Classes
 
 
@@ -6040,6 +6209,53 @@ tmpfs            95M     0   95M   0% /run/user/1000
         • Standard: Multi-AZ, greatforprod
 
         • OneZone: OneAZ, great for dev, backup enabled by default, compatible with IA (EFS One Zone-IA)
+
+
+
+
+
+
+
+------------------------------  EFS mount helper 
+
+
+
+IMP : A company uses Amazon Elastic File System (EFS) to share storage space across multiple instances of an application. As a SysOps Administrator, you work with an EFS mount helper to mount the file system.
+
+Which of the following options are available with the EFS mount helper? (Select two)
+
+
+ANS :
+
+        1 Mounting with IAM authorization
+
+                EXP : You can use the EFS mount helper to mount your Amazon EFS file system on Linux instances using AWS Identity and Access Management (IAM) authorization.
+
+
+        2 Auto-mounting when an EC2 instance reboots :
+
+
+                - To automatically remount your Amazon EFS file system directory when the Amazon EC2 instance reboots, use the file /etc/fstab.
+
+                - The /etc/fstab file contains information about file systems.
+
+                - Using the EFS mount helper, you have the following options for mounting your Amazon EFS file system:
+
+                         1. Mounting on supported EC2 instances 
+
+                         2. Mounting with IAM authorization 
+
+                         3. Mounting with Amazon EFS access points 
+
+                         4. Mounting with an on-premise Linux client 
+
+                         5. Auto-mounting when an EC2 instance reboots 
+
+                         6. Mounting a file system when a new EC2 instance launches
+
+
+-- The EFS mount helper is part of the amazon-efs-utils package. The amazon-efs-utils package is an open-source collection of Amazon EFS tools.                         
+
 
 
 
@@ -6237,6 +6453,17 @@ EBS vs EFS – Elastic File System
         • File system’s size in bytes (15 minutes interval)
 
         • Dimensions: Standard, IA,Total (Standard + IA)
+
+
+
+- ClientConnections
+
+        - To track the number of Amazon EC2 instances that are connected to a file system, you can monitor the Sum statistic of the ClientConnections metric. To calculate the average ClientConnections for periods greater than one minute, divide the sum by the number of minutes in the period.
+
+
+ - TotalIOBytes
+
+        - To determine the throughput, you can monitor the daily Sum statistic of the TotalIOBytes metric to see your throughput.       
 
 
 
@@ -6763,6 +6990,34 @@ https://aws.amazon.com/blogs/security/how-to-prevent-uploads-of-unencrypted-obje
 
 
 
+
+-- A SysOps Administrator was asked to enable versioning on an Amazon S3 bucket after a few objects were accidentally deleted by the development team.
+
+Which of the following represent valid scenarios when a developer deletes an object in the versioning-enabled bucket?
+
+
+ANS : 
+
+        1 A delete marker is set on the deleted object, but the actual object is not deleted
+
+                - A delete marker in Amazon S3 is a placeholder (or marker) for a versioned object that was named in a simple DELETE request.
+
+                - Because the object is in a versioning-enabled bucket, the object is not deleted. But the delete marker makes Amazon S3 behave as if it is deleted.
+
+                - A delete marker has a key name (or key) and version ID like any other object. It does not have data associated with it. It is not associated with an access control list (ACL) value.
+
+        2 GET requests do not retrieve delete marker objects 
+
+                - The only way to list delete markers (and other versions of an object) is by using the versions subresource in a GET Bucket versions request. A simple GET does not retrieve delete marker objects.                
+
+
+
+
+https://docs.aws.amazon.com/AmazonS3/latest/userguide/DeleteMarker.html
+
+
+
+
 ------------------------------------------------------------- Amazon S3 - Versioning Hands On 
 
 
@@ -6855,6 +7110,38 @@ IMP :  for image 3 nad 4 u did not enable versioning
         • If bucket 1 has replication into bucket 2, which has replication into bucket 3
 
         • Then objects created in bucket 1 are not replicated to bucket 3
+
+
+
+
+
+
+
+
+IMP :
+
+
+-- A company uses Amazon S3 bucket replication to copy data from one S3 bucket into the other, for compliance purposes. The Technical Lead of the development team wants to be notified if replication of an object across S3 buckets fails.
+
+How will you configure this automatic notification?
+
+
+ANS : Enable S3 Replication Time Control (S3 RTC), which allows you to set up notifications for eligible objects that failed replication
+
+
+EXP : 
+
+        - S3 Replication Time Control (S3 RTC) helps you meet compliance or business requirements for data replication and provides visibility into Amazon S3 replication times. 
+
+        - S3 RTC replicates most objects that you upload to Amazon S3 in seconds, and 99.99 percent of those objects within 15 minutes.
+
+        - S3 RTC by default includes S3 replication metrics and S3 event notifications, with which you can monitor the total number of S3 API operations that are pending replication, the total size of objects pending replication, and the maximum replication time.
+
+        - You can track replication time for objects that did not replicate within 15 minutes by monitoring specific event notifications that S3 Replication Time Control (S3 RTC) publishes. 
+
+        - These events are published when an object that was eligible for replication using S3 RTC didn't replicate within 15 minutes, and when that object replicates to the destination Region.
+
+        - Replication events are available within 15 minutes of enabling S3 RTC. Amazon S3 events are available through Amazon SQS, Amazon SNS, or AWS Lambda.
 
 
 
@@ -7058,6 +7345,18 @@ VERY IMP for EPV :
 
         • Minimum storage duration of 180 days
 
+
+
+
+-- Amazon S3 Glacier and S3 Glacier Deep Archive are designed to be the lowest-cost Amazon S3 storage classes, allowing you to archive large amounts of data at a very low cost.
+
+-- This makes it feasible to retain all the data you want for use cases like data lakes, analytics, IoT, machine learning, compliance, and media asset archiving. 
+
+-- You pay only for what you need, with no minimum commitments or up-front fees.
+
+-- Amazon S3 Glacier offers a 10 GB retrieval free tier. You can retrieve 10 GB of your Amazon S3 Glacier data per month for free. 
+
+-- The free tier allowance can be used at any time during the month and applies to Standard retrievals.
 
 
 
@@ -7270,9 +7569,6 @@ Ans : Enable S3 Versioning in order to have object versions, so that “deleted 
 -- 24 to 48 hours to start seeing data analysis
 
 --  S3 bucket --> Storage Class Analysis --> .csv report 
-
-
-
 
 
 
@@ -7791,7 +8087,7 @@ if u choose Wait to run the job when it's ready , u have to run job manually
 
 
 
--- review and create lock , u cannot delete once u create the lock 
+-- review within 24 hrs and create lock , u cannot delete once u create the lock 
 
 -- IMP 
 
@@ -9386,7 +9682,7 @@ Migration Size : Up to petabytes, offline
 
 -- it is not possible to mount storage service(s3,efs,glacier,FSx) to ur on-premises but by use of storage gateway u can do this 
 
-
+-- Storage Gateway doesn't automatically update the cache when you upload a file directly to Amazon S3. Perform a RefreshCache operation to see the changes on the file share
 
 
 • Bridge between on-premises data and cloud data
@@ -9963,7 +10259,7 @@ Can be Private .
 
 • You want to maximize the cache hit rate to minimize requests on the origin
 
-• Control the TTL (0 seconds to 1 year), can be set by the origin using the Cache- Control header, Expires header...
+• Control the TTL (0 seconds to 1 year), can be set by the origin using the Cache-Control header, Expires header...
 
 • You can invalidate part of the cache using the CreateInvalidation API
 
@@ -10820,6 +11116,46 @@ NOTE : Load balancing happens at the connections level , not the statement level
 
 
 
+
+
+
+
+IMP : A heavily used application needs to be built on an Amazon Aurora DB cluster. The connections to the DB instance will be secured using Transport Layer Security (TLS) and the database needs to be publicly accessible.
+
+Which of the following steps are needed to connect to an Amazon Aurora DB cluster from outside a VPC? (Select three)
+
+
+ANS : 
+
+        1 The Aurora DB instance must have a public IP address
+
+        2 Configure a DB subnet group for public subnets and create the Aurora DB instance from this subnet group
+
+        3 Enable the VPC attributes DNS hostnames and DNS resolution
+
+
+EXP :
+
+        - To connect to an Amazon Aurora DB cluster directly from outside the VPC, the instances in the cluster must meet the following requirements:
+
+                1 The DB instance must have a public IP address
+
+                2 The DB instance must be running in a publicly accessible subnet
+
+        - For Amazon Aurora DB instances, you can't choose a specific subnet. Instead, choose a DB subnet group when you create the instance. 
+
+        - Create a DB subnet group with subnets of similar network configuration. For example, a DB subnet group for Public subnets.
+
+-- If you want your DB instance in the VPC to be publicly accessible, you must enable the VPC attributes DNS hostnames and DNS resolution.                
+
+
+
+
+
+
+
+
+
 -------------------------------------------------------------- Features of Aurora
 
 
@@ -11094,6 +11430,8 @@ NOTE : Load balancing happens at the connections level , not the statement level
 
 2 MemcacheD --temporary 
 
+
+
 - it not supports HA, failover and backups
 
 - Data not Persistent 
@@ -11109,6 +11447,30 @@ NOTE : Load balancing happens at the connections level , not the statement level
 - sharding(pieces)
 
 - Amazon ElastiCache for Memcached is a Memcached-compatible in-memory key-value store service that can be used as a cache or a data store. Session stores are easy to create with Amazon ElastiCache for Memcached.
+
+
+
+
+
+
+
+
+-- Each engine provides some advantages.
+
+-- Amazon ElastiCache supports the Memcached and Redis cache engines. 
+
+-- Choose Memcached if the following apply to you: 
+
+        1. You need the simplest model possible.
+
+        2. You need to run large nodes with multiple cores or threads. 
+
+        3. You need the ability to scale out and in, adding and removing nodes as demand on your system increases and decreases. 
+
+        4. You need to cache objects.
+
+
+
 
 
 
@@ -11714,6 +12076,40 @@ REF : https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/cloudwatch_
 
 
 • Note: EC2 Memory usage is by default not pushed (must be pushed from inside the instance as a custom metric)
+
+
+
+
+
+
+
+-- A bug in an application code has resulted in an EC2 instance's CPU utilization touching almost 100 percent thereby freezing the instance. The instance needs a restart to work normally once it hits this point. It will take a few weeks for the team to fix the issue. Till the bug fix is deployed, you have been tasked to automate the instance restart at the first sign of the instance becoming unresponsive
+
+As a SysOps Administrator, how will you configure a solution for this requirement?
+
+
+ANS : Create a CloudWatch alarm for CPU Utilization of the Amazon EC2 instance, with detailed monitoring enabled. Configure an action to restart the instance when the alarm is triggered
+
+EXP :
+
+        - CPUUtilization is an instance metric that is already defined with CloudWatch for monitoring Amazon EC2 instances.
+
+        - By default, your instance is enabled for basic monitoring. You can optionally enable detailed monitoring. After you enable detailed monitoring, the Amazon EC2 console displays monitoring graphs with a 1-minute period for the instance. 
+
+        - In Basic monitoring, data is available automatically in 5-minute periods at no charge. For Detailed monitoring, data is available in 1-minute periods for an additional charge.
+
+        - If you enable detailed monitoring, you are charged per metric that is sent to CloudWatch. You are not charged for data storage.
+
+        - You can enable detailed monitoring on an instance as you launch it or after the instance is running or stopped.
+
+        -  Enabling detailed monitoring on an instance does not affect the monitoring of the EBS volumes attached to the instance.
+
+        - Once the detailed monitoring is active, you can configure an action to restart the instance when the alarm is triggered based on the CPUUtilization metric.
+
+
+-- Steps to enable detailed monitoring on the instance: 
+
+        https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-cloudwatch-new.html
 
 
 
@@ -13008,6 +13404,19 @@ Example 2 : EventBridge with SNS
 
 
 
+IMP : By default, CloudTrail tracks only bucket-level actions. To track object-level actions, you need to enable Amazon S3 data events
+
+
+        - AWS CloudTrail supports Amazon S3 Data Events, apart from bucket Events.
+
+        - You can record all API actions on S3 Objects and receive detailed information such as the AWS account of the caller, IAM user role of the caller, time of the API call, IP address of the API, and other details. 
+
+        - All events are delivered to an S3 bucket and CloudWatch Events, allowing you to take programmatic actions on the events.
+
+
+
+
+
 
 3  CloudTrail Insights (u have to pay)
 
@@ -13041,6 +13450,34 @@ Example 2 : EventBridge with SNS
     • Anomalies appear in the CloudTrail console
     • Event is sent to Amazon S3
     • An EventBridge event is generated (for automation needs)
+
+
+
+
+
+
+
+
+IMP : As a SysOps Administrator, you have been asked to create a custom rule that evaluates whether CloudTrail trails in your account are turned on and logging for all regions. AWS Config should run the evaluations for the rule every time a trail is created. Also, AWS Config should run the rule every 8 hours.
+
+Which is the most optimal option to meet the given requirements?
+
+
+ANS : Create the rule with configuration change and periodic triggers
+
+
+EXP : 
+
+        - When you add a rule to your account, you can specify when you want AWS Config to run the rule; this is called a trigger.
+
+        - AWS Config evaluates your resource configurations against the rule when the trigger occurs. There are two types of triggers:
+
+                1 Configuration changes: AWS Config runs evaluations for the rule when certain types of resources are created, changed, or deleted.
+
+                2 Periodic: AWS Config runs evaluations for the rule at a frequency that you choose (for example, every 24 hours).
+
+        - If you choose configuration changes and periodic, AWS Config invokes your Lambda function when it detects a configuration change and also at the frequency that you specify.         
+
 
 
 
@@ -13208,6 +13645,22 @@ Example 2 : EventBridge with SNS
 
 
 
+IMP : Member accounts will be able to see the organization trail, but cannot modify or delete it
+
+        - Organization trails must be created in the master account, and when specified as applying to an organization, are automatically applied to all member accounts in the organization.
+
+        - Member accounts will be able to see the organization trail, but cannot modify or delete it. 
+
+        - By default, member accounts will not have access to the log files for the organization trail in the Amazon S3 bucket.
+
+
+
+https://docs.aws.amazon.com/awscloudtrail/latest/userguide/how-cloudtrail-works.html        
+
+
+
+
+
 
 
 
@@ -13263,6 +13716,23 @@ Example 2 : EventBridge with SNS
 
 
 • Pricing: no free tier, $0.003 per configuration item recorded per region, $0.001 per config rule evaluation per region
+
+
+
+
+
+
+------------------------------------------------------- Automatically re-enable AWS CloudTrail by using a custom remediation rule in AWS Config
+
+
+
+
+https://docs.aws.amazon.com/prescriptive-guidance/latest/patterns/automatically-re-enable-aws-cloudtrail-by-using-a-custom-remediation-rule-in-aws-config.html
+
+
+
+
+
 
 
 
@@ -13621,6 +14091,8 @@ AWS Organizations :
 
 ------------------ Security:  Service Control Policy (SCP)
 
+
+
 • IAM policies applied to OU or Accounts to restrict Users and Roles
 
 • They do not apply to the management account (full admin power)
@@ -13864,7 +14336,30 @@ USER TASKS
         2 • Deploy a copy of the portfolio into the recipient account (must re-deploy any updates)
 
 
+
 • Ability to add products from the imported portfolio to the local portfolio
+
+
+
+-- To make your AWS Service Catalog products available to users who are not in your AWS account, such as users who belong to other organizations or other AWS accounts in your organization, you share your portfolios with them. 
+
+-- You can share in several ways, including account-to-account sharing, organizational sharing, and deploying catalogs using stack sets.
+
+-- When you share a portfolio using account-to-account sharing or AWS Organizations, you allow an AWS Service Catalog administrator of another AWS account to import your portfolio into his or her account and distribute the products to end-users in that account.
+
+-- This imported portfolio isn't an independent copy. The products and constraints in the imported portfolio stay in sync with changes that you make to the shared portfolio, the original portfolio that you shared.
+
+-- The recipient administrator, the administrator with whom you share a portfolio, cannot change the products or constraints but can add AWS Identity and Access Management (IAM) access for end-users.
+
+-- When you add products or constraints to the shared portfolio or remove products or constraints from it, the change propagates to all imported instances of the portfolio.
+
+        - For example, if you remove a product from the shared portfolio, that product is also removed from the imported portfolio. 
+
+        - It is also removed from all local portfolios that the imported product was added. 
+
+        - If an end-user launched a product before you removed it, the end user's provisioned product continues to run, but the product becomes unavailable for future launches.
+
+
 
 
 
@@ -14292,18 +14787,21 @@ eg :
 • No need to create custom scripts and manual processes
 
 • Supported services:
- • Amazon EC2 / Amazon EBS
- • Amazon S3
- • Amazon RDS (all DBs engines) / Amazon Aurora / Amazon DynamoDB 
- • Amazon DocumentDB / Amazon Neptune
- • Amazon EFS / Amazon FSx (Lustre & Windows File Server)
- • AWS Storage Gateway (Volume Gateway)   
+
+        • Amazon EC2 / Amazon EBS
+        • Amazon S3
+        • Amazon RDS (all DBs engines) / Amazon Aurora / Amazon DynamoDB 
+        • Amazon DocumentDB / Amazon Neptune
+        • Amazon EFS / Amazon FSx (Lustre & Windows File Server)
+        • AWS Storage Gateway (Volume Gateway)   
 
  -- EFS , EC2 , DynamoDB = Service level backups , 
-    for eg we always take backups of EFS files 
+    
+        for eg we always take backups of EFS files 
 
  -- RDS, EBS , AWS Storage gateway , amazon aurora = service level snapshots , 
-    for eg we always take snapshots of EBS volumes 
+    
+        for eg we always take snapshots of EBS volumes 
 
 
 
@@ -14623,10 +15121,10 @@ EPV : If you want to allow or block web requests based on the IP addresses that 
 
 • Define Web ACL (Web Access Control List) Rules:
 
- • IP Set: up to 10,000 IP addresses – use multiple Rules for more IPs
- • HTTP headers, HTTP body, or URI strings Protects from common attack - SQL injection and Cross-Site Scripting (XSS)
- • Size constraints, geo-match (block countries)
- • Rate-based rules (to count occurrences of events) – for DDoS protection
+        • IP Set: up to 10,000 IP addresses – use multiple Rules for more IPs
+        • HTTP headers, HTTP body, or URI strings Protects from common attack - SQL injection and Cross-Site Scripting (XSS)
+        • Size constraints, geo-match (block countries)
+        • Rate-based rules (to count occurrences of events) – for DDoS protection
 
 • Web ACL are Regional except for CloudFront
 
@@ -14917,7 +15415,7 @@ optional features = / S3 Logs / EBS Volumes / RDS & Aurora Login Activity / Lamb
 
 
 
-
+IMP :  GuardDuty cannot block any malicious attempts to access the APIs illegally. Rather, it can only monitor/detect such attempts.
 
 
 ------------------------------------------------------- AWS Macie
@@ -15534,6 +16032,37 @@ certutil -decode .\ExampleFileDecrypted.base64 .\ExampleFileDecrypted.txt
 
 
 
+IMP : As a SysOps Administrator, you are tasked with creating an AWS Certificate Manager (ACM) certificate for Elastic Load Balancer that is fronting Amazon EC2 instances.
+
+What are the key points to consider while creating certificates through ACM? (Select two)
+
+
+ANS : 
+
+        1 You cannot use ACM certificates for email encryption
+
+            - Indeed, ACM certificates cannot be used for email encryption.
+
+
+        2 ACM provides certificates for SSL/TLS protocols only
+
+            - AWS Certificate Manager (ACM) handles the complexity of creating, storing, and renewing public and private SSL/TLS X.509 certificates and keys that protect your AWS websites and applications. 
+
+            - Therefore, ACM does not provide certificates for anything other than the SSL/TLS protocols.
+
+            - Exceptions for ACM certifications:
+
+               https://docs.aws.amazon.com/acm/latest/userguide/acm-certificate.html
+
+
+
+
+
+
+
+
+
+
 -------------------------- ACM – Requesting Public Certificates
 
 
@@ -15575,6 +16104,40 @@ certutil -decode .\ExampleFileDecrypted.base64 .\ExampleFileDecrypted.txt
     • Events are appearing in EventBridge
 
 • AWS Config has a managed rule named acm-certificate-expiration-check to check for expiring certificates (configurable number of days) ---- IMP for exam 
+
+
+
+
+
+
+-- A certificate was imported using AWS Certificate Manager (ACM) for configuring on an Application Load Balancer (ALB). The certificate, however, is not visible in ACM.
+
+What can be the issue and how will you fix it?
+
+
+Ans: The ACM certificate wasn't requested in the same AWS Region as your load balancer
+
+
+Exp : 
+
+        - To use a third-party certificate with a load balancer, you can either import the certificate into ACM or upload a certificate to AWS Identity and Access Management (IAM).
+
+        - You won't find the imported certificate or ACM certificate if: 1. The certificate imported into ACM is using an algorithm other than 1024-bit RSA or 2048-bit RSA.
+
+                - The ACM certificate wasn't requested in the same AWS Region as your load balancer or CloudFront distribution.
+
+                - ACM certificates must be requested or imported in the same AWS Region as your Classic Load Balancer or Application Load Balancer.
+
+                
+
+
+
+
+
+
+IMP: To use the ACM certificates with Amazon CloudFront (and not an ALB), the certificates must be imported or requested in the US East (N. Virginia) Region.
+
+
 
 
 
@@ -15966,6 +16529,23 @@ def lambda_handler(event, context):
 
 • Automate generation of secrets on rotation (uses Lambda)
 
+        - Secrets Manager can't rotate secrets for AWS services running in Amazon VPC private subnets because these subnets don't have internet access.
+
+        - To rotate the keys successfully you need to configure an Amazon VPC interface endpoint to access your Secrets Manager Lambda function and private Amazon Relational Database Service (Amazon RDS) instance.
+
+        - Steps that need to be followed:
+
+                1. Create security groups for the Secrets Manager VPC endpoint, Amazon RDS instance, and the Lambda rotation function 
+
+                2. Add rules to Amazon VPC endpoint and Amazon RDS instance security groups 
+
+                3. Attach security groups to AWS resources 
+
+                4. Create an Amazon VPC interface endpoint for the Secrets Manager service and associate it with a security group
+
+                5. Verify that the Secrets Manager can rotate the secret
+
+
 • Integration with Amazon RDS (MySQL, PostgreSQL, Aurora)
 
 • Secrets are encrypted using KMS
@@ -15973,6 +16553,25 @@ def lambda_handler(event, context):
 • Mostly meant for RDS integration
 
 
+
+
+
+
+-- To help keep your secrets secure, Secrets Manager can automatically rotate them on a schedule. When it rotates a secret, Secrets Manager updates the credentials in both the secret and the database or service so that you don't have to manually change the credentials. 
+
+-- Secrets Manager uses a Lambda rotation function to communicate with both Secrets Manager and the database or service.
+
+-- AWS Secrets Manager has built-in rotation support for secrets for the following:
+
+        - Amazon RDS databases
+
+        - Amazon DocumentDB databases
+
+        - Amazon Redshift clusters
+
+
+
+https://docs.aws.amazon.com/secretsmanager/latest/userguide/intro.html
 
 
 
@@ -15987,6 +16586,26 @@ def lambda_handler(event, context):
 • Ability to promote a read replica Secret to a standalone Secret
 
 • Use cases: multi-region apps, disaster recovery strategies, multi-region DB...
+
+
+
+
+
+
+
+
+-- Owing to lapses in security, a development team has deleted a Secrets Manager secret. Now, when the team tried to create a new secret with the same name, they ended up with an error - You can't create this secret because a secret with this name is already scheduled for deletion. The secret has to be created with the same name to avoid issues in their application.
+
+How will you recreate the secret with the same name?
+
+
+ANS : Use AWS Command Line Interface (AWS CLI) to permanently delete a secret without any recovery window, run the DeleteSecret API call with the ForceDeleteWithoutRecovery parameter
+
+EXP :
+
+        - When you delete a secret, the Secrets Manager deprecates it with a seven-day recovery window. This means that you can't recreate a secret using the same name using the AWS Management Console until seven days have passed. You can permanently delete a secret without any recovery window using the AWS Command Line Interface (AWS CLI).
+
+        - Run the DeleteSecret API call with the ForceDeleteWithoutRecovery parameter to delete the secret permanently. If you receive errors when running AWS CLI commands, make sure that you’re using the most recent version of the AWS CLI. Secrets deleted using the ForceDeleteWithoutRecovery parameter can't be recovered or restored.
 
 
 
@@ -16279,7 +16898,7 @@ https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_ common-scenarios_fede
 
 • Use AWS STS (Security Token Service) to retrieve credentials and impersonate the IAM Role you have access to (AssumeRole API)
 
-• Temporary credentials can be valid between 15 minutes to 1 hour
+• Temporary credentials can be valid between 15 minutes to 12 hour
 
 
 
@@ -18758,6 +19377,18 @@ NOTE : u have to remove 5 IP's from each subnet maks , here u will get 251
 
 
 
+
+-- You cannot manually associate or disassociate a public IP address from your instance
+
+-- By default, Amazon EC2 and Amazon VPC use the IPv4 addressing protocol; you can't disable this behavior
+
+-- If the public IP address of your instance in a VPC has been released, it will not receive a new one if there is more than one network interface attached to your instance
+
+
+
+
+
+
 ------------------------------------------- steps to create VPC with CIDR
 
 1  crate VPCwith CIDR (192.168.0.0/16)
@@ -19419,7 +20050,7 @@ Applies to an EC2 instance when specified by someone                            
 
 • You can create VPC Peering connection between VPCs in different AWS accounts/regions
 
-• You can reference a security group in a peeredVPC (works cross accounts – same region)
+• You can reference a security group in a peered VPC (works cross accounts – same region)
 
 
 
@@ -19457,7 +20088,7 @@ ANS :
 
 -- create 2 vpc in different region 
 
--- follow above steps for creating all requriments IGW ,create public nad private subnets, NAT , Public and private RT's ssociate route tables and Subnets and SG and 2 instances  for vpc 
+-- follow above steps for creating all requriments IGW ,create public and private subnets, NAT , Public and private RT's ssociate route tables and Subnets and SG and 2 instances  for vpc 
 
 -- do the same things in other region CIDR 192.169.0.0/16, u can do in same region or u can do in another account also ( no need to create public instance(baston)) , create private subnet only 
 
@@ -19758,6 +20389,35 @@ Outgoing Requests:
 
 
 
+
+
+
+-- A retail company has complex AWS VPC architecture that is getting difficult to maintain. The company has decided to configure VPC flow logs to track the network traffic to analyze various traffic flow scenarios. The systems administration team has configured VPC flow logs for one of the VPCs, but it's not able to see any logs. After initial analysis, the team has been able to track the error. It says Access error and the administrator of the team wants to change the IAM Role defined in the flow log definition.
+
+ANS : The error indicates the IAM role is not correctly configured. After you've created a flow log, you cannot change its configuration. Instead, you need to delete the flow log and create a new one with the required configuration
+
+EXP :
+
+        - Access error can be caused by one of the following reasons:
+
+                - The IAM role for your flow log does not have sufficient permissions to publish flow log records to the CloudWatch log group
+
+                - The IAM role does not have a trust relationship with the flow logs service
+
+                - The trust relationship does not specify the flow logs service as the principal
+
+        - After you've created a flow log, you cannot change its configuration or the flow log record format
+
+        - For example, you can't associate a different IAM role with the flow log or add or remove fields in the flow log record. Instead, you can delete the flow log and create a new one with the required configuration.
+
+
+
+
+
+
+
+
+
 ---------------------------------------------------------- VPC Flow Logs Hands ON 
 
 
@@ -19833,9 +20493,9 @@ policy
 
 eg : 
 
-2 298132369629 eni-05988048dea221b5a 3.5.211.132 192.168.1.77 443 36382 6 741 6075864 1708930056 1708930116 ACCEPT OK
+2 298132369629 eni-05988048dea221b5a 3.5.211.132 192.168.1.77 443 36382 6 741 6075864 1708930056 1708930116 ACCEPT OK   -- inbound traffic
 
-2 298132369629 eni-05988048dea221b5a 192.168.1.77 3.5.211.132 36382 443 6 96 5957 1708930056 1708930116 ACCEPT OK
+2 298132369629 eni-05988048dea221b5a 192.168.1.77 3.5.211.132 36382 443 6 96 5957 1708930056 1708930116 ACCEPT OK       -- outbound traffic
 
 
 VPC Flow Logs Syntax
@@ -19944,7 +20604,7 @@ OK                    =  log-status
 
                         - And then, the site-to-site VPN connection can be established.
 
-• Impor tant step: enable Route Propagation for theVirtual Private Gateway in the route table that is associated with your subnets
+• Important step: enable Route Propagation for theVirtual Private Gateway in the route table that is associated with your subnets
 
         - even though this is set up, this site-to-site VPN connection will not work until you enable route propagation in your VPC within your subnets. And then, when this is done, then the connectivity will work.
 
@@ -20311,6 +20971,57 @@ IMP to know , they are 5 parts in aws to work on hybrid networking
 
 
 • Lead times are often longer than 1 month to establish a new connection
+
+
+
+
+
+
+
+
+------------------------------------- How to access s3 bucket from the on-premises aws account 
+
+
+
+IMP :
+
+
+-- An e-commerce company has established a Direct Connect connection between AWS Cloud and their on-premises infrastructure. The development team needs to access the Amazon S3 bucket present in their AWS account to pull the customer data for an application hosted on the on-premises infrastructure.
+
+What is the right way of configuring this requirement?
+
+
+ANS : Create a dedicated or hosted connection. Establish a cross-network connection and then create a public virtual interface for your connection. Configure an end router for use with the public virtual interface
+
+
+EXP :
+
+        - It's not possible to directly access an S3 bucket through a private virtual interface (VIF) using Direct Connect. 
+
+        - This is true even if you have an Amazon Virtual Private Cloud (Amazon VPC) endpoint for Amazon S3 in your VPC because VPC endpoint connections can't extend outside of a VPC. 
+
+        - Additionally, Amazon S3 resolves to public IP addresses, even if you enable a VPC endpoint for Amazon S3.
+
+        - However, you can establish access to Amazon S3 using Direct Connect by following these steps (This configuration doesn't require a VPC endpoint for Amazon S3, because traffic doesn't traverse the VPC):
+
+                1 Create a connection. You can request a dedicated connection or a hosted connection.
+
+                2 Establish a cross-network connection with the help of your network provider, and then create a public virtual interface for your connection.
+
+                3 Configure an end router for use with the public virtual interface.
+
+        - After the BGP(Border Gateway Protocol) is up and established, the Direct Connect router advertises all global public IP prefixes, including Amazon S3 prefixes. 
+
+        - Traffic heading to Amazon S3 is routed through the Direct Connect public virtual interface through a private network connection between AWS and your data center or corporate network.                
+
+
+
+
+
+
+
+
+
 
 
 

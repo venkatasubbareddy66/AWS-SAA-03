@@ -285,7 +285,7 @@ we have Floppy -- 2MB
 
 -- s3 is object storage and ebs is block type storage
 
--- default volm is called "root volume" , root volume contains o.s(like linux, windows)
+-- default volm is called "boot volume" , boot volume contains o.s(like linux, windows)
 
 -- u can attach multiple volumes to the ec2 instances
 
@@ -370,6 +370,8 @@ we have Floppy -- 2MB
 • Performance Mode (set at EFS creation time)
  
    • General Purpose (default) – latency-sensitive use cases (web server, CMS, etc...)
+
+      - Latency : Time Taken to transfer each packet of data 
       
       - General Purpose performance mode is ideal for latency-sensitive use cases, like web serving environments, content management systems, home directories, and general file serving.
 
@@ -389,6 +391,8 @@ we have Floppy -- 2MB
 
 
 • Throughput Mode
+
+    -  Throughput = no.of data packets sent or received within a unit time.
 
    • Bursting – 1TB = 50MiB/s + burst of up to 100MiB/s
    • Provisioned – set your throughput regardless of storage size, ex: 1 GiB/s for 1 TB storage
@@ -2513,6 +2517,9 @@ ANS : Use an AWS Web Application Firewall (AWS WAF) and setup a rate-based rule
 
 ============================================ Amazon GuardDuty =================================
 
+
+
+
 • Intelligent Threat discovery to protect your AWS Account , (malicious activities)
 
 • Uses Machine Learning algorithms, anomaly detection, 3rd party data
@@ -2542,6 +2549,11 @@ ANS : Use an AWS Web Application Firewall (AWS WAF) and setup a rate-based rule
 VPC Flow Logs / CloudTrail Logs / DNS Logs (AWS DNS) 
 
 optional features = / S3 Logs / EBS Volumes / RDS & Aurora Login Activity / Lambda Network Activity / EKS Audit Logs & Runtime Monitoring ------ > GuardDuty ---> EventBridge --> SNS / Lambda
+
+
+
+
+IMP :  GuardDuty cannot block any malicious attempts to access the APIs illegally. Rather, it can only monitor/detect such attempts.
 
 
 
@@ -3630,9 +3642,9 @@ or
 =============================================== DeleteOnTermination ================================================
 
 
-NOTE : if u terminate the instance all ur root volumes get terminated by default coz, "delete on termination" is checked/enabled / Yes
+NOTE : if u terminate the instance all ur boot volumes get terminated by default coz, "delete on termination" is checked/enabled / Yes
 
--  if u want to retain the root volume do uncheck  "delete on termination" while launching te ec2 instance 
+-  if u want to retain the boot volume do uncheck  "delete on termination" while launching te ec2 instance 
 
 - if u terminate ec2 , by default "additional volume will not be deleted coz "DOT" is unchecked/disabled/No
 
@@ -7910,6 +7922,44 @@ VERY IMP for EPV :
 
 
 
+
+
+
+
+IMP :
+
+
+-- A company uses Amazon S3 bucket replication to copy data from one S3 bucket into the other, for compliance purposes. The Technical Lead of the development team wants to be notified if replication of an object across S3 buckets fails.
+
+How will you configure this automatic notification?
+
+
+ANS : Enable S3 Replication Time Control (S3 RTC), which allows you to set up notifications for eligible objects that failed replication
+
+
+EXP : 
+
+        - S3 Replication Time Control (S3 RTC) helps you meet compliance or business requirements for data replication and provides visibility into Amazon S3 replication times. 
+
+        - S3 RTC replicates most objects that you upload to Amazon S3 in seconds, and 99.99 percent of those objects within 15 minutes.
+
+        - S3 RTC by default includes S3 replication metrics and S3 event notifications, with which you can monitor the total number of S3 API operations that are pending replication, the total size of objects pending replication, and the maximum replication time.
+
+        - You can track replication time for objects that did not replicate within 15 minutes by monitoring specific event notifications that S3 Replication Time Control (S3 RTC) publishes. 
+
+        -  These events are published when an object that was eligible for replication using S3 RTC didn't replicate within 15 minutes, and when that object replicates to the destination Region.
+
+        - Replication events are available within 15 minutes of enabling S3 RTC. Amazon S3 events are available through Amazon SQS, Amazon SNS, or AWS Lambda.
+
+
+
+
+
+
+
+
+
+
 ---------------------Amazon S3 – Security encryption(security)
 
 -- it will be done in 2 ways 
@@ -9401,6 +9451,8 @@ eg :
 -- it is used to transfer the data from on-premises to AWS vice versa (S3, EBS,Glacier and FSx) 
 
 -- ur lap is also called on-premises 
+
+-- Storage Gateway doesn't automatically update the cache when you upload a file directly to Amazon S3. Perform a RefreshCache operation to see the changes on the file share
 
 -- Use cases:
 • disaster recovery
@@ -11265,7 +11317,55 @@ ans : 20 RCU
 
 
 
---------------------------- LAB 
+
+
+---------------------------------------------------------- DynamoDB Streams & AWS Lambda
+
+
+• You need to define an Event Source Mapping to read from a DynamoDB Streams
+
+• You need to ensure the Lambda function has the appropriate permissions
+
+• Your Lambda function is invoked synchronously
+
+
+
+
+
+IMP : A company has inherited a legacy relational database that produces a multitude of reports needed for accounting and operations. Now, the company also wants to use Amazon DynamoDB for customer-facing applications that need millisecond latencies.
+
+Which is the most optimal way to integrate the existing relational system with DynamoDB?
+
+
+ANS :  DynamoDB Streams and AWS Lambda can be used to integrate DynamoDB seamlessly with the relational system
+
+
+EXP :
+
+      - DynamoDB can take advantage of DynamoDB Streams and AWS Lambda to integrate seamlessly with one or more existing relational database systems.
+
+      - For this kind of integration to be implemented, essentially three kinds of interoperation must be provided:
+
+          1 Fill the DynamoDB cache incrementally - When an item is queried, look for it first in DynamoDB. If it is not there, look for it in the SQL system, and load it into DynamoDB.
+
+          2 Write through a DynamoDB cache - When a customer changes a value in DynamoDB, a Lambda function is triggered to write the new data back to the SQL system.
+
+          3 Update DynamoDB from the SQL system - When internal processes such as inventory management or pricing change a value in the SQL system, a stored procedure is triggered to propagate the change to the DynamoDB materialized view.
+
+
+
+Integrating DynamoDB with relational systems:
+
+  https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-hybrid.html#bp-hybrid-problems
+
+
+
+
+
+
+
+
+---------------------------------------------------------- LAB 
 
 
 DynamoDb Streams : it is an ordered flow of information amout changes  items in a DynamoDb table. When u enable stream on a table , DynamoDb captures information about every modification to data items n the table 
@@ -11320,6 +11420,10 @@ Step 3 : Test
 -- the changes will trigger to our lambda function '
 
 -- now go to function --> monitor--> view cloudwatch logs --> now you will able to see all the changes , INSERT,UPDATE,DELETE all the modifications that are captured through the DynamoDB Stream APi and trigger through the lambda and you will able to see in the cloud watch logs what has modification occurs 
+
+
+
+
 
 
 
@@ -13950,6 +14054,22 @@ NOTE : u have to remove 5 IP's from each subnet maks , here u will get 251
 
 
 
+
+
+-- You cannot manually associate or disassociate a public IP address from your instance
+
+-- By default, Amazon EC2 and Amazon VPC use the IPv4 addressing protocol; you can't disable this behavior
+
+-- If the public IP address of your instance in a VPC has been released, it will not receive a new one if there is more than one network interface attached to your instance
+
+
+
+
+
+
+
+
+
 -------------------------------------------steps to create VPC with CIDR
 
 1  crate VPCwith CIDR (192.168.0.0/16)
@@ -14180,6 +14300,40 @@ aws s3 mb s3://vpc-bucket19876 --region ap-south-1
    • Subnets to internet
    • Subnets to subnets
    • Internet to subnets
+
+
+
+
+
+
+
+
+
+
+-- A retail company has complex AWS VPC architecture that is getting difficult to maintain. The company has decided to configure VPC flow logs to track the network traffic to analyze various traffic flow scenarios. The systems administration team has configured VPC flow logs for one of the VPCs, but it's not able to see any logs. After initial analysis, the team has been able to track the error. It says Access error and the administrator of the team wants to change the IAM Role defined in the flow log definition.
+
+ANS : The error indicates the IAM role is not correctly configured. After you've created a flow log, you cannot change its configuration. Instead, you need to delete the flow log and create a new one with the required configuration
+
+EXP :
+
+        - Access error can be caused by one of the following reasons:
+
+                - The IAM role for your flow log does not have sufficient permissions to publish flow log records to the CloudWatch log group
+
+                - The IAM role does not have a trust relationship with the flow logs service
+
+                - The trust relationship does not specify the flow logs service as the principal
+
+        - After you've created a flow log, you cannot change its configuration or the flow log record format
+
+        - For example, you can't associate a different IAM role with the flow log or add or remove fields in the flow log record. Instead, you can delete the flow log and create a new one with the required configuration.
+
+
+
+
+
+
+
 
 
 ------------------------------- LAB 
@@ -17485,6 +17639,7 @@ s3://doc-example-bucket/table1/
 
 =========================================================== 4 Amazon EMR=========================
 
+
 • EMR stands for “Elastic MapReduce”
 
 • EMR helps creating Hadoop clusters (Big Data) to analyze and process vast amount of data
@@ -18032,6 +18187,9 @@ EXP : When an Amazon Kinesis Data Stream is configured as the source of a Kinesi
 
 ========================================================== Machine Learning================================================
 
+
+
+
 ----------------------------- 1 Amazon Rekognition
 
 • Find objects, people, text, scenes in images and videos using ML
@@ -18064,6 +18222,59 @@ EXP : When an Amazon Kinesis Data Stream is configured as the source of a Kinesi
 
 
  Image --> Amazon Rekognition --> Confidence Level and Threshold --> Optional Manual review in A2I
+
+
+
+------------------------------ LAB 
+
+
+-- create s3 bucket and add some image with text 
+
+-- create aws lambda and add translate , Rekognition , s3 permissions to the lambda function and add this code 
+
+
+import boto3
+
+def lambda_handler(event, context):
+    s3_client = boto3.client('s3')
+    rekognition_client = boto3.client('rekognition')
+    translate_client = boto3.client('translate')
+
+    # Image details
+    bucket_name = 'name of bucket ' 
+    image_key = 'images.jpeg'
+
+    # OCR with Rekognition
+    response = rekognition_client.detect_text(
+        Image={'S3Object': {'Bucket': bucket_name, 'Name': image_key}}
+    )
+
+    # Extract detected text
+    detected_text = " ".join([text['DetectedText'] for text in response['TextDetections'] if text['Type'] == 'LINE'])
+
+    if detected_text:
+        # Translate the text
+        translated_text = translate_client.translate_text(
+            Text=detected_text, 
+            SourceLanguageCode="en", 
+            TargetLanguageCode="en"
+        )['TranslatedText']
+
+        print(f"Translation: {translated_text}")
+
+    return {
+        'statusCode': 200,
+        'body': translated_text
+    }
+
+
+
+
+-- once you run this lambda code u will get extract text from the images using trnaslate and Rekognition 
+
+
+
+
 
 
 
